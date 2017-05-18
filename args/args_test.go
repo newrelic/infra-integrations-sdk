@@ -20,6 +20,7 @@ func TestSetupArgsDefault(t *testing.T) {
 	}
 	var args argumentList
 
+	os.Setenv("USERNAME", "")
 	os.Args = []string{"cmd"}
 	flag.CommandLine = flag.NewFlagSet("name", 0)
 
@@ -42,6 +43,7 @@ func TestSetupArgsCommandLine(t *testing.T) {
 	}
 	var args argumentList
 
+	os.Setenv("USERNAME", "")
 	os.Args = []string{
 		"cmd",
 		"-verbose",
@@ -72,6 +74,7 @@ func TestSetupArgsEnvironment(t *testing.T) {
 	}
 	var args argumentList
 
+	os.Setenv("USERNAME", "")
 	os.Setenv("VERBOSE", "true")
 	os.Setenv("HOSTNAME", "otherhost")
 	os.Setenv("PORT", "1234")
