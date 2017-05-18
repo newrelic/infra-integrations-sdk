@@ -4,7 +4,7 @@ deps:
 	@echo "====> Install depedencies..."
 	go get -v -d -t ./...
 
-devdeps:
+devdeps: deps
 	@echo "====> Install depedencies for development..."
 	go get -v github.com/golang/lint/golint
 	go get -v github.com/axw/gocov/gocov
