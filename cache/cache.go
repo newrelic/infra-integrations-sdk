@@ -38,7 +38,8 @@ func NewCache() (*Cache, error) {
 
 	cachePath := os.Getenv("NRIA_CACHE_PATH")
 	if cachePath == "" {
-		cachePath = filepath.Join(os.TempDir(), fmt.Sprintf("%s.json", os.Args[0]))
+		_, fname := filepath.Split(os.Args[0])
+		cachePath = filepath.Join(os.TempDir(), fmt.Sprintf("%s.json", fname))
 		log.Warn("Environment variable NRIA_CACHE_PATH is not set, using default %s", cachePath)
 	}
 

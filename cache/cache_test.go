@@ -40,7 +40,8 @@ func TestDiskCache(t *testing.T) {
 		t.Fail()
 	}
 	dc.Save()
-	expectedPath := filepath.Join(os.TempDir(), fmt.Sprintf("%s.json", os.Args[0]))
+	_, fname := filepath.Split(os.Args[0])
+	expectedPath := filepath.Join(os.TempDir(), fmt.Sprintf("%s.json", fname))
 	defer os.Remove(expectedPath)
 
 	_, err = os.Stat(expectedPath)
