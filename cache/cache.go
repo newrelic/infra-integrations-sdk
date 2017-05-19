@@ -13,6 +13,8 @@ import (
 
 var now = time.Now
 
+// SetNow forces a different "current time" for the cache.
+// This function is useful only for unit testing.
 func SetNow(newNow func() time.Time) {
 	now = newNow
 }

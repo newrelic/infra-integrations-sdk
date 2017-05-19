@@ -49,15 +49,16 @@ func underscore(s string) string {
 // SetupArgs parses a struct's definition and populates the arguments out of the
 // fields it defines. Each of the fields in the struct can define their defaults
 // and help string by using tags:
-//	type Arguments struct {
-//              DefaultArgumentList
-//		Argument1  bool   `default:"false" help:"This is the help we will print"`
-//		Argument2  int    `default:"1" help:"This is the help we will print"`
-//		Argument3  string `default:"value" help:"This is the help we will print"`
-//	}
 //
-// The fields int he struct will be populated with the values set either from the
-// command line or from environment variables.
+//  type Arguments struct {
+//     	DefaultArgumentList
+//     	Argument1 bool   `default:"false" help:"This is the help we will print"`
+//     	Argument2 int    `default:"1" help:"This is the help we will print"`
+//     	Argument3 string `default:"value" help:"This is the help we will print"`
+//  }
+//
+// The fields in the struct will be populated with the values set either from
+// the command line or from environment variables.
 func SetupArgs(args interface{}) error {
 	err := defineFlags(args)
 	if err != nil {
