@@ -8,7 +8,7 @@ Link the issue it solves (if there is one).
 
 - [ ] add a risk label after carefully considering the "blast radius" of your changes
 - [ ] describe the _intent_ of your changes in the description. don't just rewrite your code in prose
-- [ ] add `ready for review` label
+- [ ] assign at least one reviewer
 
 ### Reviewer
 
