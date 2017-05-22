@@ -16,4 +16,4 @@ Link the issue it solves (if there is one).
 - [ ] verify that high risk behavior changes are well tested
 - [ ] check license for any new external dependency
 - [ ] ask questions about anything that isn't clear and obvious
-- [ ] add `approved` label when you're satisfied
+- [ ] approve the PR when you consider it's good to merge
