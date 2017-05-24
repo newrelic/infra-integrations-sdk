@@ -18,7 +18,7 @@ var cmdOut io.ReadCloser
 var cmdIn io.WriteCloser
 var mutex = &sync.Mutex{}
 
-var jmxCommand = "/usr/bin/nrjmx"
+var jmxCommand = "./bin/nrjmx"
 
 const (
 	outTimeout time.Duration = 1000 * time.Millisecond
