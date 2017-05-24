@@ -43,8 +43,8 @@ func Open(hostname, port, username, password string) error {
 
 	cmd = exec.CommandContext(
 		ctx, jmxCommand,
-		"-hostname", hostname, "-port", port,
-		"-username", username, "-password", password,
+		"--hostname", hostname, "--port", port,
+		"--username", username, "--password", password,
 	)
 
 	if cmdOut, err = cmd.StdoutPipe(); err != nil {
