@@ -16,9 +16,10 @@ var cmd *exec.Cmd
 var cancel context.CancelFunc
 var cmdOut io.ReadCloser
 var cmdIn io.WriteCloser
+var cmdErr = make(chan error, 1)
 var mutex = &sync.Mutex{}
 
-var jmxCommand = "/usr/bin/nrjmx"
+var jmxCommand = "./bin/nrjmx"
 
 const (
 	outTimeout time.Duration = 1000 * time.Millisecond
@@ -43,8 +44,8 @@ func Open(hostname, port, username, password string) error {
 
 	cmd = exec.CommandContext(
 		ctx, jmxCommand,
-		"-hostname", hostname, "-port", port,
-		"-username", username, "-password", password,
+		"--hostname", hostname, "--port", port,
+		"--username", username, "--password", password,
 	)
 
 	if cmdOut, err = cmd.StdoutPipe(); err != nil {
@@ -57,7 +58,11 @@ func Open(hostname, port, username, password string) error {
 		return err
 	}
 
-	return nil
+	go func() {
+		cmdErr <- cmd.Wait()
+	}()
+
+	return status()
 }
 
 // Close will finish the underlying nrjmx application by closing its standard
@@ -73,6 +78,23 @@ func Close() {
 	cmd = nil
 }
 
+// status checks if the current NR JMX background process has exited and, returns
+// the exit error if set.
+func status() error {
+	select {
+	default:
+		return nil
+	case err := <-cmdErr:
+		if err != nil {
+			return fmt.Errorf("JMX tool exited with error: %s", err)
+		}
+	}
+
+	return nil
+}
+
+// reload cancels the current NR JMX background process and spawns a new one with
+// the same arguments passed to jmx.Open
 func reload() error {
 	if cmd == nil {
 		return fmt.Errorf("JMX tool is not running, call Open before performing any query")
@@ -105,6 +127,9 @@ func Query(objectPattern string) (map[string]interface{}, error) {
 
 	select {
 	case line := <-pipe:
+		if line == nil {
+			return nil, status()
+		}
 		if err := json.Unmarshal(line, &result); err != nil {
 			return nil, fmt.Errorf("Invalid return value for query: %s, %s", objectPattern, err)
 		}
