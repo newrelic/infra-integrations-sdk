@@ -1,92 +1,106 @@
-package jmx
+package jmx_test
 
 import (
-	"bytes"
-	"encoding/json"
-	"io"
+	"bufio"
+	"flag"
+	"fmt"
+	"os"
 	"testing"
+	"time"
+
+	"github.com/newrelic/infra-integrations-sdk/jmx"
 )
 
-type nopReadCloser struct {
-	io.Reader
-}
+func TestMain(m *testing.M) {
+	var testType string
+	flag.StringVar(&testType, "test.type", "", "")
+	flag.Parse()
 
-func (nopReadCloser) Close() error { return nil }
-
-type nopWriterCloser struct {
-	io.Writer
-}
-
-func (nopWriterCloser) Close() error { return nil }
-
-func TestQuery(t *testing.T) {
-	resultMap := map[string]interface{}{
-		"testmap": 1.0,
-	}
-
-	inBuffer := bytes.NewBufferString("")
-
-	rMap, _ := json.Marshal(resultMap)
-	cmdOut = nopReadCloser{bytes.NewBuffer(rMap)}
-	cmdIn = nopWriterCloser{inBuffer}
-
-	result, err := Query("testquery")
-	if err != nil {
-		t.Error()
-	}
-	if result["testmap"] != resultMap["testmap"] {
-		t.Error()
-	}
-	input, err := inBuffer.ReadString('\n')
-	if err != nil {
-		t.Error()
-	}
-	if string(input) != "testquery\n" {
-		t.Error()
+	if testType == "" {
+		// Set the NR_JMX_TOOL to ourselves (the test binary) with the extra
+		// parameter test.type=helper and run the tests as usual.
+		os.Setenv("NR_JMX_TOOL", fmt.Sprintf("%s -test.type helper --", os.Args[0]))
+		os.Exit(m.Run())
+	} else if testType == "helper" {
+		// The test suite becomes a JMX Tool
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			command := scanner.Text()
+			if command == "empty" {
+				fmt.Println("{}")
+			} else if command == "crash" {
+				os.Exit(1)
+			} else if command == "invalid" {
+				fmt.Println("not a json")
+			} else if command == "timeout" {
+				time.Sleep(1000 * time.Millisecond)
+				fmt.Println("{}")
+			}
+		}
+		os.Exit(0)
 	}
 }
 
-func TestQueryInvalidData(t *testing.T) {
-	inBuffer := bytes.NewBufferString("")
+func TestJmxOpen(t *testing.T) {
+	defer jmx.Close()
 
-	rMap := []byte("not a dict")
-	cmdOut = nopReadCloser{bytes.NewBuffer(rMap)}
-	cmdIn = nopWriterCloser{inBuffer}
+	if jmx.Open("", "", "", "") != nil {
+		t.Error()
+	}
 
-	result, err := Query("testquery")
-	if err == nil {
-		t.Error()
-	}
-	if result != nil {
-		t.Error()
-	}
-	input, err := inBuffer.ReadString('\n')
-	if err != nil {
-		t.Error()
-	}
-	if string(input) != "testquery\n" {
+	if jmx.Open("", "", "", "") == nil {
 		t.Error()
 	}
 }
 
-func TestQueryTimeout(t *testing.T) {
-	inBuffer := bytes.NewBufferString("")
+func TestJmxQuery(t *testing.T) {
+	defer jmx.Close()
 
-	cmdOut, _ = io.Pipe()
-	cmdIn = nopWriterCloser{inBuffer}
+	if jmx.Open("", "", "", "") != nil {
+		t.Error()
+	}
 
-	result, err := Query("testquery")
-	if err == nil {
+	if _, err := jmx.Query("empty"); err != nil {
 		t.Error()
 	}
-	if result != nil {
+}
+
+func TestJmxCrashQuery(t *testing.T) {
+	defer jmx.Close()
+
+	if jmx.Open("", "", "", "") != nil {
 		t.Error()
 	}
-	input, err := inBuffer.ReadString('\n')
-	if err != nil {
+
+	if _, err := jmx.Query("crash"); err == nil {
 		t.Error()
 	}
-	if string(input) != "testquery\n" {
+}
+
+func TestJmxInvalidQuery(t *testing.T) {
+	defer jmx.Close()
+
+	if jmx.Open("", "", "", "") != nil {
+		t.Error()
+	}
+
+	if _, err := jmx.Query("invalid"); err == nil {
+		t.Error()
+	}
+}
+
+func TestJmxTimeoutQuery(t *testing.T) {
+	defer jmx.Close()
+
+	if jmx.Open("", "", "", "") != nil {
+		t.Error()
+	}
+
+	if _, err := jmx.Query("timeout"); err == nil {
+		t.Error()
+	}
+
+	if _, err := jmx.Query("empty"); err == nil {
 		t.Error()
 	}
 }
