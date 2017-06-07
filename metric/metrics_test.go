@@ -39,17 +39,17 @@ var metricTests = []struct {
 	{"key3", 110, metric.DELTA, 100.0, 110.0},
 }
 
-func TestAddMetric(t *testing.T) {
+func TestSetMetric(t *testing.T) {
 	fd := FakeData{}
 	cache.SetNow(fd.Now)
 
 	ms := metric.NewMetricSet("eventType", "provider")
 
 	for _, tt := range metricTests {
-		ms.AddMetric(tt.key, tt.value, tt.metricType)
+		ms.SetMetric(tt.key, tt.value, tt.metricType)
 
 		if ms[tt.key] != tt.out {
-			t.Errorf("AddMetric(\"%s\", %s, %s) => %s, want %s", tt.key, tt.value, tt.metricType, ms[tt.key], tt.out)
+			t.Errorf("SetMetric(\"%s\", %s, %s) => %s, want %s", tt.key, tt.value, tt.metricType, ms[tt.key], tt.out)
 		}
 
 		v, _, ok := cache.Get(tt.key)

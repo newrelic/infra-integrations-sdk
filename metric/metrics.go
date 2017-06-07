@@ -27,13 +27,13 @@ type MetricSet map[string]interface{}
 // NewMetricSet returns a new MetricSet instance
 func NewMetricSet(eventType string, provider string) MetricSet {
 	ms := MetricSet{}
-	ms.AddMetric("event_type", eventType, ATTRIBUTE)
-	ms.AddMetric("provider", provider, ATTRIBUTE)
+	ms.SetMetric("event_type", eventType, ATTRIBUTE)
+	ms.SetMetric("provider", provider, ATTRIBUTE)
 	return ms
 }
 
-// AddMetric adds a metric to the MetricSet object, sampling if sourceType requires it.
-func (ms MetricSet) AddMetric(name string, value interface{}, sourceType SourceType) error {
+// SetMetric adds a metric to the MetricSet object, sampling if sourceType requires it.
+func (ms MetricSet) SetMetric(name string, value interface{}, sourceType SourceType) error {
 	var err error
 	var newValue = value
 
