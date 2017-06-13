@@ -30,11 +30,11 @@ var metricTests = []struct {
 }{
 	{"gaugeKey", 10, metric.GAUGE, 10, nil},
 	{"keyAtribute", "sadad", metric.ATTRIBUTE, "sadad", nil},
-	{"counterKey1", 10, metric.COUNTER, 0.0, 10.0},
-	{"counterKey1", 100, metric.COUNTER, 90.0, 100.0},
-	{"key1", .22323333, metric.COUNTER, 0.0, 0.22323333},
-	{"key2", 100, metric.COUNTER, 0.0, 100.0},
-	{"key2", 110, metric.COUNTER, 10.0, 110.0},
+	{"rateKey1", 10, metric.RATE, 0.0, 10.0},
+	{"rateKey1", 100, metric.RATE, 90.0, 100.0},
+	{"key1", .22323333, metric.RATE, 0.0, 0.22323333},
+	{"key2", 100, metric.RATE, 0.0, 100.0},
+	{"key2", 110, metric.RATE, 10.0, 110.0},
 	{"key3", 10, metric.DELTA, 0.0, 10.0},
 	{"key3", 110, metric.DELTA, 100.0, 110.0},
 }

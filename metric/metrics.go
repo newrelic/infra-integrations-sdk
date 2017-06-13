@@ -13,8 +13,8 @@ type SourceType int
 const (
 	// GAUGE is a value that may increase and decrease. It is stored as-is.
 	GAUGE SourceType = iota
-	// COUNTER is an ever-growing value which might be reseted. We store the change rate.
-	COUNTER SourceType = iota
+	// RATE is an ever-growing value which might be reseted. We store the change rate.
+	RATE SourceType = iota
 	// DELTA is an ever-growing value which might be reseted. We store the differences between samples.
 	DELTA SourceType = iota
 	// ATTRIBUTE is any string value
@@ -40,7 +40,7 @@ func (ms MetricSet) SetMetric(name string, value interface{}, sourceType SourceT
 
 	// Only sample metrics of numeric type
 	switch sourceType {
-	case COUNTER, DELTA:
+	case RATE, DELTA:
 		if !isNumeric(value) {
 			return fmt.Errorf("Invalid (non-numeric) data type for metric %s", name)
 		}
