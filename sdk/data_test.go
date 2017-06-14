@@ -100,31 +100,6 @@ func TestNewIntegrationWithDefaultArguments(t *testing.T) {
 
 }
 
-func mockStdout(f func() error) (string, error) {
-	old := os.Stdout // keep backup of the real stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	if err := f(); err != nil {
-		return "", err
-	}
-
-	outC := make(chan string)
-	// copy the output in a separate goroutine so printing can't block indefinitely
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		outC <- buf.String()
-	}()
-
-	// back to normal state
-	w.Close()
-	os.Stdout = old // restoring the real stdout
-	out := <-outC
-
-	return out, nil
-}
-
 func TestPublish(t *testing.T) {
 	type argumentList struct {
 		sdk_args.DefaultArgumentList
@@ -169,4 +144,47 @@ func TestPublish(t *testing.T) {
 	if len(lines) <= 1 {
 		t.Error()
 	}
+}
+
+func TestSetInventoryItem(t *testing.T) {
+	pd, err := sdk.NewIntegration("TestIntegration", "1.0", new(struct{}))
+	if err != nil {
+		t.Fatal()
+	}
+	pd.Inventory.SetItem("foo/bar", "value", "bar")
+
+	if len(pd.Inventory) != 1 {
+		t.Error()
+	}
+	expectedValue := "bar"
+	actualValue := pd.Inventory["foo/bar"]["value"]
+	if expectedValue != actualValue {
+		t.Errorf("For '%s' inventory item, the expected field '%s' is '%s'. Actual value: '%s'", "foo/bar", "value", expectedValue, actualValue)
+	}
+}
+
+// Helpers
+func mockStdout(f func() error) (string, error) {
+	old := os.Stdout // keep backup of the real stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	if err := f(); err != nil {
+		return "", err
+	}
+
+	outC := make(chan string)
+	// copy the output in a separate goroutine so printing can't block indefinitely
+	go func() {
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		outC <- buf.String()
+	}()
+
+	// back to normal state
+	w.Close()
+	os.Stdout = old // restoring the real stdout
+	out := <-outC
+
+	return out, nil
 }

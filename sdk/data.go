@@ -10,21 +10,28 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/metric"
 )
 
-// Inventory is the data type for inventory data produced by a plugin data
+type inventoryItem map[string]interface{}
+
+// Inventory is the data type for inventory data produced by an integration data
 // source and emitted to the agent's inventory data store
-type Inventory map[string]interface{}
+type Inventory map[string]inventoryItem
+
+// SetItem stores a value into the inventory data structure
+func (i Inventory) SetItem(key string, field string, value interface{}) {
+	i[key] = inventoryItem{field: value}
+}
 
 // Event is the data type for single shot events
 type Event map[string]interface{}
 
 // Integration defines the format of the output JSON that plugins will return
 type Integration struct {
-	Name               string               `json:"name"`
-	ProtocolVersion    string               `json:"protocol_version"`
-	IntegrationVersion string               `json:"integration_version"`
-	Metrics            []*metric.MetricSet  `json:"metrics"`
-	Inventory          map[string]Inventory `json:"inventory"`
-	Events             []Event              `json:"events"`
+	Name               string              `json:"name"`
+	ProtocolVersion    string              `json:"protocol_version"`
+	IntegrationVersion string              `json:"integration_version"`
+	Metrics            []*metric.MetricSet `json:"metrics"`
+	Inventory          Inventory           `json:"inventory"`
+	Events             []Event             `json:"events"`
 	prettyOutput       bool
 }
 
@@ -47,7 +54,7 @@ func NewIntegration(name string, version string, arguments interface{}) (*Integr
 		Name:               name,
 		ProtocolVersion:    "1",
 		IntegrationVersion: version,
-		Inventory:          make(map[string]Inventory),
+		Inventory:          make(Inventory),
 		Metrics:            make([]*metric.MetricSet, 0),
 		Events:             make([]Event, 0),
 		prettyOutput:       defaultArgs.Pretty,
