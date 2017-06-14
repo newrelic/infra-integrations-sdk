@@ -32,7 +32,8 @@ func NewMetricSet(eventType string, provider string) MetricSet {
 	return ms
 }
 
-// SetMetric adds a metric to the MetricSet object, sampling if sourceType requires it.
+// SetMetric adds a metric to the MetricSet object or updates the metric value
+// if the metric already exists, sampling if sourceType requires it.
 func (ms MetricSet) SetMetric(name string, value interface{}, sourceType SourceType) error {
 	var err error
 	var newValue = value
