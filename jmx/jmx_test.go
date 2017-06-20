@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -35,6 +36,12 @@ func TestMain(m *testing.M) {
 			} else if command == "timeout" {
 				time.Sleep(1000 * time.Millisecond)
 				fmt.Println("{}")
+			} else if command == "bigPayload" {
+				// Create a payload of more than 64K
+				fmt.Println(fmt.Sprintf("{\"first\": 1%s}", strings.Repeat(", \"s\": 2", 70*1024)))
+			} else if command == "bigPayloadError" {
+				// Create a payload of more than 4M
+				fmt.Println(fmt.Sprintf("{\"first\": 1%s}", strings.Repeat(", \"s\": 2", 4*1024*1024)))
 			}
 		}
 		os.Exit(0)
@@ -101,6 +108,22 @@ func TestJmxTimeoutQuery(t *testing.T) {
 	}
 
 	if _, err := jmx.Query("empty"); err == nil {
+		t.Error()
+	}
+}
+
+func TestJmxTimeoutBigQuery(t *testing.T) {
+	defer jmx.Close()
+
+	if jmx.Open("", "", "", "") != nil {
+		t.Error()
+	}
+
+	if _, err := jmx.Query("bigPayload"); err != nil {
+		t.Error()
+	}
+
+	if _, err := jmx.Query("bigPayloadError"); err == nil {
 		t.Error()
 	}
 }
