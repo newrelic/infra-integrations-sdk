@@ -17,19 +17,19 @@ func SetupLogging(verbose bool) {
 }
 
 func Debug(format string, args ...interface{}) {
-	logrus.Debugf(format, args)
+	logrus.Debugf(format, args...)
 }
 
 func Info(format string, args ...interface{}) {
-	logrus.Infof(format, args)
+	logrus.Infof(format, args...)
 }
 
 func Warn(format string, args ...interface{}) {
-	logrus.Warnf(format, args)
+	logrus.Warnf(format, args...)
 }
 
 func Error(format string, args ...interface{}) {
-	logrus.Errorf(format, args)
+	logrus.Errorf(format, args...)
 }
 
 func Fatal(err error) {
