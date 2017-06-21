@@ -151,15 +151,23 @@ func TestSetInventoryItem(t *testing.T) {
 	if err != nil {
 		t.Fatal()
 	}
-	pd.Inventory.SetItem("foo/bar", "value", "bar")
+	pd.Inventory.SetItem("foo/bar", "valueOne", "bar")
+	pd.Inventory.SetItem("foo/bar", "valueTwo", "bar")
 
 	if len(pd.Inventory) != 1 {
 		t.Error()
 	}
+	if len(pd.Inventory["foo/bar"]) != 2 {
+		t.Error()
+	}
 	expectedValue := "bar"
-	actualValue := pd.Inventory["foo/bar"]["value"]
+	actualValue := pd.Inventory["foo/bar"]["valueOne"]
 	if expectedValue != actualValue {
-		t.Errorf("For '%s' inventory item, the expected field '%s' is '%s'. Actual value: '%s'", "foo/bar", "value", expectedValue, actualValue)
+		t.Errorf("For '%s' inventory item, the expected field '%s' is '%s'. Actual value: '%s'", "foo/bar", "valueOne", expectedValue, actualValue)
+	}
+	actualValue = pd.Inventory["foo/bar"]["valueTwo"]
+	if expectedValue != actualValue {
+		t.Errorf("For '%s' inventory item, the expected field '%s' is '%s'. Actual value: '%s'", "foo/bar", "valueTwo", expectedValue, actualValue)
 	}
 }
 
