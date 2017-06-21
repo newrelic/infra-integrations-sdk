@@ -18,7 +18,12 @@ type Inventory map[string]inventoryItem
 
 // SetItem stores a value into the inventory data structure
 func (i Inventory) SetItem(key string, field string, value interface{}) {
-	i[key] = inventoryItem{field: value}
+	if _, ok := i[key]; ok {
+		i[key][field] = value
+	} else {
+		i[key] = inventoryItem{field: value}
+	}
+
 }
 
 // Event is the data type for single shot events
