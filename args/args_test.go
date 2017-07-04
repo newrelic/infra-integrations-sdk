@@ -45,6 +45,7 @@ func TestSetupArgsCommandLine(t *testing.T) {
 		Username string        `help:"Username for accessing the database."`
 		Password string        `help:"Passowrd for the given user."`
 		Config   sdk_args.JSON `default:"randomstring" help:""`
+		List     sdk_args.JSON `default:"randomstring" help:""`
 	}
 	var args argumentList
 
@@ -58,16 +59,18 @@ func TestSetupArgsCommandLine(t *testing.T) {
 		"-password=dbpwd",
 		"-username=dbuser",
 		"-config={\"arg1\": 2}",
+		"-list=[\"arg1\", 2]",
 	}
 	flag.CommandLine = flag.NewFlagSet("name", 0)
 
 	sdk_args.SetupArgs(&args)
 
-	cfg := map[string]interface{}{"arg1": 2.0}
+	cfg := sdk_args.NewJSON(map[string]interface{}{"arg1": 2.0})
+	list := sdk_args.NewJSON([]interface{}{"arg1", 2.0})
 
 	expected := argumentList{
 		Verbose: true, Pretty: true, Hostname: "otherhost", Port: 1234,
-		Username: "dbuser", Password: "dbpwd", Config: cfg,
+		Username: "dbuser", Password: "dbpwd", Config: *cfg, List: *list,
 	}
 	if !reflect.DeepEqual(args, expected) {
 		t.Error()
@@ -97,10 +100,10 @@ func TestSetupArgsEnvironment(t *testing.T) {
 
 	sdk_args.SetupArgs(&args)
 
-	cfg := map[string]interface{}{"arg1": 2.0}
+	cfg := sdk_args.NewJSON(map[string]interface{}{"arg1": 2.0})
 	expected := argumentList{
 		Verbose: true, Pretty: false, Hostname: "otherhost", Port: 1234,
-		Username: "", Password: "", Config: cfg,
+		Username: "", Password: "", Config: *cfg,
 	}
 	if !reflect.DeepEqual(args, expected) {
 		t.Error()

@@ -8,19 +8,25 @@ import (
 
 // JSON type, to be used from the arguments structs
 // This argument type will parse a serialized JSON string into a map which
-type JSON map[string]interface{}
+type JSON struct {
+	value interface{}
+}
+
+func NewJSON(value interface{}) *JSON {
+	return &JSON{value}
+}
 
 func (i *JSON) Set(s string) error {
-	if err := json.Unmarshal([]byte(s), i); err != nil {
+	if err := json.Unmarshal([]byte(s), &(i.value)); err != nil {
 		return fmt.Errorf("Bad JSON, %v", err)
 	}
 	return nil
 }
 
-func (i *JSON) Get() interface{} { return *i }
+func (i *JSON) Get() interface{} { return i.value }
 
 func (i *JSON) String() string {
-	s, _ := json.Marshal(i)
+	s, _ := json.Marshal(&(i.value))
 	return string(s)
 }
 
