@@ -11,12 +11,13 @@ import (
 
 func TestSetupArgsDefault(t *testing.T) {
 	type argumentList struct {
-		Verbose  bool   `default:"false" help:"Print more information to logs."`
-		Pretty   bool   `default:"false" help:"Print pretty formatted JSON."`
-		Hostname string `default:"localhost" help:"Hostname or IP where MySQL is running."`
-		Port     int    `default:"3306" help:"Port on which MySQL server is listening."`
-		Username string `help:"Username for accessing the database."`
-		Password string `help:"Passowrd for the given user."`
+		Verbose  bool          `default:"false" help:"Print more information to logs."`
+		Pretty   bool          `default:"false" help:"Print pretty formatted JSON."`
+		Hostname string        `default:"localhost" help:"Hostname or IP where MySQL is running."`
+		Port     int           `default:"3306" help:"Port on which MySQL server is listening."`
+		Username string        `help:"Username for accessing the database."`
+		Password string        `help:"Passowrd for the given user."`
+		Config   sdk_args.JSON `default:"randomstring" help:""`
 	}
 	var args argumentList
 
@@ -26,7 +27,10 @@ func TestSetupArgsDefault(t *testing.T) {
 
 	sdk_args.SetupArgs(&args)
 
-	expected := argumentList{Verbose: false, Pretty: false, Hostname: "localhost", Port: 3306, Username: "", Password: ""}
+	expected := argumentList{
+		Verbose: false, Pretty: false, Hostname: "localhost", Port: 3306,
+		Username: "", Password: "",
+	}
 	if !reflect.DeepEqual(args, expected) {
 		t.Error()
 	}
@@ -34,12 +38,14 @@ func TestSetupArgsDefault(t *testing.T) {
 
 func TestSetupArgsCommandLine(t *testing.T) {
 	type argumentList struct {
-		Verbose  bool   `default:"false" help:"Print more information to logs."`
-		Pretty   bool   `default:"false" help:"Print pretty formatted JSON."`
-		Hostname string `default:"localhost" help:"Hostname or IP where MySQL is running."`
-		Port     int    `default:"3306" help:"Port on which MySQL server is listening."`
-		Username string `help:"Username for accessing the database."`
-		Password string `help:"Passowrd for the given user."`
+		Verbose  bool          `default:"false" help:"Print more information to logs."`
+		Pretty   bool          `default:"false" help:"Print pretty formatted JSON."`
+		Hostname string        `default:"localhost" help:"Hostname or IP where MySQL is running."`
+		Port     int           `default:"3306" help:"Port on which MySQL server is listening."`
+		Username string        `help:"Username for accessing the database."`
+		Password string        `help:"Passowrd for the given user."`
+		Config   sdk_args.JSON `default:"randomstring" help:""`
+		List     sdk_args.JSON `default:"randomstring" help:""`
 	}
 	var args argumentList
 
@@ -52,12 +58,20 @@ func TestSetupArgsCommandLine(t *testing.T) {
 		"-port=1234",
 		"-password=dbpwd",
 		"-username=dbuser",
+		"-config={\"arg1\": 2}",
+		"-list=[\"arg1\", 2]",
 	}
 	flag.CommandLine = flag.NewFlagSet("name", 0)
 
 	sdk_args.SetupArgs(&args)
 
-	expected := argumentList{Verbose: true, Pretty: true, Hostname: "otherhost", Port: 1234, Username: "dbuser", Password: "dbpwd"}
+	cfg := sdk_args.NewJSON(map[string]interface{}{"arg1": 2.0})
+	list := sdk_args.NewJSON([]interface{}{"arg1", 2.0})
+
+	expected := argumentList{
+		Verbose: true, Pretty: true, Hostname: "otherhost", Port: 1234,
+		Username: "dbuser", Password: "dbpwd", Config: *cfg, List: *list,
+	}
 	if !reflect.DeepEqual(args, expected) {
 		t.Error()
 	}
@@ -65,12 +79,13 @@ func TestSetupArgsCommandLine(t *testing.T) {
 
 func TestSetupArgsEnvironment(t *testing.T) {
 	type argumentList struct {
-		Verbose  bool   `default:"false" help:"Print more information to logs."`
-		Pretty   bool   `default:"false" help:"Print pretty formatted JSON."`
-		Hostname string `default:"localhost" help:"Hostname or IP where MySQL is running."`
-		Port     int    `default:"3306" help:"Port on which MySQL server is listening."`
-		Username string `help:"Username for accessing the database."`
-		Password string `help:"Passowrd for the given user."`
+		Verbose  bool          `default:"false" help:"Print more information to logs."`
+		Pretty   bool          `default:"false" help:"Print pretty formatted JSON."`
+		Hostname string        `default:"localhost" help:"Hostname or IP where MySQL is running."`
+		Port     int           `default:"3306" help:"Port on which MySQL server is listening."`
+		Username string        `help:"Username for accessing the database."`
+		Password string        `help:"Passowrd for the given user."`
+		Config   sdk_args.JSON `default:"randomstring" help:""`
 	}
 	var args argumentList
 
@@ -78,13 +93,18 @@ func TestSetupArgsEnvironment(t *testing.T) {
 	os.Setenv("VERBOSE", "true")
 	os.Setenv("HOSTNAME", "otherhost")
 	os.Setenv("PORT", "1234")
+	os.Setenv("CONFIG", "{\"arg1\": 2}")
 	os.Args = []string{"cmd"}
 
 	flag.CommandLine = flag.NewFlagSet("name", 0)
 
 	sdk_args.SetupArgs(&args)
 
-	expected := argumentList{Verbose: true, Pretty: false, Hostname: "otherhost", Port: 1234, Username: "", Password: ""}
+	cfg := sdk_args.NewJSON(map[string]interface{}{"arg1": 2.0})
+	expected := argumentList{
+		Verbose: true, Pretty: false, Hostname: "otherhost", Port: 1234,
+		Username: "", Password: "", Config: *cfg,
+	}
 	if !reflect.DeepEqual(args, expected) {
 		t.Error()
 	}
@@ -121,6 +141,23 @@ func TestSetupArgsErrors(t *testing.T) {
 	flag.CommandLine = flag.NewFlagSet("name", 0)
 
 	err = sdk_args.SetupArgs(&argumentList3{})
+	if err == nil {
+		t.Error()
+	}
+}
+
+func TestSetupArgsParseJsonError(t *testing.T) {
+	type argumentList4 struct {
+		Config sdk_args.JSON `default:"randomstring" help:""`
+	}
+
+	os.Args = []string{
+		"cmd",
+		"-config={\"arg1\": 2",
+	}
+
+	flag.CommandLine = flag.NewFlagSet("name", 0)
+	err := sdk_args.SetupArgs(&argumentList4{})
 	if err == nil {
 		t.Error()
 	}

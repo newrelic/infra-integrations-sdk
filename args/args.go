@@ -65,7 +65,9 @@ func SetupArgs(args interface{}) error {
 		return err
 	}
 
-	flag.Parse()
+	if err := flag.CommandLine.Parse(os.Args[1:]); err != nil {
+		return err
+	}
 
 	// Override flags from environment variables with the same name
 	flag.VisitAll(getArgsFromEnv())
@@ -123,6 +125,8 @@ func defineFlags(args interface{}) error {
 			flag.BoolVar(argDefault, argName, boolVal, helpValue)
 		case *string:
 			flag.StringVar(argDefault, argName, defaultValue, helpValue)
+		case *JSON:
+			jsonVar(argDefault, argName, defaultValue, helpValue)
 		case *DefaultArgumentList:
 			err := defineFlags(argDefault)
 			if err != nil {
