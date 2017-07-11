@@ -88,7 +88,17 @@ func (integration *Integration) Publish() error {
 	}
 
 	fmt.Println(output)
+	integration.Clear()
+
 	return nil
+}
+
+// Clear re-initializes the Inventory, Metrics and Events for this integration.
+// Used after publishing so the object can be reused.
+func (integration *Integration) Clear() {
+	integration.Inventory = make(Inventory)
+	integration.Metrics = make([]*metric.MetricSet, 0)
+	integration.Events = make([]Event, 0)
 }
 
 // toJSON returns the integration as a JSON string. If the pretty attribute is
