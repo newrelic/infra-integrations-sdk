@@ -69,8 +69,8 @@ func NewIntegration(name string, version string, arguments interface{}) (*Integr
 }
 
 // NewMetricSet returns a new instance of MetricSet with its sample attached to the IntegrationData
-func (integration *Integration) NewMetricSet(eventType string, provider string) *metric.MetricSet {
-	ms := metric.NewMetricSet(eventType, provider)
+func (integration *Integration) NewMetricSet(eventType string) *metric.MetricSet {
+	ms := metric.NewMetricSet(eventType)
 	integration.Metrics = append(integration.Metrics, &ms)
 	return &ms
 }
