@@ -24,7 +24,7 @@ type DefaultArgumentList struct {
 
 func getArgsFromEnv() func(f *flag.Flag) {
 	return func(f *flag.Flag) {
-		envName := strings.ToUpper(f.Name)
+		envName := fmt.Sprintf("NRIA_%s", strings.ToUpper(f.Name))
 		if os.Getenv(envName) != "" {
 			f.Value.Set(os.Getenv(envName))
 		}
