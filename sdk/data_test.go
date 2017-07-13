@@ -45,12 +45,12 @@ func TestNewMetricSet(t *testing.T) {
 		t.Fatal()
 	}
 
-	metric1 := pd.NewMetricSet("TestPlugin", "TestProvider")
+	metric1 := pd.NewMetricSet("TestPlugin")
 	if metric1 != pd.Metrics[0] {
 		t.Error()
 	}
 
-	metric2 := pd.NewMetricSet("TestMetric2", "TestProvider2")
+	metric2 := pd.NewMetricSet("TestMetric2")
 	if metric2 != pd.Metrics[1] {
 		t.Error()
 	}

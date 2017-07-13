@@ -25,10 +25,9 @@ const (
 type MetricSet map[string]interface{}
 
 // NewMetricSet returns a new MetricSet instance
-func NewMetricSet(eventType string, provider string) MetricSet {
+func NewMetricSet(eventType string) MetricSet {
 	ms := MetricSet{}
 	ms.SetMetric("event_type", eventType, ATTRIBUTE)
-	ms.SetMetric("provider", provider, ATTRIBUTE)
 	return ms
 }
 
