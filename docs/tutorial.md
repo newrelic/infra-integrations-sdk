@@ -73,7 +73,7 @@ Your current directory will be used as the default destination. The following st
     * vendor.json
     * _external\_packages_name_
 
-## Building a Redis integration using the Integration Golang SDK v0.3
+## Building a Redis integration using the Integration Golang SDK v0.4
 **Step1:** Create the directory where you want to place the Redis integration (it needs to be under `$GOPATH/src`)
 ```bash
 $ mkdir $GOPATH/src/nr-integrations/
@@ -100,8 +100,7 @@ The following JSON payload will be printed to stdout:
 	"integration_version": "0.1.0",
 	"metrics": [
 		{
-			"event_type": "\u003cREPLACE_WITH_YOUR_EVENT_TYPE\u003e",
-			"provider": "redis"
+			"event_type": "RedisSample"
 		}
 	],
 	"inventory": {},
@@ -110,7 +109,12 @@ The following JSON payload will be printed to stdout:
 ```
 This is the basic JSON data format that is expected by the Infrastructure agent. The main logic is placed in `src/redis.go`, which is [the integration executable file](https://docs.newrelic.com/docs/create-integration-executable-file).
 
-When the integration is initialized with `nr-integrations-builder`, the executable file builds the JSON output data with three header fields (_name_, _protocol_version_, _integration_version_), [metrics data](https://docs.newrelic.com/docs/create-integration-executable-file#metric-data) (with the mandatory _event_type_, which needs to be updated and _provider_ fields), and an empty structure for [inventory](https://docs.newrelic.com/docs/create-integration-executable-file#inventory) and [events data](https://docs.newrelic.com/docs/create-integration-executable-file#event-data).
+When the integration is initialized with `nr-integrations-builder`, the
+executable file builds the JSON output data with three header fields (_name_,
+_protocol_version_,
+_integration_version_),
+[metrics data](https://docs.newrelic.com/docs/create-integration-executable-file#metric-data) (with
+the mandatory _event_type_ field), and an empty structure for [inventory](https://docs.newrelic.com/docs/create-integration-executable-file#inventory) and [events data](https://docs.newrelic.com/docs/create-integration-executable-file#event-data).
 
 The SDK package contains a function called `NewIntegration`, which initializes a new instance of integration data. If you run the following simplified `main` function that calls `NewIntegration`:
 ```go
@@ -138,7 +142,10 @@ you will receive the following output:
 ### Fetching metric data
 Let's start by defining the metric data. `MetricSet` is the basic structure for storing metrics. The `NewMetricSet` function returns a new instance of MetricSet with its sample attached to the integration data.
 
-Next, modify the argument for `NewMetricSet` in the code. Replace the text `<REPLACE_WITH_YOUR_EVENT_TYPE>` with `DatastoreSample` so that your `main` function looks like:
+Next, if you think it's necessary, modify the argument for `NewMetricSet` in the
+code. By default, `nr-integrations-builder` generates an Event Type
+automatically using the name of the integration + 'Sample'.  Your `main`
+function should look like:
 ```go
 func main() {
 	integration, err := sdk.NewIntegration(integrationName, integrationVersion, &args)
@@ -147,7 +154,7 @@ func main() {
 	// the code for populating Inventory omitted
 
 	if args.All || args.Metrics {
-		ms := integration.NewMetricSet("DatastoreSample", "redis")
+		ms := integration.NewMetricSet("RedisSample")
 		fatalIfErr(populateMetrics(ms))
 	}
 
@@ -163,9 +170,8 @@ After building and executing the integration the following output is returned:
 	"integration_version": "0.1.0",
 	"metrics": [
 		{
-			"event_type": "DatastoreSample",
-			"provider": "redis"
-		}
+            "event_type": "RedisSample"
+        }
 	],
 	"inventory": {},
 	"events": []
@@ -197,9 +203,8 @@ and build and execute the integration. You will receive the following output
 	"integration_version": "0.1.0",
 	"metrics": [
 		{
-			"event_type": "DatastoreSample",
-			"provider": "redis",
-      "requestsPerSecond": 10
+			"event_type": "RedisSample",
+            "requestsPerSecond": 10
 		}
 	],
 	"inventory": {},
@@ -220,7 +225,11 @@ you will receive
 ```bash
 instantaneous_ops_per_sec:4
 ```
-This is the number of commands processed per second. This is a numeric value that may increase or decrease and it should be stored as-is. Use the GAUGE source type in these cases. We need to parse this line and specify the GAUGE type. It is recommended that you use the `provider` prefix, innerCamelCase naming format, and specify the measurement unit using a unit suffix, i.e. PerSecond. In this case, for the metric data key, use `provider.instantaneousOpsPerSecond`:
+This is the number of commands processed per second. This is a numeric value
+that may increase or decrease and it should be stored as-is. Use the GAUGE
+source type in these cases. We need to parse this line and specify the GAUGE
+type. For metric names, it is recommended that you use a prefix to categorize
+them, innerCamelCase naming format, and specify the measurement unit using a unit suffix, i.e. PerSecond. In this case, for the metric data key, use `query.instantaneousOpsPerSecond`:
 
 ```go
 func populateMetrics(ms *metric.MetricSet) error {
@@ -237,7 +246,7 @@ func populateMetrics(ms *metric.MetricSet) error {
 	if err != nil {
 		return err
 	}
-  ms.SetMetric("provider.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
+    ms.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
 
 	return nil
 }
@@ -251,9 +260,8 @@ After building and executing the integration, you should receive
 	"integration_version": "0.1.0",
 	"metrics": [
 		{
-			"event_type": "DatastoreSample",
-			"provider": "redis",
-      "provider.instantaneousOpsPerSecond": 3
+			"event_type": "RedisSample",
+            "query.instantaneousOpsPerSecond": 3
 		}
 	],
 	"inventory": {},
@@ -293,7 +301,7 @@ func populateMetrics(ms *metric.MetricSet) error {
 		return err
 	}
 
-  ms.SetMetric("provider.connectionsReceivedPerSecond", metricValue, metric.RATE)
+    ms.SetMetric("net.connectionsReceivedPerSecond", metricValue, metric.RATE)
 	return nil
 }
 ```
@@ -306,10 +314,9 @@ Build and execute the integration, and then check the output (Note: your metric 
 	"integration_version": "0.1.0",
 	"metrics": [
 		{
-			"event_type": "DatastoreSample",
-			"provider": "redis",
-      "provider.connectionsReceivedPerSecond": 2,
-      "provider.instantaneousOpsPerSecond": 3
+			"event_type": "RedisSample",
+            "net.connectionsReceivedPerSecond": 2,
+            "query.instantaneousOpsPerSecond": 3
 		}
 	],
 	"inventory": {},
@@ -386,11 +393,11 @@ For more information, see the [configuration file](https://docs.newrelic.com/doc
 ### View metric data in New Relic Insights
 When the integration and the Infrastructure agent are communicating correctly, you can view your metric data in [New Relic Insights](https://docs.newrelic.com/docs/find-use-infrastructure-integration-data#metric-data).
 
-Below are example NRQL queries for the `DatastoreSample` event type. Note that you must indicate the `redis` provider with the WHERE clause.
+Below are example NRQL queries for the `RedisSample` event type.
 
 ```
-NRQL> SELECT average(`provider.connectionsReceivedPerSecond`) FROM DatastoreSample WHERE provider = 'redis' TIMESERIES
-NRQL> SELECT average(`provider.instantaneousOpsPerSecond`) FROM DatastoreSample WHERE provider = 'redis' TIMESERIES
+NRQL> SELECT average(`net.connectionsReceivedPerSecond`) FROM RedisSample TIMESERIES
+NRQL> SELECT average(`query.instantaneousOpsPerSecond`) FROM RedisSample TIMESERIES
 ```
 
 For more about creating NRQL queries, see [Introduction to NRQL](https://docs.newrelic.com/docs/insights/nrql-new-relic-query-language/using-nrql/introduction-nrql). For more on where to find integration data in New Relic products, see [Find and use integration data](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/use-integration-data/find-use-infrastructure-integration-data).
@@ -508,10 +515,9 @@ $ ./bin/nr-redis -pretty
 	"integration_version": "0.1.0",
 	"metrics": [
 		{
-			"event_type": "DatastoreSample",
-			"provider": "redis",
-      "provider.connectionsReceivedPerSecond": 0.5,
-      "provider.instantaneousOpsPerSecond": 1
+			"event_type": "RedisSample",
+            "net.connectionsReceivedPerSecond": 0.5,
+            "query.instantaneousOpsPerSecond": 1
 		}
 	],
 	"inventory": {
