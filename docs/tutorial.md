@@ -7,11 +7,12 @@ This tutorial will guide you through the process of developing a custom integrat
 
 For a simple overview of what Infrastructure integrations are and how they work, see the [Intro to the Integrations SDK](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/get-started/intro-infrastructure-integrations-sdk).
 
-This tutorial is compatible with `nr-integration-builder` v0.3.x and `Integration Golang SDK` v0.3.x .
+This tutorial is compatible with `nr-integration-builder` v0.4.x and `Integration Golang SDK` v0.4.x.
 
 ## Prerequisites
 To successfully complete this tutorial you must:
 * Be familiar with Golang
+* Install [the Vendor Tool for Go](https://github.com/kardianos/govendor)
 * Have access to a [supported Linux OS](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/getting-started/compatibility-requirements-new-relic-infrastructure#operating-systems)
 * Install [Go](https://golang.org/doc/install)
 * Install [Redis](https://redis.io/topics/quickstart)
@@ -44,7 +45,15 @@ $ $GOPATH/bin/nr-integrations-builder --help
 
 This tutorial assumes that your `$GOBIN` or `$GOPATH/bin` has been added to your `$PATH` environment variable.
 
-**Step 2: Initialize the integration**
+**Step 2: Check govendor tool**
+
+Before initializing the integration with `nr-integrations-builder` you have to check that the `govendor` tool (used for managing dependencies) is successfully installed. Run the following command:
+```bash
+$ govendor
+```
+You should receive the description about the `govendor` tool with the list of accepted commands. More information about the usage can be found in the [README.md](https://github.com/kardianos/govendor/blob/master/README.md).
+
+**Step 3: Initialize the integration**
 
 To initialize the integration and generate the scaffold, run
 ```bash
@@ -227,8 +236,7 @@ instantaneous_ops_per_sec:4
 ```
 This is the number of commands processed per second. This is a numeric value
 that may increase or decrease and it should be stored as-is. Use the GAUGE
-source type in these cases. We need to parse this line and specify the GAUGE
-type. For metric names, it is recommended that you use a prefix to categorize
+source type in these cases. For metric names, it is recommended that you use a prefix to categorize
 them, innerCamelCase naming format, and specify the measurement unit using a unit suffix, i.e. PerSecond. In this case, for the metric data key, use `query.instantaneousOpsPerSecond`:
 
 ```go
@@ -327,7 +335,7 @@ The calculations for a given metric source type are handled by `SetMetric`; the 
 
 <!-- In the future add here a link with official definition of the source type -->
 
-This method of fetching data, shown above is not very efficient. You will want to fetch a set of data at once, but this example just shows how to use the `SetMetric` function and the source types.
+This method of fetching data, shown above is not very efficient. You will want to fetch a set of data all at once, but this example just shows how to use the `SetMetric` function and the source types.
 
 ### Configuration of the integration (for metrics)
 Let's look now at the definition file of the redis integration. In the file _redis-definition.yml_ under _command_ you can specify common arguments for all instances (that you will define in the config file) that you want to monitor. In this case we have just one common argument: `--metrics`.  
@@ -362,7 +370,7 @@ instances:
 
   # configuration for the inventory omitted
 ```
-Rename it to `redis-config.yml`. It is required to specify instances that you want to monitor. Arguments and labels parameters are not mandatory. For fetching metric data for the redis integration there is no argument needed. But we can specify the label with the environment name and the role.
+Rename it to `redis-config.yml`. It is required to specify instances that you want to monitor. Arguments and labels parameters are not mandatory. For fetching metric data for the redis integration there is no argument needed. But we can specify the label with the environment name and the role. Make sure that you use two spaces as intend, tabs are not allowed.
 ```yml
 integration_name: com.custom.redis
 
@@ -377,7 +385,7 @@ instances:
 ```      
 This configuration is only for metric data. The configuration for inventory will be done in a further step.
 
-The last configuration step for metrics is to place the integration file in the directory used by the infrastructure agent. Place the executable and the definition file in `/var/db/newrelic-infra/newrelic-integrations/`
+The last configuration step for metrics is to place the integration file in the directory used by the Infrastructure agent. Place the executable and the definition file in `/var/db/newrelic-infra/newrelic-integrations/`
 
 ```bash
 $ sudo cp $GOPATH/src/nr-integrations/redis/redis-definition.yml /var/db/newrelic-infra/newrelic-integrations/redis-definition.yaml
@@ -428,7 +436,7 @@ gives the following result
 2) "dump.rdb"
 ```
 
-To parse this output and create the proper inventory data structure modify the `populateInventory` function:
+To parse this output and create the proper inventory data structure, modify the `populateInventory` function:
 ```go
 func populateInventory(inventory sdk.Inventory) error {
 
@@ -558,6 +566,7 @@ commands:
     interval: 60
 ```
 `redis-definition.yml` contains a `prefix` parameter that defines the source of the inventory data and can be used as a filter to see your inventory data on the Infrastructure [Inventory page](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/infrastructure-ui-pages/infrastructure-inventory-page-search-your-entire-infrastructure).
+The `prefix` is customizable, typically of the form category/integration-name. You can select maximum two levels (i.e. if you use three levels: `config/redis/custom`, you won't be able to view your inventory data.)
 
 Next, let's look at the [config file](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/file-specifications/integration-configuration-file-specifications):
 ```yml
@@ -578,7 +587,7 @@ instances:
       key1: <LABEL_VALUE>
 ```
 
-Specify the name of the instance and add two arguments: `hostname` and `port`.
+Specify the name of the instance and add two arguments: `hostname` and `port`. Remember to always use two spaces as intend instead of tab.
 ```yml
 integration_name: com.custom.redis
 
@@ -592,8 +601,8 @@ instances:
   - name: redis-server-inventory
     command: inventory
     arguments:
-        hostname: localhost
-        port: 6379
+      hostname: localhost
+      port: 6379
     labels:
       env: production
       role: cache
@@ -625,12 +634,13 @@ $ sudo cp $GOPATH/src/nr-integrations/redis/redis-config.yml /etc/newrelic-infra
 ```
 When all the above steps are done, restart the agent.
 
+To view the complete files for the Redis integration, check: [the source code file](tutorial-code/redis.go), [the config file](tutorial-code/redis-config.yml), [the definition file](tutorial-code/redis-definition.yml).
 
 
 ### View inventory data in Infrastructure
-Inventory data can be viewed in New Relic Infrastructure on the [Inventory page](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/infrastructure-ui-pages/infrastructure-inventory-page-search-your-entire-infrastructure). Filter by prefix `config/redis` (which was specified in the definition file) and you will see only the inventory data collected by the redis integration.
+Inventory data can be viewed in New Relic Infrastructure on the [Inventory page](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/infrastructure-ui-pages/infrastructure-inventory-page-search-your-entire-infrastructure). Filter by prefix `config/redis` (which was specified in the definition file) and you will see the inventory data collected by the redis integration and labels that you specified in [the config file](tutorial-code/redis-config.yml).
 
-![Redis invenotory](images/redis_inventory_view.png)
+![Redis inventory](images/redis_inventory_view.png)
 
 
 See more about how inventory data shows up in the New Relic UI in [Find integration inventory data](https://docs.newrelic.com/docs/find-use-infrastructure-integration-data#inventory-data).
