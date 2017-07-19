@@ -22,13 +22,10 @@ Besides the idea of provide this library for helping people to write their
 custom integrations, New Relic is using it for writing the official set
 of
 [Infrastructure Integrations](https://github.com/newrelic/infra-integrations).
-For this reason, the package will evolve continuosly and we'll improve or add
+For this reason, the package will evolve continuously and we'll improve or add
 new characteristics, trying to simplify even further the process of writing an
 Integration.
 
-## Compatibility and requirements
-
-Up-to-date [our docs site](https://docs.newrelic.com/docs/compatibility-requirements-infrastructure-integration-sdk).
 
 ## Getting Started
 
@@ -43,7 +40,7 @@ $ go get github.com/newrelic/infra-integrations-sdk
 ```
 
 Then you can import any of the packages provided with the SDK from your code and
-start writing your integration. If you need ideas or inspiration, you can find
+start writing your integration. If you need ideas or inspiration, you can follow [the tutorial](docs/tutorial.md) or find
 some existing integrations provided by New Relic in
 our [github](https://github.com/newrelic/infra-integrations)
 
