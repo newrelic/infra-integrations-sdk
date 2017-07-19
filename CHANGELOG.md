@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.4.1 (2017-07-19)
+### Fixed
+- Use absolute path calling nrjmx binary
+
+### Changed
+- Update tutorial with changes about metric names, event types and some other improvements
+
 ## 0.4.0 (2017-07-13)
 ### Added
 - Add a JSON type for Arguments
