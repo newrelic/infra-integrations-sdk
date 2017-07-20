@@ -17,10 +17,6 @@ To successfully complete this tutorial you must:
 * Install [Go](https://golang.org/doc/install)
 * Install [Redis](https://redis.io/topics/quickstart)
 * Install the [New Relic Infrastructure Agent](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/installation/install-infrastructure-linux)
-* Modify Git configuration using
-```bash
-$ git config --global url."git@github.com:newrelic".insteadOf "https://github.com/newrelic"
-```
 
 ## Building the structure of the integration
 **Step1: Install nr-integrations-builder**
