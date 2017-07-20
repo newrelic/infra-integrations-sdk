@@ -7,7 +7,7 @@ This tutorial will guide you through the process of developing a custom integrat
 
 For a simple overview of what Infrastructure integrations are and how they work, see the [Intro to the Integrations SDK](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/get-started/intro-infrastructure-integrations-sdk).
 
-This tutorial is compatible with `nr-integration-builder` v0.4.x and `Integration Golang SDK` v0.4.x.
+This tutorial is compatible with `nr-integration-builder` v1.0.x and `Integration Golang SDK` v1.0.x.
 
 ## Prerequisites
 To successfully complete this tutorial you must:
@@ -82,7 +82,7 @@ Your current directory will be used as the default destination. The following st
     * vendor.json
     * _external\_packages_name_
 
-## Building a Redis integration using the Integration Golang SDK v0.4
+## Building a Redis integration using the Integration Golang SDK v1.0
 **Step1:** Create the directory where you want to place the Redis integration (it needs to be under `$GOPATH/src`)
 ```bash
 $ mkdir $GOPATH/src/nr-integrations/
@@ -370,7 +370,7 @@ instances:
 
   # configuration for the inventory omitted
 ```
-Rename it to `redis-config.yml`. It is required to specify instances that you want to monitor. Arguments and labels parameters are not mandatory. For fetching metric data for the redis integration there is no argument needed. But we can specify the label with the environment name and the role. Make sure that you use two spaces as intend, tabs are not allowed.
+Rename it to `redis-config.yml`. It is required to specify instances that you want to monitor. Arguments and labels parameters are not mandatory. For fetching metric data for the redis integration there is no argument needed. But we can specify the label with the environment name and the role. Make sure that you use valid YAML file format.
 ```yml
 integration_name: com.custom.redis
 
@@ -383,7 +383,7 @@ instances:
 
     # configuration for the inventory omitted
 ```      
-This configuration is only for metric data. The configuration for inventory will be done in a further step.
+This configuration is only for metric data. The configuration for inventory will be done farther along in this tutorial.
 
 The last configuration step for metrics is to place the integration file in the directory used by the Infrastructure agent. Place the executable and the definition file in `/var/db/newrelic-infra/newrelic-integrations/`
 
@@ -424,9 +424,9 @@ func populateInventory(inventory sdk.Inventory) error {
 	return nil
 }
 ```
-Notice that in the code above we use the `Inventory` type from the SDK package for inventory data. The `SetItem` method stores a value into the inventory data structure. The first argument is a name of the inventory item, and the other two are field name and a value of the inventory data.
+Notice that in the code above we use the `Inventory` type from the SDK package for inventory data. The `SetItem` method stores a value into the inventory data structure. The first argument is the name of the inventory item, and the other two are a field name and the inventory data value.
 
-Let's assume that we want to collect configuration information for Redis, for example we would like to capture the value of the `dbfilename` parameter. The command
+Let's assume that we want to collect configuration information for Redis. For example, let's say we'd like to capture the value of the `dbfilename` parameter. The command
 ```bash
 redis-cli CONFIG GET dbfilename
 ```
@@ -587,7 +587,7 @@ instances:
       key1: <LABEL_VALUE>
 ```
 
-Specify the name of the instance and add two arguments: `hostname` and `port`. Remember to always use two spaces as intend instead of tab.
+Specify the name of the instance and add two arguments: `hostname` and `port`. Make sure that you use YAML's indentation correctly.
 ```yml
 integration_name: com.custom.redis
 
