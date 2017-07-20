@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 1.0.0 (2017-07-20)
+
+This is the same version as 0.4.1, we consider this package "stable" and we can
+release v1.0.0
+
 ## 0.4.1 (2017-07-19)
 ### Fixed
 - Use absolute path calling nrjmx binary
