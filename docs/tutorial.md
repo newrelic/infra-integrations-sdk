@@ -59,6 +59,24 @@ To see the list of the parameters that you can specify, type
 ```bash
 $ nr-integrations-builder init --help
 ```
+You will receive the following output
+```
+Initialize an integration generating a scaffold.
+
+Usage:
+  nr-integrations-builder init [integration name] [flags]
+
+Flags:
+  -n, --company-name string       Company name (required)
+  -c, --company-prefix string     Company prefix identifier (required)
+  -p, --destination-path string   Destination path for initialized integration (default "./")
+  -h, --help                      help for init
+
+Global Flags:
+      --config string   config file (default is $HOME/.nr-integrations-builder.yaml)
+      --verbose         verbose output
+```
+It's obligatory to specify `company-name` and `company-prefix` flags. Otherwise, the `nr-integrations-builder` will not initialize the integration.
 
 After initializing the integration you should receive information that the scaffold was successfully created. If it failed you will get an error message.
 
@@ -69,8 +87,8 @@ Your current directory will be used as the default destination. The following st
   * LICENSE
   * README.md
   * Makefile
-  * _integration\_name_-config.yml.sample
-  * _integration\_name_-definition.yml  
+  * _company\-prefix_-_integration\_name_-config.yml.sample
+  * _company\-prefix_-_integration\_name_-definition.yml  
   * src
     * _integration\_name_.go  
     * _integration\_name_\_test.go
@@ -81,31 +99,32 @@ Your current directory will be used as the default destination. The following st
 ## Building a Redis integration using the Integration Golang SDK v1.0
 **Step1:** Create the directory where you want to place the Redis integration (it needs to be under `$GOPATH/src`)
 ```bash
-$ mkdir $GOPATH/src/nr-integrations/
-$ cd $GOPATH/src/nr-integrations/
+$ mkdir $GOPATH/src/myorg-integrations/
+$ cd $GOPATH/src/myorg-integrations/
 ```
 **Step2:** Initialize the integration
 ```bash
-$ nr-integrations-builder init redis --company-prefix "nr"
+$ nr-integrations-builder init redis --company-prefix "myorg" --company-name "myorganization"
 ```
-**Step 3:** Go to the directory you created and build the executable file
+**Step 3:** Go to the directory you created. Before building the executable file you have to format the Go source code using [gofmt tool](https://blog.golang.org/go-fmt-your-code). If you don't do this, the `make` command will fail and the executable file will not be created.
 ```bash
-cd redis/
-make
+$ cd redis/
+$ go fmt src/redis.go
 ```
-**Step 4:** Test that the integration was created properly by running
+**Step 4:** Build the executable file and test that the integration was created properly
 ```bash
-$ ./bin/nr-redis -pretty
+$ make
+$ ./bin/myorg-redis -pretty
 ```
 The following JSON payload will be printed to stdout:
 ```bash
 {
-	"name": "redis",
+	"name": "com.myorganization.redis",
 	"protocol_version": "1",
 	"integration_version": "0.1.0",
 	"metrics": [
 		{
-			"event_type": "RedisSample"
+			"event_type": "MyorgRedisSample"
 		}
 	],
 	"inventory": {},
@@ -135,7 +154,7 @@ func main() {
 you will receive the following output:
 ```bash
 {
-	"name": "redis",
+		"name": "com.myorganization.redis",
 	"protocol_version": "1",
 	"integration_version": "0.1.0",
 	"metrics": [],
@@ -144,12 +163,14 @@ you will receive the following output:
 }
 ```
 
+The complete files for the Redis integration can be found in [tutorial-code](tutorial-code).
+
 ### Fetching metric data
 Let's start by defining the metric data. `MetricSet` is the basic structure for storing metrics. The `NewMetricSet` function returns a new instance of MetricSet with its sample attached to the integration data.
 
 Next, if you think it's necessary, modify the argument for `NewMetricSet` in the
 code. By default, `nr-integrations-builder` generates an Event Type
-automatically using the name of the integration + 'Sample'.  Your `main`
+automatically using the `company-prefix` flag (that you specified initializing the integration), name of the integration and the word: _'Sample'_.  Your `main`
 function should look like:
 ```go
 func main() {
@@ -159,7 +180,7 @@ func main() {
 	// the code for populating Inventory omitted
 
 	if args.All || args.Metrics {
-		ms := integration.NewMetricSet("RedisSample")
+		ms := integration.NewMetricSet("MyorgRedisSample")
 		fatalIfErr(populateMetrics(ms))
 	}
 
@@ -167,15 +188,15 @@ func main() {
 }
 ```
 
-After building and executing the integration the following output is returned:
+After building, formatting the source code and executing the integration the following output is returned:
 ```bash
 {
-	"name": "redis",
+		"name": "com.myorganization.redis",
 	"protocol_version": "1",
 	"integration_version": "0.1.0",
 	"metrics": [
 		{
-            "event_type": "RedisSample"
+            "event_type": "MyorgRedisSample"
         }
 	],
 	"inventory": {},
@@ -200,15 +221,15 @@ func populateMetrics(ms *metric.MetricSet) error {
 	return nil
 }
 ```
-and build and execute the integration. You will receive the following output
+and build, format Go source code (using `gofmt` tool) and execute the integration. You will receive the following output
 ```bash
 {
-	"name": "redis",
+		"name": "com.myorganization.redis",
 	"protocol_version": "1",
 	"integration_version": "0.1.0",
 	"metrics": [
 		{
-			"event_type": "RedisSample",
+			"event_type": "MyorgRedisSample",
             "requestsPerSecond": 10
 		}
 	],
@@ -256,15 +277,15 @@ func populateMetrics(ms *metric.MetricSet) error {
 }
 ```
 
-After building and executing the integration, you should receive
+After building, formatting the source code and executing the integration, you should receive
 ```bash
 {
-	"name": "redis",
+		"name": "com.myorganization.redis",
 	"protocol_version": "1",
 	"integration_version": "0.1.0",
 	"metrics": [
 		{
-			"event_type": "RedisSample",
+			"event_type": "MyorgRedisSample",
             "query.instantaneousOpsPerSecond": 3
 		}
 	],
@@ -310,15 +331,15 @@ func populateMetrics(ms *metric.MetricSet) error {
 }
 ```
 
-Build and execute the integration, and then check the output (Note: your metric values will vary.)
+Build, format the source code and execute the integration, and then check the output (Note: your metric values will vary.)
 ```bash
 {
-	"name": "redis",
+		"name": "com.myorganization.redis",
 	"protocol_version": "1",
 	"integration_version": "0.1.0",
 	"metrics": [
 		{
-			"event_type": "RedisSample",
+			"event_type": "MyorgRedisSample",
             "net.connectionsReceivedPerSecond": 2,
             "query.instantaneousOpsPerSecond": 3
 		}
@@ -334,7 +355,7 @@ The calculations for a given metric source type are handled by `SetMetric`; the 
 This method of fetching data, shown above is not very efficient. You will want to fetch a set of data all at once, but this example just shows how to use the `SetMetric` function and the source types.
 
 ### Configuration of the integration (for metrics)
-Let's look now at the definition file of the redis integration. In the file _redis-definition.yml_ under _command_ you can specify common arguments for all instances (that you will define in the config file) that you want to monitor. In this case we have just one common argument: `--metrics`.  
+Let's look now at the definition file of the redis integration. In the file _myorg-redis-definition.yml_ under _command_ you can specify common arguments for all instances (that you will define in the config file) that you want to monitor. In this case we have just one common argument: `--metrics`.  
 ```yml
 name: com.custom.redis
 description: Reports status and metrics for redis service
@@ -344,7 +365,7 @@ os: linux
 commands:
   metrics:
     command:
-      - ./bin/nr-redis
+      - ./bin/myorg-redis
       - --metrics
     interval: 15
 
@@ -366,7 +387,7 @@ instances:
 
   # configuration for the inventory omitted
 ```
-Rename it to `redis-config.yml`. It is required to specify instances that you want to monitor. Arguments and labels parameters are not mandatory. For fetching metric data for the redis integration there is no argument needed. But we can specify the label with the environment name and the role. Make sure that you use valid YAML file format.
+Rename it to `myorg-redis-config.yml`. It is required to specify instances that you want to monitor. Arguments and labels parameters are not mandatory. For fetching metric data for the redis integration there is no argument needed. But we can specify the label with the environment name and the role. Make sure that you use valid YAML file format.
 ```yml
 integration_name: com.custom.redis
 
@@ -381,15 +402,15 @@ instances:
 ```      
 This configuration is only for metric data. The configuration for inventory will be done farther along in this tutorial.
 
-The last configuration step for metrics is to place the integration file in the directory used by the Infrastructure agent. Place the executable and the definition file in `/var/db/newrelic-infra/newrelic-integrations/`
+The last configuration step for metrics is to place the integration file in the directory used by the Infrastructure agent. Place the executable and the definition file in `/var/db/newrelic-infra/custom-integrations/`
 
 ```bash
-$ sudo cp $GOPATH/src/nr-integrations/redis/redis-definition.yml /var/db/newrelic-infra/newrelic-integrations/redis-definition.yaml
-$ sudo cp -R $GOPATH/src/nr-integrations/redis/bin /var/db/newrelic-infra/newrelic-integrations/
+$ sudo cp $GOPATH/src/myorg-integrations/redis/myorg-redis-definition.yml /var/db/newrelic-infra/custom-integrations/myorg-redis-definition.yaml
+$ sudo cp -R $GOPATH/src/myorg-integrations/redis/bin /var/db/newrelic-infra/custom-integrations/
 ```
 Place the integration config file in `/etc/newrelic-infra/integrations.d/`
 ```bash
-$ sudo cp $GOPATH/src/nr-integrations/redis/redis-config.yml /etc/newrelic-infra/integrations.d/redis-config.yaml
+$ sudo cp $GOPATH/src/myorg-integrations/redis/myorg-redis-config.yml /etc/newrelic-infra/integrations.d/myorg-redis-config.yaml
 ```
 When all the above steps are done, restart the agent.
 
@@ -397,11 +418,11 @@ For more information, see the [configuration file](https://docs.newrelic.com/doc
 ### View metric data in New Relic Insights
 When the integration and the Infrastructure agent are communicating correctly, you can view your metric data in [New Relic Insights](https://docs.newrelic.com/docs/find-use-infrastructure-integration-data#metric-data).
 
-Below are example NRQL queries for the `RedisSample` event type.
+Below are example NRQL queries for the `MyorgRedisSample` event type.
 
 ```
-NRQL> SELECT average(`net.connectionsReceivedPerSecond`) FROM RedisSample TIMESERIES
-NRQL> SELECT average(`query.instantaneousOpsPerSecond`) FROM RedisSample TIMESERIES
+NRQL> SELECT average(`net.connectionsReceivedPerSecond`) FROM MyorgRedisSample TIMESERIES
+NRQL> SELECT average(`query.instantaneousOpsPerSecond`) FROM MyorgRedisSample TIMESERIES
 ```
 
 For more about creating NRQL queries, see [Introduction to NRQL](https://docs.newrelic.com/docs/insights/nrql-new-relic-query-language/using-nrql/introduction-nrql). For more on where to find integration data in New Relic products, see [Find and use integration data](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/use-integration-data/find-use-infrastructure-integration-data).
@@ -451,14 +472,14 @@ func populateInventory(inventory sdk.Inventory) error {
 }
 ```
 
-After building and executing the integration (with just inventory data)
+After building, formatting the source code and executing the integration (with just inventory data)
 ```bash
-$ ./bin/nr-redis -pretty -inventory
+$ ./bin/myorg-redis -pretty -inventory
 ```
 we receive
 ```bash
 {
-	"name": "redis",
+		"name": "com.myorganization.redis",
 	"protocol_version": "1",
 	"integration_version": "0.1.0",
 	"metrics": [],
@@ -508,18 +529,19 @@ func populateInventory(inventory sdk.Inventory) error {
 	return nil
 }
 ```
-Finally, build and execute the integration to fetch all inventory and metric data.
+Finally, build, format the source code and execute the integration to fetch all inventory and metric data.
 ```bash
-$ ./bin/nr-redis -pretty
+$ go fmt src/redis.go
+$ ./bin/myorg-redis -pretty
 ```
 ```bash
 {
-	"name": "redis",
+		"name": "com.myorganization.redis",
 	"protocol_version": "1",
 	"integration_version": "0.1.0",
 	"metrics": [
 		{
-			"event_type": "RedisSample",
+			"event_type": "MyorgRedisSample",
             "net.connectionsReceivedPerSecond": 0.5,
             "query.instantaneousOpsPerSecond": 1
 		}
@@ -539,7 +561,7 @@ $ ./bin/nr-redis -pretty
 
 
 ### Configuration of the integration (for inventory)
-In the [definition file](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/file-specifications/integration-definition-file-specifications), `redis-definition.yml`, we want to increase the `interval` value for the inventory. This is because the changes in the inventory data are not as frequent as in metrics data.
+In the [definition file](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/file-specifications/integration-definition-file-specifications), `myorg-redis-definition.yml`, we want to increase the `interval` value for the inventory. This is because the changes in the inventory data are not as frequent as in metrics data.
 
 ```yml
 name: com.custom.redis
@@ -550,19 +572,19 @@ os: linux
 commands:
   metrics:
     command:
-      - ./bin/nr-redis
+      - ./bin/myorg-redis
       - --metrics
     interval: 15
 
   inventory:
     command:
-      - ./bin/nr-redis
+      - ./bin/myorg-redis
       - --inventory
-    prefix: config/redis
+    prefix: config/myorg-redis
     interval: 60
 ```
-`redis-definition.yml` contains a `prefix` parameter that defines the source of the inventory data and can be used as a filter to see your inventory data on the Infrastructure [Inventory page](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/infrastructure-ui-pages/infrastructure-inventory-page-search-your-entire-infrastructure).
-The `prefix` is customizable, typically of the form category/integration-name. You can select maximum two levels (i.e. if you use three levels: `config/redis/custom`, you won't be able to view your inventory data.)
+`myorg-redis-definition.yml` contains a `prefix` parameter that defines the source of the inventory data and can be used as a filter to see your inventory data on the Infrastructure [Inventory page](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/infrastructure-ui-pages/infrastructure-inventory-page-search-your-entire-infrastructure).
+The `prefix` is customizable, typically of the form category/integration-name. You can select maximum two levels (i.e. if you use three levels: `config/myorg-redis/custom`, you won't be able to view your inventory data.)
 
 Next, let's look at the [config file](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/file-specifications/integration-configuration-file-specifications):
 ```yml
@@ -618,23 +640,20 @@ type argumentList struct {
 }
 ```
 
-To finish the inventory configuration place the executable and the definition file in `/var/db/newrelic-infra/newrelic-integrations/`
+To finish the inventory configuration place the executable and the definition file in `/var/db/newrelic-infra/custom-integrations/`
 
 ```bash
-$ sudo cp $GOPATH/src/nr-integrations/redis/redis-definition.yml /var/db/newrelic-infra/newrelic-integrations/redis-definition.yaml
-$ sudo cp -R $GOPATH/src/nr-integrations/redis/bin /var/db/newrelic-infra/newrelic-integrations/
+$ sudo cp $GOPATH/src/myorg-integrations/redis/myorg-redis-definition.yml /var/db/newrelic-infra/custom-integrations/myorg-redis-definition.yaml
+$ sudo cp -R $GOPATH/src/myorg-integrations/redis/bin /var/db/newrelic-infra/custom-integrations/
 ```
 Place the integration config file in `/etc/newrelic-infra/integrations.d/`
 ```bash
-$ sudo cp $GOPATH/src/nr-integrations/redis/redis-config.yml /etc/newrelic-infra/integrations.d/redis-config.yaml
+$ sudo cp $GOPATH/src/myorg-integrations/redis/myorg-redis-config.yml /etc/newrelic-infra/integrations.d/myorg-redis-config.yaml
 ```
 When all the above steps are done, restart the agent.
 
-To view the complete files for the Redis integration, check: [the source code file](tutorial-code/redis.go), [the config file](tutorial-code/redis-config.yml), [the definition file](tutorial-code/redis-definition.yml).
-
-
 ### View inventory data in Infrastructure
-Inventory data can be viewed in New Relic Infrastructure on the [Inventory page](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/infrastructure-ui-pages/infrastructure-inventory-page-search-your-entire-infrastructure). Filter by prefix `config/redis` (which was specified in the definition file) and you will see the inventory data collected by the redis integration and labels that you specified in [the config file](tutorial-code/redis-config.yml).
+Inventory data can be viewed in New Relic Infrastructure on the [Inventory page](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/infrastructure-ui-pages/infrastructure-inventory-page-search-your-entire-infrastructure). Filter by prefix `config/myorg-redis` (which was specified in the definition file) and you will see the inventory data collected by the redis integration and labels that you specified in [the config file](tutorial-code/myorg-redis-config.yml).
 
 ![Redis inventory](images/redis_inventory_view.png)
 

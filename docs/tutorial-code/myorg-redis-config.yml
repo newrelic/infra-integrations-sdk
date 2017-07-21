@@ -1,4 +1,4 @@
-integration_name: com.custom.redis
+integration_name: com.myorganization.redis
 
 instances:
   - name: redis-metrics
