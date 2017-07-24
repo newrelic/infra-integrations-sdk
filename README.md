@@ -18,15 +18,6 @@ If you want to know more or you need specific documentation about the structures
 and functions provided by this package, you can take a look at the official
 package documentation in godoc.org (see below).
 
-Besides the idea of provide this library for helping people to write their
-custom integrations, New Relic is using it for writing the official set
-of
-[Infrastructure Integrations](https://github.com/newrelic/infra-integrations).
-For this reason, the package will evolve continuously and we'll improve or add
-new characteristics, trying to simplify even further the process of writing an
-Integration.
-
-
 ## Getting Started
 
 Before starting to write Go code, we suggest taking a look at
@@ -40,13 +31,11 @@ $ go get github.com/newrelic/infra-integrations-sdk
 ```
 
 Then you can import any of the packages provided with the SDK from your code and
-start writing your integration. If you need ideas or inspiration, you can follow [the tutorial](docs/tutorial.md) or find
-some existing integrations provided by New Relic in
-our [github](https://github.com/newrelic/infra-integrations)
+start writing your integration. If you need ideas or inspiration, you can follow [the tutorial](docs/tutorial.md).
 
 ## JMX support
 
-The Integrations Go lang SDK supports getting metrics through JMX through the
+The Integrations Go lang SDK supports getting metrics through JMX by calling the
 `jmx.Open()`, `jmx.Query()` and `jmx.Close()` functions. This JMX support relies
 on the nrjmx tool. Follow the steps in
 the [nrjmx](https://github.com/newrelic/nrjmx) repository to build it and set
