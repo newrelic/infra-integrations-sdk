@@ -51,11 +51,7 @@ You should receive the description about the `govendor` tool with the list of ac
 
 **Step 3: Initialize the integration**
 
-To initialize the integration and generate the scaffold, run
-```bash
-$ nr-integrations-builder init integration_name
-```
-To see the list of the parameters that you can specify, type
+To see the list of the parameters that you can specify for `nr-integrations-builder`, type
 ```bash
 $ nr-integrations-builder init --help
 ```
@@ -77,6 +73,11 @@ Global Flags:
       --verbose         verbose output
 ```
 It's obligatory to specify `company-name` and `company-prefix` flags. Otherwise, the `nr-integrations-builder` will not initialize the integration.
+
+To initialize the integration and generate the scaffold, run
+```bash
+$ nr-integrations-builder init integration_name --company-name "your-company-name"  --company-prefix "your-company-prefix"
+```
 
 After initializing the integration you should receive information that the scaffold was successfully created. If it failed you will get an error message.
 
@@ -254,7 +255,7 @@ instantaneous_ops_per_sec:4
 This is the number of commands processed per second. This is a numeric value
 that may increase or decrease and it should be stored as-is. Use the GAUGE
 source type in these cases. For metric names, it is recommended that you use a prefix to categorize
-them, innerCamelCase naming format, and specify the measurement unit using a unit suffix, i.e. PerSecond. In this case, for the metric data key, use `query.instantaneousOpsPerSecond`:
+them (check [the currently used prefixes](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/file-specifications/integration-executable-file-specifications#metric-data)), innerCamelCase naming format, and specify the measurement unit using a unit suffix, i.e. PerSecond. In this case, for the metric data key, use `query.instantaneousOpsPerSecond`:
 
 ```go
 func populateMetrics(ms *metric.MetricSet) error {
