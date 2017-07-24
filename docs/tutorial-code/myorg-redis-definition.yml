@@ -1,4 +1,4 @@
-name: com.custom.redis
+name: com.myorganization.redis
 description: Reports status and metrics for redis service
 protocol_version: 1
 os: linux
@@ -6,13 +6,13 @@ os: linux
 commands:
   metrics:
     command:
-      - ./bin/nr-redis
+      - ./bin/myorg-redis
       - --metrics
     interval: 15
 
   inventory:
     command:
-      - ./bin/nr-redis
+      - ./bin/myorg-redis
       - --inventory
-    prefix: config/redis
+    prefix: config/myorg-redis
     interval: 60

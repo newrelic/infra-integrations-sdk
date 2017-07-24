@@ -19,7 +19,7 @@ type argumentList struct {
 }
 
 const (
-	integrationName    = "com.custom.redis"
+	integrationName    = "com.myorg.redis"
 	integrationVersion = "0.1.0"
 )
 
