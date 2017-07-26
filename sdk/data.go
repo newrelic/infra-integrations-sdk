@@ -13,10 +13,10 @@ import (
 type inventoryItem map[string]interface{}
 
 // Inventory is the data type for inventory data produced by an integration data
-// source and emitted to the agent's inventory data store
+// source and emitted to the agent's inventory data store.
 type Inventory map[string]inventoryItem
 
-// SetItem stores a value into the inventory data structure
+// SetItem stores a value into the inventory data structure.
 func (i Inventory) SetItem(key string, field string, value interface{}) {
 	if _, ok := i[key]; ok {
 		i[key][field] = value
@@ -31,7 +31,7 @@ func (i Inventory) SetItem(key string, field string, value interface{}) {
 type Event map[string]interface{}
 
 // Integration defines the format of the output JSON that integrations will
-// return
+// return.
 type Integration struct {
 	Name               string              `json:"name"`
 	ProtocolVersion    string              `json:"protocol_version"`
@@ -42,7 +42,7 @@ type Integration struct {
 	prettyOutput       bool
 }
 
-// NewIntegration initializes a new instance of integration data
+// NewIntegration initializes a new instance of integration data.
 func NewIntegration(name string, version string, arguments interface{}) (*Integration, error) {
 	err := args.SetupArgs(arguments)
 	if err != nil {
@@ -70,15 +70,18 @@ func NewIntegration(name string, version string, arguments interface{}) (*Integr
 	return integration, nil
 }
 
-// NewMetricSet returns a new instance of MetricSet with its sample attached to the IntegrationData
+// NewMetricSet returns a new instance of MetricSet with its sample attached to
+// the IntegrationData.
 func (integration *Integration) NewMetricSet(eventType string) *metric.MetricSet {
 	ms := metric.NewMetricSet(eventType)
 	integration.Metrics = append(integration.Metrics, &ms)
 	return &ms
 }
 
-// Publish will run any tasks before publishing the data. In this case, it will
-// store the cache and print the JSON repreentation of the integration to stdout
+// Publish runs all necessary tasks before publishing the data. Currently, it
+// stores the cache, prints the JSON representation of the integration to stdout
+// and re-initializes the integration object (allowing re-use it during the
+// execution of your code).
 func (integration *Integration) Publish() error {
 	if err := cache.Save(); err != nil {
 		return err

@@ -23,10 +23,10 @@ const (
 	ATTRIBUTE SourceType = iota
 )
 
-// MetricSet is the basic structure for storing metrics
+// MetricSet is the basic structure for storing metrics.
 type MetricSet map[string]interface{}
 
-// NewMetricSet returns a new MetricSet instance
+// NewMetricSet returns a new MetricSet instance.
 func NewMetricSet(eventType string) MetricSet {
 	ms := MetricSet{}
 	ms.SetMetric("event_type", eventType, ATTRIBUTE)
