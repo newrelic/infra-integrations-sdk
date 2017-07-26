@@ -26,10 +26,12 @@ func (i Inventory) SetItem(key string, field string, value interface{}) {
 
 }
 
-// Event is the data type for single shot events
+// Event is the data type to represent arbitrary, one-off messages for key
+// activities on a system.
 type Event map[string]interface{}
 
-// Integration defines the format of the output JSON that plugins will return
+// Integration defines the format of the output JSON that integrations will
+// return
 type Integration struct {
 	Name               string              `json:"name"`
 	ProtocolVersion    string              `json:"protocol_version"`

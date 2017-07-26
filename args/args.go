@@ -11,8 +11,8 @@ import (
 )
 
 // DefaultArgumentList includes the minimal set of necessary arguments for an
-// integration. You can embed this struct in your struct of arguments to include
-// them automatically.
+// integration. To include them automatically, embed this struct in your struct
+// of arguments.
 type DefaultArgumentList struct {
 	Verbose   bool `default:"false" help:"Print more information to logs."`
 	Pretty    bool `default:"false" help:"Print pretty formatted JSON."`
@@ -46,7 +46,7 @@ func underscore(s string) string {
 	return strings.ToLower(strings.Join(a, "_"))
 }
 
-// SetupArgs parses a struct's definition and populates the arguments out of the
+// SetupArgs parses a struct's definition and populates the arguments from the
 // fields it defines. Each of the fields in the struct can define their defaults
 // and help string by using tags:
 //
