@@ -6,7 +6,7 @@ import (
 	"github.com/Sirupsen/logrus"
 )
 
-// SetupLogging redirect logs to stderr and configures the log level.
+// SetupLogging redirects logs to stderr and configures the log level.
 func SetupLogging(verbose bool) {
 	logrus.SetOutput(os.Stderr)
 	if verbose {

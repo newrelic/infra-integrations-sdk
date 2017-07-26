@@ -7,24 +7,26 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/cache"
 )
 
-// SourceType defines the kind of data source and how we are going to treat it
+// SourceType defines the kind of data source. Based on this SourceType, metric
+// package performs some calculations with it. Check below the description for
+// each one.
 type SourceType int
 
 const (
 	// GAUGE is a value that may increase and decrease. It is stored as-is.
 	GAUGE SourceType = iota
-	// RATE is an ever-growing value which might be reseted. We store the change rate.
+	// RATE is an ever-growing value which might be reseted. The package calculates the change rate.
 	RATE SourceType = iota
-	// DELTA is an ever-growing value which might be reseted. We store the differences between samples.
+	// DELTA is an ever-growing value which might be reseted. The package calculates the difference between samples.
 	DELTA SourceType = iota
 	// ATTRIBUTE is any string value
 	ATTRIBUTE SourceType = iota
 )
 
-// MetricSet is the basic structure for storing metrics
+// MetricSet is the basic structure for storing metrics.
 type MetricSet map[string]interface{}
 
-// NewMetricSet returns a new MetricSet instance
+// NewMetricSet returns a new MetricSet instance.
 func NewMetricSet(eventType string) MetricSet {
 	ms := MetricSet{}
 	ms.SetMetric("event_type", eventType, ATTRIBUTE)
@@ -32,7 +34,8 @@ func NewMetricSet(eventType string) MetricSet {
 }
 
 // SetMetric adds a metric to the MetricSet object or updates the metric value
-// if the metric already exists, sampling if sourceType requires it.
+// if the metric already exists, performing a calculation if the SourceType
+// (RATE, DELTA) requires it.
 func (ms MetricSet) SetMetric(name string, value interface{}, sourceType SourceType) error {
 	var err error
 	var newValue = value

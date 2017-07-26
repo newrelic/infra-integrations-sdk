@@ -123,7 +123,8 @@ func doQuery(out chan []byte, errorChan chan error, queryString []byte) {
 	}
 }
 
-// Query returns a map with the attribute names and its values from the nrjmx tool
+// Query returns a map with the attribute names and its values from the nrjmx
+// tool.
 func Query(objectPattern string) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
 	pipe := make(chan []byte)
