@@ -19,6 +19,7 @@ To successfully complete this tutorial you must:
 * Install the [New Relic Infrastructure Agent](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/installation/install-infrastructure-linux)
 
 ## Building the structure of the integration
+
 **Step1: Install nr-integrations-builder**
 
 Install `nr-integrations-builder`
@@ -41,7 +42,7 @@ $ $GOPATH/bin/nr-integrations-builder --help
 
 This tutorial assumes that your `$GOBIN` or `$GOPATH/bin` has been added to your `$PATH` environment variable.
 
-**Step 2: Check govendor tool**
+**Step 3: Check govendor tool**
 
 Before initializing the integration with `nr-integrations-builder` you have to check that the `govendor` tool (used for managing dependencies) is successfully installed. Run the following command:
 ```bash
@@ -49,7 +50,7 @@ $ govendor
 ```
 You should receive the description about the `govendor` tool with the list of accepted commands. More information about the usage can be found in the [README.md](https://github.com/kardianos/govendor/blob/master/README.md).
 
-**Step 3: Initialize the integration**
+**Step 4: Initialize the integration**
 
 To see the list of the parameters that you can specify for `nr-integrations-builder`, type
 ```bash
@@ -132,7 +133,7 @@ The following JSON payload will be printed to stdout:
 	"events": []
 }
 ```
-This is the basic JSON data format that is expected by the Infrastructure agent. The main logic is placed in `src/redis.go`, which is [the integration executable file](https://docs.newrelic.com/docs/create-integration-executable-file).
+This is the basic JSON data format that is expected by the Infrastructure agent. The main logic is placed in `src/redis.go`, which is the source that will be compiled into [the integration executable file](https://docs.newrelic.com/docs/create-integration-executable-file).
 
 When the integration is initialized with `nr-integrations-builder`, the
 executable file builds the JSON output data with three header fields (_name_,
@@ -204,7 +205,7 @@ After building, formatting the source code and executing the integration the fol
 	"events": []
 }
 ```
-In order to define the metric value, we will use the function `SetMetric` from the `SDK package`. `nr-integrations-builder` automatically generates the `populateMetrics` function:
+In order to define the metric value, we will use the function `SetMetric` from the SDK package. `nr-integrations-builder` automatically generates the `populateMetrics` function:
 ```go
 func populateMetrics(ms *metric.MetricSet) error {
 	// Insert here the logic of your integration to get the metrics data
@@ -222,7 +223,7 @@ func populateMetrics(ms *metric.MetricSet) error {
 	return nil
 }
 ```
-and build, format Go source code (using `gofmt` tool) and execute the integration. You will receive the following output
+and build, format Go source code (using `gofmt` tool) and execute the integration. You will receive the following output:
 ```bash
 {
 	"name": "com.myorganization.redis",
@@ -231,7 +232,7 @@ and build, format Go source code (using `gofmt` tool) and execute the integratio
 	"metrics": [
 		{
 			"event_type": "MyorgRedisSample",
-            "requestsPerSecond": 10
+			"requestsPerSecond": 10
 		}
 	],
 	"inventory": {},
@@ -244,11 +245,11 @@ The metric source type can be one of the following: GAUGE, RATE, DELTA or ATTRIB
 
 The `redis-cli info` command returns a list of redis performance and health metrics.
 
-If you run
+If you run:
 ```bash
 redis-cli info | grep instantaneous_ops_per_sec:
 ```
-you will receive
+you will receive:
 ```bash
 instantaneous_ops_per_sec:4
 ```
@@ -264,21 +265,37 @@ func populateMetrics(ms *metric.MetricSet) error {
 	if err != nil {
 		return err
 	}
-	splitedLine := strings.Split(string(output), ":")
-	if len(splitedLine) != 2 {
+	splittedLine := strings.Split(string(output), ":")
+	if len(splittedLine) != 2 {
 		return fmt.Errorf("Cannot split the output line")
 	}
-	metricValue, err := strconv.ParseFloat(strings.TrimSpace(splitedLine[1]), 64)
+	metricValue, err := strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
 	if err != nil {
 		return err
 	}
-    ms.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
+	ms.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
 
 	return nil
 }
 ```
 
-After building, formatting the source code and executing the integration, you should receive
+In order to continue to build the source, you'll need to add the needed packages to the import statemement at the top of the program:
+
+```go
+import (
+	"fmt"
+	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
+	"github.com/newrelic/infra-integrations-sdk/log"
+	"github.com/newrelic/infra-integrations-sdk/metric"
+	"github.com/newrelic/infra-integrations-sdk/sdk"
+	"os/exec"
+	"strconv"
+	"strings"
+)
+```
+
+After building, formatting the source code, and executing the integration, you should receive:
+
 ```bash
 {
 	"name": "com.myorganization.redis",
@@ -287,7 +304,7 @@ After building, formatting the source code and executing the integration, you sh
 	"metrics": [
 		{
 			"event_type": "MyorgRedisSample",
-            "query.instantaneousOpsPerSecond": 3
+			"query.instantaneousOpsPerSecond": 3
 		}
 	],
 	"inventory": {},
@@ -295,18 +312,22 @@ After building, formatting the source code and executing the integration, you sh
 }
 ```
 
+Using the command:
 
-Using command
 ```bash
 redis-cli info | grep total_connections_received:
 ```
-you will receive
+
+you will receive:
+
 ```bash
 total_connections_received:111
 ```
+
 This provides information about the total number of connections accepted by the server. This is an ever-growing value which might be reset. In a case like this it is more useful to store the change rate instead of the as-is value. We use the RATE type and the SDK will automatically compute the change rate.
 
-Modify the `populateMetrics` function to process the metric data using the RATE type
+Modify the `populateMetrics` function to process the metric data using the RATE type:
+
 ```go
 func populateMetrics(ms *metric.MetricSet) error {
   // ...
@@ -318,21 +339,21 @@ func populateMetrics(ms *metric.MetricSet) error {
 	if err != nil {
 		return err
 	}
-	splitedLine = strings.Split(string(output), ":")
-	if len(splitedLine) != 2 {
+	splittedLine = strings.Split(string(output), ":")
+	if len(splittedLine) != 2 {
 		return fmt.Errorf("Cannot split the output line")
 	}
-	metricValue, err = strconv.ParseFloat(strings.TrimSpace(splitedLine[1]), 64)
+	metricValue, err = strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
 	if err != nil {
 		return err
 	}
-
-    ms.SetMetric("net.connectionsReceivedPerSecond", metricValue, metric.RATE)
+	ms.SetMetric("net.connectionsReceivedPerSecond", metricValue, metric.RATE)
 	return nil
 }
 ```
 
-Build, format the source code and execute the integration, and then check the output (Note: your metric values will vary.)
+Build, format the source code, and execute the integration, and then check the output (note: your metric values may vary.)
+
 ```bash
 {
 	"name": "com.myorganization.redis",
@@ -341,8 +362,8 @@ Build, format the source code and execute the integration, and then check the ou
 	"metrics": [
 		{
 			"event_type": "MyorgRedisSample",
-            "net.connectionsReceivedPerSecond": 2,
-            "query.instantaneousOpsPerSecond": 3
+			"net.connectionsReceivedPerSecond": 2,
+			"query.instantaneousOpsPerSecond": 3
 		}
 	],
 	"inventory": {},
@@ -400,8 +421,8 @@ instances:
       role: cache
 
     # configuration for the inventory omitted
-```      
-This configuration is only for metric data. The configuration for inventory will be done farther along in this tutorial.
+```
+This configuration is only for metric data. The configuration for inventory will be done further along in this tutorial.
 
 The last configuration step for metrics is to place the integration file in the directory used by the Infrastructure agent. Place the executable and the definition file in `/var/db/newrelic-infra/custom-integrations/`
 
@@ -457,16 +478,15 @@ gives the following result
 To parse this output and create the proper inventory data structure, modify the `populateInventory` function:
 ```go
 func populateInventory(inventory sdk.Inventory) error {
-
 	cmd := exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET dbfilename")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return err
 	}
 
-	splitedLine := strings.Split(string(output), "\n")
-	if splitedLine[0] == "dbfilename" {
-    inventory.SetItem(splitedLine[0], "value", splitedLine[1])
+	splittedLine := strings.Split(string(output), "\n")
+	if splittedLine[0] == "dbfilename" {
+		inventory.SetItem(splittedLine[0], "value", splittedLine[1])
 	}
 
 	return nil
@@ -506,15 +526,14 @@ we get
 To add this to our integration we can update the `populateInventory` function:
 ```go
 func populateInventory(inventory sdk.Inventory) error {
-
 	cmd := exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET dbfilename")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return err
 	}
-	splitedLine := strings.Split(string(output), "\n")
-	if splitedLine[0] == "dbfilename" {
-		inventory.SetItem(splitedLine[0], "value", splitedLine[1])
+	splittedLine := strings.Split(string(output), "\n")
+	if splittedLine[0] == "dbfilename" {
+		inventory.SetItem(splittedLine[0], "value", splittedLine[1])
 	}
 
 	cmd = exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET bind")
@@ -522,9 +541,9 @@ func populateInventory(inventory sdk.Inventory) error {
 	if err != nil {
 		return err
 	}
-	splitedLine = strings.Split(string(output), "\n")
-	if splitedLine[0] == "bind" {
-		inventory.SetItem(splitedLine[0], "value", splitedLine[1])
+	splittedLine = strings.Split(string(output), "\n")
+	if splittedLine[0] == "bind" {
+		inventory.SetItem(splittedLine[0], "value", splittedLine[1])
 	}
 
 	return nil
@@ -543,8 +562,8 @@ $ ./bin/myorg-redis -pretty
 	"metrics": [
 		{
 			"event_type": "MyorgRedisSample",
-            "net.connectionsReceivedPerSecond": 0.5,
-            "query.instantaneousOpsPerSecond": 1
+			"net.connectionsReceivedPerSecond": 0.5,
+			"query.instantaneousOpsPerSecond": 1
 		}
 	],
 	"inventory": {
@@ -558,8 +577,6 @@ $ ./bin/myorg-redis -pretty
 	"events": []
 }
 ```
-
-
 
 ### Configuration of the integration (for inventory)
 In the [definition file](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/file-specifications/integration-definition-file-specifications), `myorg-redis-definition.yml`, we want to increase the `interval` value for the inventory. This is because the changes in the inventory data are not as frequent as in metrics data.

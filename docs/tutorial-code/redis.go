@@ -32,9 +32,9 @@ func populateInventory(inventory sdk.Inventory) error {
 		return err
 	}
 
-	splitedLine := strings.Split(string(output), "\n")
-	if splitedLine[0] == "dbfilename" {
-		inventory.SetItem(splitedLine[0], "value", splitedLine[1])
+	splittedLine := strings.Split(string(output), "\n")
+	if splittedLine[0] == "dbfilename" {
+		inventory.SetItem(splittedLine[0], "value", splittedLine[1])
 	}
 
 	cmd = exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET bind")
@@ -42,9 +42,9 @@ func populateInventory(inventory sdk.Inventory) error {
 	if err != nil {
 		return err
 	}
-	splitedLine = strings.Split(string(output), "\n")
-	if splitedLine[0] == "bind" {
-		inventory.SetItem(splitedLine[0], "value", splitedLine[1])
+	splittedLine = strings.Split(string(output), "\n")
+	if splittedLine[0] == "bind" {
+		inventory.SetItem(splittedLine[0], "value", splittedLine[1])
 	}
 	return nil
 }
@@ -55,11 +55,11 @@ func populateMetrics(ms *metric.MetricSet) error {
 	if err != nil {
 		return err
 	}
-	splitedLine := strings.Split(string(output), ":")
-	if len(splitedLine) != 2 {
+	splittedLine := strings.Split(string(output), ":")
+	if len(splittedLine) != 2 {
 		return fmt.Errorf("Cannot split the output line")
 	}
-	metricValue, err := strconv.ParseFloat(strings.TrimSpace(splitedLine[1]), 64)
+	metricValue, err := strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
 	if err != nil {
 		return err
 	}
@@ -70,11 +70,11 @@ func populateMetrics(ms *metric.MetricSet) error {
 	if err != nil {
 		return err
 	}
-	splitedLine = strings.Split(string(output), ":")
-	if len(splitedLine) != 2 {
+	splittedLine = strings.Split(string(output), ":")
+	if len(splittedLine) != 2 {
 		return fmt.Errorf("Cannot split the output line")
 	}
-	metricValue, err = strconv.ParseFloat(strings.TrimSpace(splitedLine[1]), 64)
+	metricValue, err = strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
 	if err != nil {
 		return err
 	}
