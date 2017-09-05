@@ -48,6 +48,8 @@ func TestMain(m *testing.M) {
 	}
 }
 
+const timeout = 1000
+
 func TestJmxOpen(t *testing.T) {
 	defer jmx.Close()
 
@@ -67,8 +69,8 @@ func TestJmxQuery(t *testing.T) {
 		t.Error()
 	}
 
-	if _, err := jmx.Query("empty"); err != nil {
-		t.Error()
+	if _, err := jmx.Query("empty", timeout); err != nil {
+		t.Error(err)
 	}
 }
 
@@ -79,7 +81,7 @@ func TestJmxCrashQuery(t *testing.T) {
 		t.Error()
 	}
 
-	if _, err := jmx.Query("crash"); err == nil {
+	if _, err := jmx.Query("crash", timeout); err == nil {
 		t.Error()
 	}
 }
@@ -91,7 +93,7 @@ func TestJmxInvalidQuery(t *testing.T) {
 		t.Error()
 	}
 
-	if _, err := jmx.Query("invalid"); err == nil {
+	if _, err := jmx.Query("invalid", timeout); err == nil {
 		t.Error()
 	}
 }
@@ -103,12 +105,24 @@ func TestJmxTimeoutQuery(t *testing.T) {
 		t.Error()
 	}
 
-	if _, err := jmx.Query("timeout"); err == nil {
+	if _, err := jmx.Query("timeout", timeout); err == nil {
 		t.Error()
 	}
 
-	if _, err := jmx.Query("empty"); err == nil {
+	if _, err := jmx.Query("empty", timeout); err == nil {
 		t.Error()
+	}
+}
+
+func TestJmxNoTimeoutQuery(t *testing.T) {
+	defer jmx.Close()
+
+	if jmx.Open("", "", "", "") != nil {
+		t.Error()
+	}
+
+	if _, err := jmx.Query("timeout", 1500); err != nil {
+		t.Error(err)
 	}
 }
 
@@ -119,11 +133,11 @@ func TestJmxTimeoutBigQuery(t *testing.T) {
 		t.Error()
 	}
 
-	if _, err := jmx.Query("bigPayload"); err != nil {
-		t.Error()
+	if _, err := jmx.Query("bigPayload", timeout); err != nil {
+		t.Error(err)
 	}
 
-	if _, err := jmx.Query("bigPayloadError"); err == nil {
+	if _, err := jmx.Query("bigPayloadError", timeout); err == nil {
 		t.Error()
 	}
 }
