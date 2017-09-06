@@ -39,10 +39,10 @@ func getCommand(hostname, port, username, password string) []string {
 		cliCommand = []string{jmxCommand}
 	}
 
-	cliCommand = append(
-		cliCommand, "--hostname", hostname, "--port", port,
-		"--username", username, "--password", password,
-	)
+	cliCommand = append(cliCommand, "--hostname", hostname, "--port", port)
+	if username != "" && password != "" {
+		cliCommand = append(cliCommand, "--username", username, "--password", password)
+	}
 
 	return cliCommand
 }
