@@ -15,6 +15,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/newrelic/infra-integrations-sdk/log"
 )
 
 var cmd *exec.Cmd
@@ -58,12 +60,13 @@ func Open(hostname, port, username, password string) error {
 		<-cmdErr
 	}
 
-	done.Add(1)
+	done.Add(2)
 
 	var err error
 	var ctx context.Context
 
 	cliCommand := getCommand(hostname, port, username, password)
+	log.Debug("JMX tool called with command: %s", cliCommand)
 
 	ctx, cancel = context.WithCancel(context.Background())
 	// Avoid stupid errors/warnings b/c cancel is not used in this method
@@ -74,17 +77,78 @@ func Open(hostname, port, username, password string) error {
 	if cmdOut, err = cmd.StdoutPipe(); err != nil {
 		return err
 	}
+
 	if cmdIn, err = cmd.StdinPipe(); err != nil {
 		return err
 	}
+
+	stdErr, err := cmd.StderrPipe()
+	if err != nil {
+		return err
+	}
+
 	if err = cmd.Start(); err != nil {
 		return err
 	}
 
+	// ****************************
+	// This are three different proposal for sending the errors to the cmdErr channel
+	//
+
+	// go func() {
+	// 	errText, err := ioutil.ReadAll(stdErr)
+	// 	log.Debug("Output from ReadAll: %s, Err from ReadAll: %v", errText, err)
+
+	// 	if err == nil {
+	// 		cmdErr <- fmt.Errorf("JMX tool exited with error: %s", errText)
+	// 	}
+
+	// 	done.Done()
+	// }()
+
+	go func() {
+		scanner := bufio.NewScanner(stdErr)
+		var errText []string
+		lineNr := 0
+		for scanner.Scan() {
+			errText = append(errText, scanner.Text())
+			lineNr++
+			// if lineNr < 4 {
+			// 	break
+			// }
+		}
+		err := scanner.Err()
+		if err == nil {
+			cmdErr <- fmt.Errorf("JMX tool exited with error: %s", errText)
+		}
+		log.Debug("Form scanner output: %s, error: %v", errText, err)
+
+		// reader := bufio.NewReader(stdErr)
+		// for {
+		// 	line, err := reader.ReadString('\n')
+
+		// 	if err == io.EOF {
+		// 		break
+		// 	}
+		// 	if err != nil {
+		// 		log.Debug("Error from reader: %v", err)
+		// 		break
+		// 	}
+		// 	// if strings.Contains(line, "SEVERE") || strings.Contains(line, "Exception in thread") {
+		// 	log.Debug("line from reader: %s", line)
+		// 	// cmdErr <- fmt.Errorf("JMX tool exited with error: %s", line)
+		// 	// }
+		// }
+
+		done.Done()
+	}()
+	// ****************************
+
 	go func() {
 		if err = cmd.Wait(); err != nil {
-			cmdErr <- fmt.Errorf("JMX tool exited with error: %s", err)
+			log.Debug("JMX tool finished with error: %v", err)
 		}
+
 		done.Done()
 		cmd = nil
 	}()
@@ -115,9 +179,6 @@ func doQuery(out chan []byte, errorChan chan error, queryString []byte) {
 	} else {
 		if err := scanner.Err(); err != nil {
 			errorChan <- fmt.Errorf("Error reading output from JMX tool: %v", err)
-		} else {
-			// If scanner.Scan() returns false but err is also nil, it hit EOF. We consider that a problem, so we should return an error.
-			errorChan <- fmt.Errorf("Got an EOF while reading JMX tool output")
 		}
 	}
 }
