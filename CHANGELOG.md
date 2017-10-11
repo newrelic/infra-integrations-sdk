@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 2.0.0 (2017-10-11)
+### Fixed
+- Allow executing JMX queries to a server without authentication required
+### Changed
+- **Breaking change**: Update `jmx.Query` function adding timeout argument
+- Improve documentation
+
 ## 1.0.0 (2017-07-20)
 
 This is the same version as 0.4.1, we consider this package "stable" and we can
