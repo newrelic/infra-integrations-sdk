@@ -71,7 +71,8 @@ func NewIntegrationProtocol2(name string, version string, arguments interface{})
 		ProtocolVersion:    "2",
 		IntegrationVersion: version,
 		prettyOutput:       defaultArgs.Pretty,
-		writer:             os.Stdout, // StdOut by default
+		Data:               []*EntityData{}, // we do because we don't want a null but an empty array on marshaling.
+		writer:             os.Stdout,       // StdOut by default
 	}
 
 	return integration, nil
@@ -96,6 +97,11 @@ func (integration *IntegrationProtocol2) Entity(entityName, entityType string) (
 			Name: entityName,
 			Type: entityType,
 		},
+
+		// empty array or object preferred instead of null on marshaling.
+		Metrics:   []metric.MetricSet{},
+		Inventory: Inventory{},
+		Events:    []Event{},
 	}
 
 	integration.Data = append(integration.Data, d)
@@ -137,7 +143,7 @@ func (integration *IntegrationProtocol2) Publish() error {
 func (integration *IntegrationProtocol2) Clear() {
 	integration.Lock()
 	defer integration.Unlock()
-	integration.Data = nil
+	integration.Data = []*EntityData{} // empty array preferred instead of null on marshaling.
 }
 
 // toJSON returns the integration as a JSON string. If the pretty attribute is
