@@ -143,6 +143,10 @@ func TestIntegrationProtocol2_EntityReturnsExistingEntity(t *testing.T) {
 	if e1 != e2 {
 		t.Error("entity should be equal.")
 	}
+
+	if len(i.Data) > 1 {
+		t.Error()
+	}
 }
 
 // NOTE: This test does nothing as test but when running with -race flag we can detect data races.
