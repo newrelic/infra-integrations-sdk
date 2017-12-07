@@ -127,7 +127,7 @@ func TestIntegrationProtocol2_Publish(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(expectedOutput, integration) {
-				t.Errorf("output does not match the expectations.\nExpected:\n%s\nGot:\n%s", expectedOutput, p)
+				t.Errorf("output does not match the expectations.\nGot:\n%s\nExpected:\n%s", p, expectedOutput)
 			}
 		},
 	}
