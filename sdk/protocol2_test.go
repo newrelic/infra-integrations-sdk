@@ -1,10 +1,11 @@
 package sdk_test
 
 import (
-	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
+	"reflect"
 	"testing"
 
 	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
@@ -110,11 +111,16 @@ func TestNewIntegrationProtocol2WithDefaultArguments(t *testing.T) {
 }
 
 func TestIntegrationProtocol2_Publish(t *testing.T) {
-	expectedOutput := []byte(`{"name":"TestIntegration","protocol_version":"2","integration_version":"1.0","data":[{"entity":{"name":"EntityOne","type":"test"},"metrics":[{"event_type":"EventTypeForEntityOne","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]},{"entity":{"name":"EntityTwo","type":"test"},"metrics":[{"event_type":"EventTypeForEntityTwo","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]},{"metrics":[{"event_type":"EventTypeForEntityThree","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]}]}`)
-
 	w := testWritter{
 		func(p []byte) {
-			if !bytes.Equal(p, expectedOutput) {
+			expectedOutputRaw := []byte(`{"name":"TestIntegration","protocol_version":"2","integration_version":"1.0","data":[{"entity":{"name":"EntityOne","type":"test"},"metrics":[{"event_type":"EventTypeForEntityOne","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]},{"entity":{"name":"EntityTwo","type":"test"},"metrics":[{"event_type":"EventTypeForEntityTwo","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]},{"metrics":[{"event_type":"EventTypeForEntityThree","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]}]}`)
+			expectedOutput := new(sdk.IntegrationProtocol2)
+			json.Unmarshal(expectedOutputRaw, expectedOutput)
+
+			integration := new(sdk.IntegrationProtocol2)
+			json.Unmarshal(p, integration)
+
+			if !reflect.DeepEqual(expectedOutput, integration) {
 				t.Errorf("output does not match the expectations.\nExpected:\n%s\nGot:\n%s", expectedOutput, p)
 			}
 		},
