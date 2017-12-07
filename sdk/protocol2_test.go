@@ -115,10 +115,16 @@ func TestIntegrationProtocol2_Publish(t *testing.T) {
 		func(p []byte) {
 			expectedOutputRaw := []byte(`{"name":"TestIntegration","protocol_version":"2","integration_version":"1.0","data":[{"entity":{"name":"EntityOne","type":"test"},"metrics":[{"event_type":"EventTypeForEntityOne","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]},{"entity":{"name":"EntityTwo","type":"test"},"metrics":[{"event_type":"EventTypeForEntityTwo","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]},{"metrics":[{"event_type":"EventTypeForEntityThree","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]}]}`)
 			expectedOutput := new(sdk.IntegrationProtocol2)
-			json.Unmarshal(expectedOutputRaw, expectedOutput)
+			err := json.Unmarshal(expectedOutputRaw, expectedOutput)
+			if err != nil {
+				t.Fatal("error unmarshaling expected output raw test data sample")
+			}
 
 			integration := new(sdk.IntegrationProtocol2)
-			json.Unmarshal(p, integration)
+			err = json.Unmarshal(p, integration)
+			if err != nil {
+				t.Error("error unmarshaling integration output", err)
+			}
 
 			if !reflect.DeepEqual(expectedOutput, integration) {
 				t.Errorf("output does not match the expectations.\nExpected:\n%s\nGot:\n%s", expectedOutput, p)
