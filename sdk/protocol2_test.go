@@ -65,6 +65,7 @@ func TestNewIntegrationProtocol2WithDefaultArguments(t *testing.T) {
 		sdk_args.DefaultArgumentList
 	}
 
+	// Needed for initialising os.Args + flags (emulating).
 	os.Args = []string{"cmd"}
 	flag.CommandLine = flag.NewFlagSet("name", 0)
 
