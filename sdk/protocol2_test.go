@@ -24,19 +24,31 @@ func TestNewEntityData(t *testing.T) {
 }
 
 func TestNewEntityData_MissingData(t *testing.T) {
-	_, err := sdk.NewEntityData("", "test")
+	e, err := sdk.NewEntityData("", "test")
 	if err == nil {
-		t.Fail()
+		t.Error("error was expected on partial entity data")
 	}
 
-	_, err = sdk.NewEntityData("Entity", "")
-	if err == nil {
-		t.Fail()
+	if e.Entity != nil {
+		t.Error("no entity expected")
 	}
 
-	_, err = sdk.NewEntityData("", "")
+	e, err = sdk.NewEntityData("Entity", "")
 	if err == nil {
-		t.Fail()
+		t.Error("error was expected on partial entity data")
+	}
+
+	if e.Entity != nil {
+		t.Error("no entity expected")
+	}
+
+	e, err = sdk.NewEntityData("", "")
+	if err != nil {
+		t.Error(err)
+	}
+
+	if e.Entity != nil {
+		t.Error("no entity expected")
 	}
 }
 
@@ -98,7 +110,7 @@ func TestNewIntegrationProtocol2WithDefaultArguments(t *testing.T) {
 }
 
 func TestIntegrationProtocol2_Publish(t *testing.T) {
-	expectedOutput := []byte(`{"name":"TestIntegration","protocol_version":"2","integration_version":"1.0","data":[{"entity":{"name":"EntityOne","type":"test"},"metrics":[{"event_type":"EventTypeForEntityOne","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]},{"entity":{"name":"EntityTwo","type":"test"},"metrics":[{"event_type":"EventTypeForEntityTwo","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]}]}`)
+	expectedOutput := []byte(`{"name":"TestIntegration","protocol_version":"2","integration_version":"1.0","data":[{"entity":{"name":"EntityOne","type":"test"},"metrics":[{"event_type":"EventTypeForEntityOne","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]},{"entity":{"name":"EntityTwo","type":"test"},"metrics":[{"event_type":"EventTypeForEntityTwo","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]},{"metrics":[{"event_type":"EventTypeForEntityThree","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]}]}`)
 
 	w := testWritter{
 		func(p []byte) {
@@ -129,6 +141,16 @@ func TestIntegrationProtocol2_Publish(t *testing.T) {
 	}
 
 	ms = e.NewMetricSet("EventTypeForEntityTwo")
+	ms.SetMetric("metricOne", 99, metric.GAUGE)
+	ms.SetMetric("metricTwo", 88, metric.GAUGE)
+	ms.SetMetric("metricThree", "test", metric.ATTRIBUTE)
+
+	e, err = i.Entity("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ms = e.NewMetricSet("EventTypeForEntityThree")
 	ms.SetMetric("metricOne", 99, metric.GAUGE)
 	ms.SetMetric("metricTwo", 88, metric.GAUGE)
 	ms.SetMetric("metricThree", "test", metric.ATTRIBUTE)

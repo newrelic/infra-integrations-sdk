@@ -22,7 +22,7 @@ type Entity struct {
 
 // EntityData defines all the data related to a particular event from an entity.
 type EntityData struct {
-	Entity    Entity             `json:"entity"`
+	Entity    *Entity            `json:"entity,omitempty"` // Pointer because we want to omit the value when empty during marshaling.
 	Metrics   []metric.MetricSet `json:"metrics"`
 	Inventory Inventory          `json:"inventory"`
 	Events    []Event            `json:"events"`
@@ -30,21 +30,27 @@ type EntityData struct {
 
 // NewEntityData creates a new EntityData with default values initialised.
 func NewEntityData(entityName, entityType string) (EntityData, error) {
-	if entityName == "" || entityType == "" {
-		return EntityData{}, errors.New("entityName and entityType should be not empty")
-	}
-
-	return EntityData{
-		Entity: Entity{
-			Name: entityName,
-			Type: entityType,
-		},
-
+	d := EntityData{
 		// empty array or object preferred instead of null on marshaling.
 		Metrics:   []metric.MetricSet{},
 		Inventory: Inventory{},
 		Events:    []Event{},
-	}, nil
+	}
+
+	// If one of the attributes is defined, both Name and Type are needed.
+	if entityName == "" && entityType != "" || entityName != "" && entityType == "" {
+		return EntityData{}, errors.New("entity name and type are required when defining one")
+	}
+
+	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
+	if entityName != "" && entityType != "" {
+		d.Entity = &Entity{
+			Name: entityName,
+			Type: entityType,
+		}
+	}
+
+	return d, nil
 }
 
 // IntegrationProtocol2 defines the format of the output JSON that integrations will return for protocol 2.
