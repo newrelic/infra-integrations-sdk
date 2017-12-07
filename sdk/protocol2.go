@@ -28,6 +28,25 @@ type EntityData struct {
 	Events    []Event            `json:"events"`
 }
 
+// NewEntityData creates a new EntityData with default values initialised.
+func NewEntityData(entityName, entityType string) (EntityData, error) {
+	if entityName == "" || entityType == "" {
+		return EntityData{}, errors.New("entityName and entityType should be not empty")
+	}
+
+	return EntityData{
+		Entity: Entity{
+			Name: entityName,
+			Type: entityType,
+		},
+
+		// empty array or object preferred instead of null on marshaling.
+		Metrics:   []metric.MetricSet{},
+		Inventory: Inventory{},
+		Events:    []Event{},
+	}, nil
+}
+
 // IntegrationProtocol2 defines the format of the output JSON that integrations will return for protocol 2.
 type IntegrationProtocol2 struct {
 	sync.Mutex
@@ -80,10 +99,6 @@ func NewIntegrationProtocol2(name string, version string, arguments interface{})
 
 // Entity method creates or retrieves an already created EntityData.
 func (integration *IntegrationProtocol2) Entity(entityName, entityType string) (*EntityData, error) {
-	if entityName == "" || entityType == "" {
-		return nil, errors.New("entityName and entityType should be not empty")
-	}
-
 	integration.Lock()
 	defer integration.Unlock()
 	for _, e := range integration.Data {
@@ -92,21 +107,14 @@ func (integration *IntegrationProtocol2) Entity(entityName, entityType string) (
 		}
 	}
 
-	d := &EntityData{
-		Entity: Entity{
-			Name: entityName,
-			Type: entityType,
-		},
-
-		// empty array or object preferred instead of null on marshaling.
-		Metrics:   []metric.MetricSet{},
-		Inventory: Inventory{},
-		Events:    []Event{},
+	d, err := NewEntityData(entityName, entityType)
+	if err != nil {
+		return nil, err
 	}
 
-	integration.Data = append(integration.Data, d)
+	integration.Data = append(integration.Data, &d)
 
-	return d, nil
+	return &d, nil
 }
 
 // NewMetricSet returns a new instance of MetricSet with its sample attached to

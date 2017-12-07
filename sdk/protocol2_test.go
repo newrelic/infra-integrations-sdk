@@ -2,13 +2,43 @@ package sdk_test
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
+	"os"
 	"testing"
 
 	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/sdk"
 )
+
+func TestNewEntityData(t *testing.T) {
+	e, err := sdk.NewEntityData("TestEntityName", "TestEntityType")
+	if err != nil {
+		t.Error(err)
+	}
+
+	if e.Entity.Name != "TestEntityName" || e.Entity.Type != "TestEntityType" {
+		t.Error("entity malformed")
+	}
+}
+
+func TestNewEntityData_MissingData(t *testing.T) {
+	_, err := sdk.NewEntityData("", "test")
+	if err == nil {
+		t.Fail()
+	}
+
+	_, err = sdk.NewEntityData("Entity", "")
+	if err == nil {
+		t.Fail()
+	}
+
+	_, err = sdk.NewEntityData("", "")
+	if err == nil {
+		t.Fail()
+	}
+}
 
 func TestNewIntegrationProtocol2Data(t *testing.T) {
 	i, err := sdk.NewIntegrationProtocol2("TestIntegration", "1.0", new(struct{}))
@@ -34,6 +64,9 @@ func TestNewIntegrationProtocol2WithDefaultArguments(t *testing.T) {
 	type argumentList struct {
 		sdk_args.DefaultArgumentList
 	}
+
+	os.Args = []string{"cmd"}
+	flag.CommandLine = flag.NewFlagSet("name", 0)
 
 	var al argumentList
 	i, err := sdk.NewIntegrationProtocol2("TestIntegration", "1.0", &al)
@@ -100,28 +133,6 @@ func TestIntegrationProtocol2_Publish(t *testing.T) {
 	ms.SetMetric("metricThree", "test", metric.ATTRIBUTE)
 
 	i.Publish()
-}
-
-func TestIntegrationProtocol2_EntityErrorOnEmptyNameAndOrType(t *testing.T) {
-	i, err := sdk.NewIntegrationProtocol2("TestIntegration", "1.0", new(struct{}))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, err = i.Entity("", "test")
-	if err == nil {
-		t.Fail()
-	}
-
-	_, err = i.Entity("Entity", "")
-	if err == nil {
-		t.Fail()
-	}
-
-	_, err = i.Entity("", "")
-	if err == nil {
-		t.Fail()
-	}
 }
 
 func TestIntegrationProtocol2_EntityReturnsExistingEntity(t *testing.T) {
