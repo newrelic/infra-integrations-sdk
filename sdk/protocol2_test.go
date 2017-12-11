@@ -30,7 +30,8 @@ func TestNewEntityData_MissingData(t *testing.T) {
 		t.Error("error was expected on partial entity data")
 	}
 
-	if e.Entity != nil {
+	emptyEntity := sdk.Entity{}
+	if e.Entity != emptyEntity {
 		t.Error("no entity expected")
 	}
 
@@ -39,7 +40,7 @@ func TestNewEntityData_MissingData(t *testing.T) {
 		t.Error("error was expected on partial entity data")
 	}
 
-	if e.Entity != nil {
+	if e.Entity != emptyEntity {
 		t.Error("no entity expected")
 	}
 
@@ -48,7 +49,7 @@ func TestNewEntityData_MissingData(t *testing.T) {
 		t.Error(err)
 	}
 
-	if e.Entity != nil {
+	if e.Entity != emptyEntity {
 		t.Error("no entity expected")
 	}
 }
@@ -113,7 +114,7 @@ func TestNewIntegrationProtocol2WithDefaultArguments(t *testing.T) {
 func TestIntegrationProtocol2_Publish(t *testing.T) {
 	w := testWritter{
 		func(p []byte) {
-			expectedOutputRaw := []byte(`{"name":"TestIntegration","protocol_version":"2","integration_version":"1.0","data":[{"entity":{"name":"EntityOne","type":"test"},"metrics":[{"event_type":"EventTypeForEntityOne","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]},{"entity":{"name":"EntityTwo","type":"test"},"metrics":[{"event_type":"EventTypeForEntityTwo","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]},{"metrics":[{"event_type":"EventTypeForEntityThree","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]}]}`)
+			expectedOutputRaw := []byte(`{"name":"TestIntegration","protocol_version":"2","integration_version":"1.0","data":[{"entity":{"name":"EntityOne","type":"test"},"metrics":[{"event_type":"EventTypeForEntityOne","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]},{"entity":{"name":"EntityTwo","type":"test"},"metrics":[{"event_type":"EventTypeForEntityTwo","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]},{"entity":{},"metrics":[{"event_type":"EventTypeForEntityThree","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]}]}`)
 			expectedOutput := new(sdk.IntegrationProtocol2)
 			err := json.Unmarshal(expectedOutputRaw, expectedOutput)
 			if err != nil {
@@ -127,7 +128,7 @@ func TestIntegrationProtocol2_Publish(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(expectedOutput, integration) {
-				t.Errorf("output does not match the expectations.\nGot:\n%s\nExpected:\n%s", p, expectedOutput)
+				t.Errorf("output does not match the expectations.\nGot:\n%v\nExpected:\n%v", p, expectedOutput)
 			}
 		},
 	}
