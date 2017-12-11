@@ -22,7 +22,7 @@ type Entity struct {
 
 // EntityData defines all the data related to a particular event from an entity.
 type EntityData struct {
-	Entity    *Entity            `json:"entity,omitempty"` // Pointer because we want to omit the value when empty during marshaling.
+	Entity    Entity             `json:"entity"`
 	Metrics   []metric.MetricSet `json:"metrics"`
 	Inventory Inventory          `json:"inventory"`
 	Events    []Event            `json:"events"`
@@ -44,7 +44,7 @@ func NewEntityData(entityName, entityType string) (EntityData, error) {
 
 	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
 	if entityName != "" && entityType != "" {
-		d.Entity = &Entity{
+		d.Entity = Entity{
 			Name: entityName,
 			Type: entityType,
 		}
