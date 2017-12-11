@@ -24,8 +24,8 @@ type Entity struct {
 type EntityData struct {
 	Entity    *Entity            `json:"entity,omitempty"` // Pointer because we want to omit the value when empty during marshaling.
 	Metrics   []metric.MetricSet `json:"metrics"`
-	Inventory Inventory          `json:"inventory"`
-	Events    []Event            `json:"events"`
+	Inventory *Inventory         `json:"inventory,omitempty"`
+	Events    []Event            `json:"events,omitempty"`
 }
 
 // NewEntityData creates a new EntityData with default values initialised.
@@ -37,9 +37,7 @@ func NewEntityData(entityName, entityType string) (EntityData, error) {
 
 	d := EntityData{
 		// empty array or object preferred instead of null on marshaling.
-		Metrics:   []metric.MetricSet{},
-		Inventory: Inventory{},
-		Events:    []Event{},
+		Metrics: []metric.MetricSet{},
 	}
 
 	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
