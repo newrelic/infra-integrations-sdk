@@ -211,6 +211,104 @@ func TestIntegrationProtocol2_EntityHasNoDataRace(t *testing.T) {
 	}
 }
 
+func TestAddNotificationEvent_Entity(t *testing.T) {
+	en, err := sdk.NewEntityData("Entity1", "Type1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = en.AddNotificationEvent("TestSummary")
+	if err != nil {
+		t.Errorf("error not expected, got: %s", err)
+	}
+
+	if en.Events[0].Summary != "TestSummary" || en.Events[0].Category != "notifications" {
+		t.Error("event malformed")
+	}
+
+	if len(en.Events) != 1 {
+		t.Error("not expected length of events")
+	}
+}
+
+func TestAddNotificationEvent_Event_NoSummary_Error(t *testing.T) {
+	en, err := sdk.NewEntityData("Entity1", "Type1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = en.AddNotificationEvent("")
+	if err == nil {
+		t.Error("error was expected for empty summary")
+	}
+
+	if len(en.Events) != 0 {
+		t.Error("not expected length of events")
+	}
+}
+
+func TestAddEvent_Entity(t *testing.T) {
+	en, err := sdk.NewEntityData("Entity1", "Type1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = en.AddEvent(sdk.Event{Summary: "TestSummary", Category: "TestCategory"})
+	if err != nil {
+		t.Errorf("error not expected, got: %s", err)
+	}
+
+	if en.Events[0].Summary != "TestSummary" || en.Events[0].Category != "TestCategory" {
+		t.Error("event malformed")
+	}
+
+	if len(en.Events) != 1 {
+		t.Error("not expected length of events")
+	}
+}
+
+func TestAddEvent_Entity_TheSameEvents_And_NoCategory(t *testing.T) {
+	en, err := sdk.NewEntityData("Entity1", "Type1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = en.AddEvent(sdk.Event{Summary: "TestSummary"})
+	if err != nil {
+		t.Errorf("error not expected, got: %s", err)
+	}
+	err = en.AddEvent(sdk.Event{Summary: "TestSummary"})
+	if err != nil {
+		t.Errorf("error not expected, got: %s", err)
+	}
+
+	if en.Events[0].Summary != "TestSummary" || en.Events[0].Category != "" {
+		t.Error("event malformed")
+	}
+	if en.Events[1].Summary != "TestSummary" || en.Events[1].Category != "" {
+		t.Error("event malformed")
+	}
+	if len(en.Events) != 2 {
+		t.Error("not expected length of events")
+	}
+}
+
+func TestAddEvent_Entity_EmptySummary_Error(t *testing.T) {
+	en, err := sdk.NewEntityData("Entity1", "Type1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = en.AddEvent(sdk.Event{Category: "TestCategory"})
+	if err == nil {
+		t.Error("error was expected for empty summary")
+	}
+
+	if len(en.Events) != 0 {
+		t.Error("not expected length of events")
+	}
+}
+
 type testWritter struct {
 	testFunc func([]byte)
 }
