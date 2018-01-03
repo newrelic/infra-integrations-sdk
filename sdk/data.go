@@ -28,7 +28,13 @@ func (i Inventory) SetItem(key string, field string, value interface{}) {
 
 // Event is the data type to represent arbitrary, one-off messages for key
 // activities on a system.
-type Event map[string]interface{}
+type Event struct {
+	Summary  string `json:"summary"`
+	Category string `json:"category,omitempty"`
+}
+
+// DefaultEventCategory is a default value for event category
+const DefaultEventCategory = "notifications"
 
 // Integration defines the format of the output JSON that integrations will
 // return.
@@ -38,7 +44,7 @@ type Integration struct {
 	IntegrationVersion string              `json:"integration_version"`
 	Metrics            []*metric.MetricSet `json:"metrics"`
 	Inventory          Inventory           `json:"inventory"`
-	Events             []Event             `json:"events"`
+	Events             []*Event            `json:"events"`
 	prettyOutput       bool
 }
 
@@ -63,7 +69,7 @@ func NewIntegration(name string, version string, arguments interface{}) (*Integr
 		IntegrationVersion: version,
 		Inventory:          make(Inventory),
 		Metrics:            make([]*metric.MetricSet, 0),
-		Events:             make([]Event, 0),
+		Events:             make([]*Event, 0),
 		prettyOutput:       defaultArgs.Pretty,
 	}
 
@@ -76,6 +82,22 @@ func (integration *Integration) NewMetricSet(eventType string) *metric.MetricSet
 	ms := metric.NewMetricSet(eventType)
 	integration.Metrics = append(integration.Metrics, &ms)
 	return &ms
+}
+
+// AddNotificationEvent method adds a new Event with default event category.
+func (integration *Integration) AddNotificationEvent(summary string) error {
+	return integration.AddEvent(Event{Summary: summary, Category: DefaultEventCategory})
+}
+
+// AddEvent method adds a new Event.
+func (integration *Integration) AddEvent(e Event) error {
+	if e.Summary == "" {
+		return fmt.Errorf("summary of the event cannot be empty")
+	}
+
+	integration.Events = append(integration.Events, &e)
+
+	return nil
 }
 
 // Publish runs all necessary tasks before publishing the data. Currently, it
@@ -103,11 +125,11 @@ func (integration *Integration) Publish() error {
 func (integration *Integration) Clear() {
 	integration.Inventory = make(Inventory)
 	integration.Metrics = make([]*metric.MetricSet, 0)
-	integration.Events = make([]Event, 0)
+	integration.Events = make([]*Event, 0)
 }
 
 // toJSON returns the integration as a JSON string. If the pretty attribute is
-// set to true, the JSON will be idented for easy reading.
+// set to true, the JSON will be indented for easy reading.
 func (integration *Integration) toJSON(pretty bool) (string, error) {
 	var output []byte
 	var err error
