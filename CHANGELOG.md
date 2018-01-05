@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## Unreleased
+### Added
+- Add methods for creating events
+### Changed
+- Change `Event` type
+- Change `Integration` struct type
+
 ## 2.0.0 (2017-10-11)
 ### Fixed
 - Allow executing JMX queries to a server without authentication required
