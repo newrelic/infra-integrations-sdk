@@ -78,9 +78,38 @@ func populateMetrics(ms *metric.MetricSet) error {
 	if err != nil {
 		return err
 	}
-
 	ms.SetMetric("net.connectionsReceivedPerSecond", metricValue, metric.RATE)
+
+	cmd = exec.Command("/bin/sh", "-c", "redis-cli info | grep uptime_in_seconds:")
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		return err
+	}
+	splittedLine = strings.Split(string(output), ":")
+	if len(splittedLine) != 2 {
+		return fmt.Errorf("Cannot split the output line")
+	}
+
+	metricValue, err = strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
+	if err != nil {
+		return err
+	}
+	ms.SetMetric("software.uptimeSeconds", metricValue, metric.GAUGE)
+
 	return nil
+}
+
+func populateEvents(integration *sdk.Integration) error {
+	var err error
+	for _, m := range integration.Metrics {
+		mVal := *m
+		if v, ok := mVal["software.uptimeSeconds"]; ok {
+			if v.(float64) < 60 {
+				err = integration.AddEvent("Redis Server recently started", "Notification")
+			}
+		}
+	}
+	return err
 }
 
 func main() {
@@ -95,6 +124,14 @@ func main() {
 		ms := integration.NewMetricSet("RedisSample")
 		fatalIfErr(populateMetrics(ms))
 	}
+
+	if args.All || args.Events {
+		err := populateEvents(integration)
+		if err != nil {
+			log.Debug("adding event failed, got: %s", err)
+		}
+	}
+
 	fatalIfErr(integration.Publish())
 }
 
