@@ -171,6 +171,103 @@ func TestSetInventoryItem(t *testing.T) {
 	}
 }
 
+func TestNewEvent(t *testing.T) {
+	ev, err := sdk.NewEvent("TestSummary", "TestCategory")
+	if err != nil {
+		t.Errorf("error not expected, got: %s", err)
+	}
+
+	if ev.Summary != "TestSummary" || ev.Category != "TestCategory" {
+		t.Error("event malformed")
+	}
+}
+
+func TestNewEvent_EmptySummary_Error(t *testing.T) {
+	var expectedEvent sdk.Event
+
+	ev, err := sdk.NewEvent("", "TestCategory")
+	if err == nil {
+		t.Error("error was expected on empty summary")
+	}
+
+	if ev != expectedEvent {
+		t.Error("event malformed")
+	}
+}
+
+func TestNewEvent_EmptyCategory_NoError(t *testing.T) {
+	ev, err := sdk.NewEvent("TestSummary", "")
+	if err != nil {
+		t.Errorf("error not expected, got: %s", err)
+	}
+
+	if ev.Summary != "TestSummary" || ev.Category != "" {
+		t.Error("event malformed")
+	}
+}
+
+func TestAddEvent_Integration(t *testing.T) {
+	i, err := sdk.NewIntegration("TestIntegration", "1.0", new(struct{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = i.AddEvent("TestSummary", "TestCategory")
+	if err != nil {
+		t.Errorf("error not expected, got: %s", err)
+	}
+
+	if i.Events[0].Summary != "TestSummary" || i.Events[0].Category != "TestCategory" {
+		t.Error("event malformed")
+	}
+
+	if len(i.Events) != 1 {
+		t.Error("not expected length of events")
+	}
+}
+
+func TestAddEvent_Integration_TheSameEvents(t *testing.T) {
+	i, err := sdk.NewIntegration("TestIntegration", "1.0", new(struct{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = i.AddEvent("TestSummary", "")
+	if err != nil {
+		t.Errorf("error not expected, got: %s", err)
+	}
+	err = i.AddEvent("TestSummary", "")
+	if err != nil {
+		t.Errorf("error not expected, got: %s", err)
+	}
+
+	if i.Events[0].Summary != "TestSummary" || i.Events[0].Category != "" {
+		t.Error("event malformed")
+	}
+	if i.Events[1].Summary != "TestSummary" || i.Events[1].Category != "" {
+		t.Error("event malformed")
+	}
+	if len(i.Events) != 2 {
+		t.Error("not expected length of events")
+	}
+}
+
+func TestAddEvent_Integration_EmptySummary_Error(t *testing.T) {
+	i, err := sdk.NewIntegration("TestIntegration", "1.0", new(struct{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = i.AddEvent("", "TestCategory")
+	if err == nil {
+		t.Error("error was expected for empty summary")
+	}
+
+	if len(i.Events) != 0 {
+		t.Error("not expected length of events")
+	}
+}
+
 // Helpers
 func mockStdout(f func() error) (string, error) {
 	old := os.Stdout // keep backup of the real stdout
