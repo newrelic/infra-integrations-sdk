@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Protocol v2 support
 - Loggers can now be created from the log package.
 - Already created loggers can be configured from the log package.
+- Updated github.com/sirupsen/logrus dependency to v1.*
+### Fixed
+- github.com/Sirupsen/logrus is now github.com/sirupsen/logrus since v1.0.0.
 
 ## 2.0.0 (2017-10-11)
 ### Fixed

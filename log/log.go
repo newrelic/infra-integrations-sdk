@@ -3,7 +3,7 @@ package log
 import (
 	"os"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 // SetupLogging redirects logs to stderr and configures the log level.
