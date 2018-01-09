@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Loggers can now be created from the log package.
 - Already created loggers can be configured from the log package.
 - Updated github.com/sirupsen/logrus dependency to v1.*
+- Add methods for creating events
+### Changed
+- **Breaking change**: Update `Event` type
+- **Breaking change**: Update `Integration` struct type
 ### Fixed
 - github.com/Sirupsen/logrus is now github.com/sirupsen/logrus since v1.0.0.
 

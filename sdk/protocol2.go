@@ -25,7 +25,7 @@ type EntityData struct {
 	Entity    Entity             `json:"entity"`
 	Metrics   []metric.MetricSet `json:"metrics"`
 	Inventory Inventory          `json:"inventory"`
-	Events    []Event            `json:"events"`
+	Events    []*Event           `json:"events"`
 }
 
 // NewEntityData creates a new EntityData with default values initialised.
@@ -39,7 +39,7 @@ func NewEntityData(entityName, entityType string) (EntityData, error) {
 		// empty array or object preferred instead of null on marshaling.
 		Metrics:   []metric.MetricSet{},
 		Inventory: Inventory{},
-		Events:    []Event{},
+		Events:    []*Event{},
 	}
 
 	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
@@ -130,6 +130,21 @@ func (d *EntityData) NewMetricSet(eventType string) metric.MetricSet {
 	d.Metrics = append(d.Metrics, ms)
 
 	return ms
+}
+
+// AddNotificationEvent method adds a new Event with default event category.
+func (d *EntityData) AddNotificationEvent(summary string) error {
+	return d.AddEvent(Event{Summary: summary, Category: DefaultEventCategory})
+}
+
+// AddEvent method adds a new Event.
+func (d *EntityData) AddEvent(e Event) error {
+	if e.Summary == "" {
+		return fmt.Errorf("summary of the event cannot be empty")
+	}
+
+	d.Events = append(d.Events, &e)
+	return nil
 }
 
 // Publish runs all necessary tasks before publishing the data. Currently, it
