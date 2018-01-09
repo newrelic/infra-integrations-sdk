@@ -38,3 +38,19 @@ func TestConfigureLogger(t *testing.T) {
 		t.Error("logger out should be stderr")
 	}
 }
+
+func TestNew(t *testing.T) {
+	l := New(false)
+	if l.Level != logrus.InfoLevel {
+		t.Error("level should be info when verbose is false")
+	}
+
+	l = New(true)
+	if l.Level != logrus.DebugLevel {
+		t.Error("level should be debug when verbose is true")
+	}
+
+	if l.Out != os.Stderr {
+		t.Error("logger out should be stderr")
+	}
+}

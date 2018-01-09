@@ -16,6 +16,14 @@ func SetupLogging(verbose bool) {
 	}
 }
 
+// New creates an already configured logger.
+func New(verbose bool) *logrus.Logger {
+	l := logrus.New()
+	ConfigureLogger(l, verbose)
+
+	return l
+}
+
 // ConfigureLogger configures an already created logger. Redirects logs to stderr and configures the log level.
 func ConfigureLogger(logger *logrus.Logger, verbose bool) {
 	logger.Out = os.Stderr
