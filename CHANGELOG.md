@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 - Protocol v2 support
+- Loggers can now be created from the log package.
+- Already created loggers can be configured from the log package.
 
 ## 2.0.0 (2017-10-11)
 ### Fixed
