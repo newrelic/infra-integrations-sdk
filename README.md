@@ -1,5 +1,18 @@
 # New Relic Infrastructure Integrations - Go lang SDK
 
+[![BuildStatus Widget]][BuildStatus Result]
+[![GoReport Widget]][GoReport Status]
+[![GoDocWidget]][GoDocReference]
+
+[BuildStatus Result]: https://travis-ci.org/newrelic/infra-integrations-sdk
+[BuildStatus Widget]: https://travis-ci.org/newrelic/infra-integrations-sdk.svg?branch=master
+
+[GoReport Status]: https://goreportcard.com/report/github.com/newrelic/infra-integrations-sdk
+[GoReport Widget]: https://goreportcard.com/badge/github.com/newrelic/infra-integrations-sdk
+
+[GoDocReference]: https://godoc.org/github.com/newrelic/infra-integrations-sdk
+[GoDocWidget]: https://godoc.org/github.com/newrelic/infra-integrations-sdk?status.svg
+
 New Relic Infrastructure, provided by New Relic, Inc (http://www.newrelic.com),
 offers flexible, dynamic server monitoring. We provide an SDK for creating an
 integration for reporting custom host and server data, including metric, event,
