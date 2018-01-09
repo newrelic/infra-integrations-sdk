@@ -78,9 +78,22 @@ func populateMetrics(ms *metric.MetricSet) error {
 	if err != nil {
 		return err
 	}
-
 	ms.SetMetric("net.connectionsReceivedPerSecond", metricValue, metric.RATE)
+
 	return nil
+}
+
+func populateEvents(integration *sdk.Integration) error {
+	var err error
+	for _, m := range integration.Metrics {
+		mVal := *m
+		if v, ok := mVal["net.connectionsReceivedPerSecond"]; ok {
+			if v.(float64) > 1000 {
+				err = integration.AddEvent("More than 1000 connections received per second", "notification")
+			}
+		}
+	}
+	return err
 }
 
 func main() {
@@ -94,7 +107,13 @@ func main() {
 	if args.All || args.Metrics {
 		ms := integration.NewMetricSet("RedisSample")
 		fatalIfErr(populateMetrics(ms))
+
+		err := populateEvents(integration)
+		if err != nil {
+			log.Debug("adding event failed, got: %s", err)
+		}
 	}
+
 	fatalIfErr(integration.Publish())
 }
 
