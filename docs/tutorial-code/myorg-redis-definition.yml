@@ -16,3 +16,9 @@ commands:
       - --inventory
     prefix: config/myorg-redis
     interval: 60
+
+  events:
+    command:
+      - ./bin/myorg-redis
+      - --events
+    interval: 60    

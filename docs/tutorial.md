@@ -279,7 +279,7 @@ func populateMetrics(ms *metric.MetricSet) error {
 }
 ```
 
-In order to continue to build the source, you'll need to add the needed packages to the import statemement at the top of the program:
+In order to continue to build the source, you'll need to add the needed packages to the import statement at the top of the program:
 
 ```go
 import (
@@ -677,3 +677,260 @@ Inventory data can be viewed in New Relic Infrastructure on the [Inventory page]
 
 
 See more about how inventory data shows up in the New Relic UI in [Find integration inventory data](https://docs.newrelic.com/docs/find-use-infrastructure-integration-data#inventory-data).
+
+### Fetching events data
+The last type of data that an Infrastructure integration can generate is events. Events are used to record important activities on a system, i.e. a service starting. We will implement this event for a Redis server.
+
+For representing events, we use the `Event` structure, which has `Summary` and `Category` fields. The `Summary` field is obligatory and it stores a message to be sent. `Category` is optional and it's useful for grouping and finding events in the Infrastructure Events tabs. There are no limits for the `Category` value. Check the [list of examples of categories](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/file-specifications/integration-executable-file-specifications#event-data).
+By default , the `notifications` event category is used. Let's start with the function for creating an event with the default category. 
+
+The command `redis-cli info` provides information about uptime of the Redis server. If you run:
+```bash
+redis-cli info | grep uptime_in_seconds:
+```
+you will receive (value will vary):
+```bash
+uptime_in_seconds:54782
+```
+
+We assume that when the uptime is less than 60 seconds, the Redis service has recently started. Let's create a new function called `populateEvents`. It will call the `redis-cli info | grep uptime_in_seconds:` command and then create a notification event if the uptime value is smaller than a defined limit. To do so, we will use the method `AddNotificationEvent`, which adds a new event with the default `notifications` category for an integration object. It accepts the `string` argument, which is a summary message, i.e. `"Redis Server recently started"`.
+
+```go
+func populateEvents(integration *sdk.Integration) error {
+	cmd := exec.Command("/bin/sh", "-c", "redis-cli info | grep uptime_in_seconds:")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return err
+	}
+	splittedLine := strings.Split(string(output), ":")
+	if len(splittedLine) != 2 {
+		return fmt.Errorf("Cannot split the output line")
+	}
+	uptime, err := strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
+	if err != nil {
+		return err
+	}
+	if uptime < 60 {
+		err = integration.AddNotificationEvent("Redis Server recently started")
+	}
+
+	return err
+}
+```
+
+Then, update `main()` function including `populateEvents` function.
+
+```go
+func main() {
+	integration, err := sdk.NewIntegration(integrationName, integrationVersion, &args)
+	fatalIfErr(err)
+
+	if args.All || args.Inventory {
+		fatalIfErr(populateInventory(integration.Inventory))
+	}
+
+	if args.All || args.Metrics {
+		ms := integration.NewMetricSet("RedisSample")
+		fatalIfErr(populateMetrics(ms))
+	}
+
+	if args.All || args.Events {
+		err := populateEvents(integration)
+		if err != nil {
+			log.Debug("adding event failed, got: %s", err)
+		}
+	}
+	fatalIfErr(integration.Publish())
+}
+```
+
+Format the source code, build and execute the integration. In order to fetch only events data, use `-events` flag. 
+```bash
+$ go fmt src/redis.go
+$ make
+$ ./bin/myorg-redis -pretty -events
+```
+
+If Redis server was recently started, you will receive the following output:
+
+```bash
+{
+	"name": "com.myorg.redis",
+	"protocol_version": "1",
+	"integration_version": "0.1.0",
+	"metrics": [],
+	"inventory": {},
+	"events": [
+		{
+			"summary": "Redis Server recently started",
+			"category": "notifications"
+		}
+	]
+}
+``` 
+Otherwise, `events` list will be empty:
+```bash
+{
+	"name": "com.myorg.redis",
+	"protocol_version": "1",
+	"integration_version": "0.1.0",
+	"metrics": [],
+	"inventory": {},
+	"events": []
+}
+```
+
+
+Now, let's assume that we would like to create an event with a different category. To do this, we will extend the previous `populateEvents` function and include another method called `AddEvent`. This method accepts as an argument `Event` structure. To easily identify a new event in the Infrastructure Events UI, we will use a new category called `redis-server`. 
+
+```go
+func populateEvents(integration *sdk.Integration) error {
+	cmd := exec.Command("/bin/sh", "-c", "redis-cli info | grep uptime_in_seconds:")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return err
+	}
+	splittedLine := strings.Split(string(output), ":")
+	if len(splittedLine) != 2 {
+		return fmt.Errorf("Cannot split the output line")
+	}
+	uptime, err := strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
+	if err != nil {
+		return err
+	}
+	if uptime < 60 {
+		err = integration.AddNotificationEvent("Redis Server recently started")
+		if err != nil {
+			return err
+		}
+	}
+	if uptime < 60 {
+		err = integration.AddEvent(sdk.Event{Summary: "Redis Server recently started", Category: "redis-server"})
+	}
+
+	return err
+}
+```
+
+After formating the source code, building and executing the integration with the command:
+```bash
+$ ./bin/myorg-redis -pretty
+```
+check that the integration was created properly (this output assume that your Redis server was started in the latest 60 seconds.).
+
+```bash
+{
+	"name": "com.myorg.redis",
+	"protocol_version": "1",
+	"integration_version": "0.1.0",
+	"metrics": [
+		{
+			"event_type": "RedisSample",
+			"net.connectionsReceivedPerSecond": 0.23809523809523808,
+			"query.instantaneousOpsPerSecond": 0
+		}
+	],
+	"inventory": {
+		"bind": {
+			"value": "127.0.0.1"
+		},
+		"dbfilename": {
+			"value": "dump.rdb"
+		}
+	},
+	"events": [
+		{
+			"summary": "Redis Server recently started",
+			"category": "notifications"
+		},
+		{
+			"summary": "Redis Server just started",
+			"category": "redis-server"
+		}
+	]
+}
+```
+
+As you can see in the output above, there was a second event created, with a new category `redis-server`.
+
+### Configuration of the integration (for events)
+To test the integration with the Infrastucture Agent, it's required to update [the config file](tutorial-code/myorg-redis-config.yml) and [the definition file](tutorial-code/myorg-redis-definition.yml). Let's start with the definition file by adding the `events` command. 
+
+```bash
+name: com.myorganization.redis
+description: Reports status and metrics for redis service
+protocol_version: 1
+os: linux
+
+commands:
+  metrics:
+    command:
+      - ./bin/myorg-redis
+      - --metrics
+    interval: 15
+
+  inventory:
+    command:
+      - ./bin/myorg-redis
+      - --inventory
+    prefix: config/myorg-redis
+    interval: 60
+
+  events:
+    command:
+      - ./bin/myorg-redis
+      - --events
+    interval: 60    
+```
+
+Then we will use the `events` command in the `myorg-redis-config.yml` file specifying a new `redis-events` instance. 
+
+```bash
+integration_name: com.myorganization.redis
+
+instances:
+  - name: redis-metrics
+    command: metrics
+    labels:
+      env: production
+      role: cache
+
+  - name: redis-inventory
+    command: inventory
+    arguments:
+      hostname: localhost
+      port: 6379
+    labels:
+      env: production
+      role: cache
+
+  - name: redis-events
+    command: events
+    labels:
+      env: production
+      role: cache      
+```
+
+In order to finish the events configuration, place the executable and the updated definition file in `/var/db/newrelic-infra/custom-integrations/`
+
+```bash
+$ sudo cp $GOPATH/src/myorg-integrations/redis/myorg-redis-definition.yml /var/db/newrelic-infra/custom-integrations/myorg-redis-definition.yaml
+$ sudo cp -R $GOPATH/src/myorg-integrations/redis/bin /var/db/newrelic-infra/custom-integrations/
+```
+and the integration config file in `/etc/newrelic-infra/integrations.d/`
+```bash
+$ sudo cp $GOPATH/src/myorg-integrations/redis/myorg-redis-config.yml /etc/newrelic-infra/integrations.d/myorg-redis-config.yaml
+```
+When all the above steps are done, restart the agent.
+
+### View events data in Infrastructure
+
+Event data can be viewed in New Relic Infrastructure on the [Events page](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/infrastructure-ui-pages/infrastructure-events-page-live-feed-every-config-change). Use the events category to filter events created by the integration.
+
+View for `notifications` events:
+![Redis notifications category events](images/redis_event_notifications_view.png)
+
+View for `redis-server` events:
+![Redis redis-server category events](images/redis_event_redis-server_view.png)
+
+See more about how events data shows up in the New Relic UI in [Find integration events data](https://docs.newrelic.com/docs/infrastructure/integrations-getting-started/getting-started/understand-integration-data-data-types#event-data).
