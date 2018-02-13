@@ -3,7 +3,7 @@ package log
 import (
 	"testing"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 func TestSetupLogging(t *testing.T) {
