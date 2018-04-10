@@ -127,6 +127,9 @@ func (integration *IntegrationProtocol2) Entity(entityName, entityType string) (
 // the IntegrationData.
 func (d *EntityData) NewMetricSet(eventType string) metric.MetricSet {
 	ms := metric.NewMetricSet(eventType)
+	if d.Entity.Type != "" && d.Entity.Name != "" {
+		ms.SetMetric("entityName", fmt.Sprintf("%s:%s", d.Entity.Type, d.Entity.Name), metric.ATTRIBUTE)
+	}
 	d.Metrics = append(d.Metrics, ms)
 
 	return ms

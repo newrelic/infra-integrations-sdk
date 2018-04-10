@@ -71,6 +71,15 @@ func isNumeric(value interface{}) bool {
 	return err == nil
 }
 
+func (ms MetricSet) cacheKey(name string) string {
+	entityName, ok1 := ms["entityName"].(string)
+	eventType, ok2 := ms["event_type"].(string)
+	if ok1 && ok2 {
+		return fmt.Sprintf("%s_%s_%s", entityName, eventType, name)
+	}
+	return name
+}
+
 func (ms MetricSet) sample(name string, value interface{}, sourceType SourceType) (float64, error) {
 	sampledValue := 0.0
 
@@ -79,20 +88,20 @@ func (ms MetricSet) sample(name string, value interface{}, sourceType SourceType
 	if err != nil {
 		return sampledValue, fmt.Errorf("Can't sample metric of unknown type %s", name)
 	}
-
+	key := ms.cacheKey(name)
 	// Retrieve the last value and timestamp from cache
-	oldval, oldTime, ok := cache.Get(name)
+	oldval, oldTime, ok := cache.Get(key)
 	// And replace it with the new value which we want to keep
-	newTime := cache.Set(name, floatValue)
+	newTime := cache.Set(key, floatValue)
 
 	if ok {
 		duration := (newTime - oldTime)
 		if duration == 0 {
-			return sampledValue, fmt.Errorf("Samples for %s are too close in time, skipping sampling", name)
+			return sampledValue, fmt.Errorf("Samples for %s are too close in time, skipping sampling", key)
 		}
 
 		if floatValue-oldval < 0 {
-			return sampledValue, fmt.Errorf("Source for %s was reseted, skipping sampling", name)
+			return sampledValue, fmt.Errorf("Source for %s was reseted, skipping sampling", key)
 		}
 		if sourceType == DELTA {
 			sampledValue = floatValue - oldval
