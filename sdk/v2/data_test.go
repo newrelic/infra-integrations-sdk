@@ -11,6 +11,7 @@ import (
 	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/sdk/v1"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewEntityData(t *testing.T) {
@@ -54,8 +55,8 @@ func TestNewEntityData_MissingData(t *testing.T) {
 	}
 }
 
-func TestNewIntegrationProtocol2Data(t *testing.T) {
-	i, err := NewIntegrationProtocol2("TestIntegration", "1.0", new(struct{}))
+func TestNewIntegrationData(t *testing.T) {
+	i, err := NewIntegration("TestIntegration", "1.0", new(struct{}))
 	if err != nil {
 		t.Fatal()
 	}
@@ -74,7 +75,7 @@ func TestNewIntegrationProtocol2Data(t *testing.T) {
 	}
 }
 
-func TestNewIntegrationProtocol2WithDefaultArguments(t *testing.T) {
+func TestNewIntegrationWithDefaultArguments(t *testing.T) {
 	type argumentList struct {
 		sdk_args.DefaultArgumentList
 	}
@@ -84,7 +85,7 @@ func TestNewIntegrationProtocol2WithDefaultArguments(t *testing.T) {
 	flag.CommandLine = flag.NewFlagSet("name", 0)
 
 	var al argumentList
-	i, err := NewIntegrationProtocol2("TestIntegration", "1.0", &al)
+	i, err := NewIntegration("TestIntegration", "1.0", &al)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,29 +112,29 @@ func TestNewIntegrationProtocol2WithDefaultArguments(t *testing.T) {
 	}
 }
 
-func TestIntegrationProtocol2_Publish(t *testing.T) {
+func TestIntegration_Publish(t *testing.T) {
 	w := testWritter{
 		func(p []byte) {
 			expectedOutputRaw := []byte(`{"name":"TestIntegration","protocol_version":"2","integration_version":"1.0","data":[{"entity":{"name":"EntityOne","type":"test"},"metrics":[{"event_type":"EventTypeForEntityOne","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]},{"entity":{"name":"EntityTwo","type":"test"},"metrics":[{"event_type":"EventTypeForEntityTwo","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]},{"entity":{},"metrics":[{"event_type":"EventTypeForEntityThree","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]}]}`)
-			expectedOutput := new(IntegrationProtocol2)
+			expectedOutput := new(Integration)
 			err := json.Unmarshal(expectedOutputRaw, expectedOutput)
 			if err != nil {
 				t.Fatal("error unmarshaling expected output raw test data sample")
 			}
 
-			integration := new(IntegrationProtocol2)
+			integration := new(Integration)
 			err = json.Unmarshal(p, integration)
 			if err != nil {
 				t.Error("error unmarshaling integration output", err)
 			}
 
 			if !reflect.DeepEqual(expectedOutput, integration) {
-				t.Errorf("output does not match the expectations.\nGot:\n%v\nExpected:\n%v", p, expectedOutput)
+				t.Errorf("output does not match the expectations.\nGot:\n%v\nExpected:\n%v", string(p), string(expectedOutputRaw))
 			}
 		},
 	}
 
-	i, err := NewIntegrationProtocol2WithWriter("TestIntegration", "1.0", new(struct{}), w)
+	i, err := NewIntegrationWithWriter("TestIntegration", "1.0", new(struct{}), w)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,8 +172,8 @@ func TestIntegrationProtocol2_Publish(t *testing.T) {
 	i.Publish()
 }
 
-func TestIntegrationProtocol2_EntityReturnsExistingEntity(t *testing.T) {
-	i, err := NewIntegrationProtocol2("TestIntegration", "1.0", new(struct{}))
+func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
+	i, err := NewIntegration("TestIntegration", "1.0", new(struct{}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,9 +188,7 @@ func TestIntegrationProtocol2_EntityReturnsExistingEntity(t *testing.T) {
 		t.Fail()
 	}
 
-	if e1 != e2 {
-		t.Error("entity should be equal.")
-	}
+	assert.Equal(t, e1, e2)
 
 	if len(i.Data) > 1 {
 		t.Error()
@@ -198,8 +197,8 @@ func TestIntegrationProtocol2_EntityReturnsExistingEntity(t *testing.T) {
 
 // NOTE: This test does nothing as test but when running with -race flag we can detect data races.
 // See Lock and Unlock on Entity method.
-func TestIntegrationProtocol2_EntityHasNoDataRace(t *testing.T) {
-	in, err := NewIntegrationProtocol2("TestIntegration", "1.0", new(struct{}))
+func TestIntegration_EntityHasNoDataRace(t *testing.T) {
+	in, err := NewIntegration("TestIntegration", "1.0", new(struct{}))
 	if err != nil {
 		t.Fatal(err)
 	}
