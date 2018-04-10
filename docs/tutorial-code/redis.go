@@ -9,7 +9,7 @@ import (
 	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/metric"
-	"github.com/newrelic/infra-integrations-sdk/sdk"
+	"github.com/newrelic/infra-integrations-sdk/sdk/v1"
 )
 
 type argumentList struct {
@@ -25,7 +25,7 @@ const (
 
 var args argumentList
 
-func populateInventory(inventory sdk.Inventory) error {
+func populateInventory(inventory v1.Inventory) error {
 	cmd := exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET dbfilename")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -83,7 +83,7 @@ func populateMetrics(ms *metric.MetricSet) error {
 	return nil
 }
 
-func populateEvents(integration *sdk.Integration) error {
+func populateEvents(integration *v1.Integration) error {
 	cmd := exec.Command("/bin/sh", "-c", "redis-cli info | grep uptime_in_seconds:")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -104,14 +104,14 @@ func populateEvents(integration *sdk.Integration) error {
 		}
 	}
 	if uptime < 60 {
-		err = integration.AddEvent(sdk.Event{Summary: "Redis Server recently started", Category: "redis-server"})
+		err = integration.AddEvent(v1.Event{Summary: "Redis Server recently started", Category: "redis-server"})
 	}
 
 	return err
 }
 
 func main() {
-	integration, err := sdk.NewIntegration(integrationName, integrationVersion, &args)
+	integration, err := v1.NewIntegration(integrationName, integrationVersion, &args)
 	fatalIfErr(err)
 
 	if args.All || args.Inventory {

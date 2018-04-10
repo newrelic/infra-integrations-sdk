@@ -1,4 +1,4 @@
-package sdk
+package v2
 
 import (
 	"encoding/json"
@@ -11,6 +11,7 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/cache"
 	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/metric"
+	"github.com/newrelic/infra-integrations-sdk/sdk/v1"
 	"github.com/pkg/errors"
 )
 
@@ -24,8 +25,8 @@ type Entity struct {
 type EntityData struct {
 	Entity    Entity             `json:"entity"`
 	Metrics   []metric.MetricSet `json:"metrics"`
-	Inventory Inventory          `json:"inventory"`
-	Events    []*Event           `json:"events"`
+	Inventory v1.Inventory          `json:"inventory"`
+	Events    []*v1.Event           `json:"events"`
 }
 
 // NewEntityData creates a new EntityData with default values initialised.
@@ -38,8 +39,8 @@ func NewEntityData(entityName, entityType string) (EntityData, error) {
 	d := EntityData{
 		// empty array or object preferred instead of null on marshaling.
 		Metrics:   []metric.MetricSet{},
-		Inventory: Inventory{},
-		Events:    []*Event{},
+		Inventory: v1.Inventory{},
+		Events:    []*v1.Event{},
 	}
 
 	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
@@ -134,11 +135,11 @@ func (d *EntityData) NewMetricSet(eventType string) metric.MetricSet {
 
 // AddNotificationEvent method adds a new Event with default event category.
 func (d *EntityData) AddNotificationEvent(summary string) error {
-	return d.AddEvent(Event{Summary: summary, Category: DefaultEventCategory})
+	return d.AddEvent(v1.Event{Summary: summary, Category: v1.DefaultEventCategory})
 }
 
 // AddEvent method adds a new Event.
-func (d *EntityData) AddEvent(e Event) error {
+func (d *EntityData) AddEvent(e v1.Event) error {
 	if e.Summary == "" {
 		return fmt.Errorf("summary of the event cannot be empty")
 	}
