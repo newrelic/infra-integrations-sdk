@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Protocol v2 support
+- Loggers can now be created from the log package.
+- Already created loggers can be configured from the log package.
+- Updated github.com/sirupsen/logrus dependency to v1.*
+- Add methods for creating events
+### Changed
+- **Breaking change**: Update `Event` type
+- **Breaking change**: Update `Integration` struct type
+### Fixed
+- github.com/Sirupsen/logrus is now github.com/sirupsen/logrus since v1.0.0.
+
 ## 2.0.0 (2017-10-11)
 ### Fixed
 - Allow executing JMX queries to a server without authentication required
