@@ -1,6 +1,7 @@
 package metric_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -39,6 +40,24 @@ var metricTests = []struct {
 	{"key3", 110, metric.DELTA, 100.0, 110.0},
 }
 
+var metricTestsWhenCacheCollision = []struct {
+	key        string
+	value      interface{}
+	metricType metric.SourceType
+	out        interface{}
+	cache      interface{}
+}{
+	{"gaugeKey", 10, metric.GAUGE, 10, nil},
+	{"keyAtribute", "sadad", metric.ATTRIBUTE, "sadad", nil},
+	{"rateKey1", 10, metric.RATE, nil, 10.0},
+	{"rateKey1", 100, metric.RATE, 90.0, 100.0},
+	{"key1", .22323333, metric.RATE, 0.0, 0.22323333},
+	{"key2", 100, metric.RATE, nil, 100.0},
+	{"key2", 110, metric.RATE, 10.0, 110.0},
+	{"key3", 10, metric.DELTA, nil, 10.0},
+	{"key3", 110, metric.DELTA, 100.0, 110.0},
+}
+
 func TestSetMetric(t *testing.T) {
 	fd := FakeData{}
 	cache.SetNow(fd.Now)
@@ -46,6 +65,106 @@ func TestSetMetric(t *testing.T) {
 	ms := metric.NewMetricSet("eventType")
 
 	for _, tt := range metricTests {
+		ms.SetMetric(tt.key, tt.value, tt.metricType)
+
+		if ms[tt.key] != tt.out {
+			t.Errorf("SetMetric(\"%s\", %s, %v) => %s, want %s", tt.key, tt.value, tt.metricType, ms[tt.key], tt.out)
+		}
+
+		v, _, ok := cache.Get(tt.key)
+		if tt.cache != nil {
+			if !ok {
+				t.Errorf("cache.Get(\"%v\") ==> %v, want %v", true, v, ok)
+			} else if tt.cache != v {
+				t.Errorf("cache.Get(\"%v\") ==> %v, want %v", tt.key, v, tt.cache)
+			}
+		}
+	}
+}
+
+func TestSetMetric_MultipleMetricSets_CacheValueNamesUnique(t *testing.T) {
+	fd := FakeData{}
+	cache.SetNow(fd.Now)
+	var n string
+
+	ms := metric.NewMetricSet("eventTypeOne")
+	ms.SetMetric("entityName", "entityOne", metric.ATTRIBUTE)
+
+	for _, tt := range metricTests {
+		ms.SetMetric(tt.key, tt.value, tt.metricType)
+
+		if ms[tt.key] != tt.out {
+			t.Errorf("SetMetric(\"%s\", %s, %v) => %s, want %s", tt.key, tt.value, tt.metricType, ms[tt.key], tt.out)
+		}
+
+		if tt.metricType == metric.RATE || tt.metricType == metric.DELTA {
+			n = fmt.Sprintf("entityOne_eventTypeOne_%s", tt.key)
+		} else {
+			n = tt.key
+		}
+		v, _, ok := cache.Get(n)
+		if tt.cache != nil {
+			if !ok {
+				t.Errorf("cache.Get(\"%v\") ==> %v, want %v", true, v, ok)
+			} else if tt.cache != v {
+				t.Errorf("cache.Get(\"%v\") ==> %v, want %v", n, v, tt.cache)
+			}
+		}
+	}
+
+	ms = metric.NewMetricSet("eventTypeTwo")
+	ms.SetMetric("entityName", "entityOne", metric.ATTRIBUTE)
+
+	for _, tt := range metricTests {
+		ms.SetMetric(tt.key, tt.value, tt.metricType)
+
+		if ms[tt.key] != tt.out {
+			t.Errorf("SetMetric(\"%s\", %s, %v) => %s, want %s", tt.key, tt.value, tt.metricType, ms[tt.key], tt.out)
+		}
+
+		if tt.metricType == metric.RATE || tt.metricType == metric.DELTA {
+			n = fmt.Sprintf("entityOne_eventTypeTwo_%s", tt.key)
+		} else {
+			n = tt.key
+		}
+		v, _, ok := cache.Get(n)
+		if tt.cache != nil {
+			if !ok {
+				t.Errorf("cache.Get(\"%v\") ==> %v, want %v", true, v, ok)
+			} else if tt.cache != v {
+				t.Errorf("cache.Get(\"%v\") ==> %v, want %v", n, v, tt.cache)
+			}
+		}
+	}
+
+}
+
+func TestSetMetric_MultipleMetricSet__CacheValueNamesNotUnique(t *testing.T) {
+	fd := FakeData{}
+	cache.SetNow(fd.Now)
+
+	ms := metric.NewMetricSet("eventType")
+
+	for _, tt := range metricTests {
+		ms.SetMetric(tt.key, tt.value, tt.metricType)
+
+		if v, ok := ms[tt.key]; ok && v != tt.out {
+			t.Errorf("SetMetric(\"%s\", %s, %v) => %s, want %s", tt.key, tt.value, tt.metricType, ms[tt.key], tt.out)
+		}
+
+		v, _, ok := cache.Get(tt.key)
+		if tt.cache != nil {
+			if !ok {
+				t.Errorf("cache.Get(\"%v\") ==> %v, want %v", true, v, ok)
+			} else if tt.cache != v {
+				t.Errorf("cache.Get(\"%v\") ==> %v, want %v", tt.key, v, tt.cache)
+			}
+		}
+	}
+
+	ms = metric.NewMetricSet("eventTypeTwo")
+
+	for _, tt := range metricTestsWhenCacheCollision {
 		ms.SetMetric(tt.key, tt.value, tt.metricType)
 
 		if ms[tt.key] != tt.out {
