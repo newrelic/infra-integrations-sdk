@@ -25,8 +25,8 @@ type Entity struct {
 type EntityData struct {
 	Entity    Entity             `json:"entity"`
 	Metrics   []metric.MetricSet `json:"metrics"`
-	Inventory v1.Inventory          `json:"inventory"`
-	Events    []*v1.Event           `json:"events"`
+	Inventory v1.Inventory       `json:"inventory"`
+	Events    []*v1.Event        `json:"events"`
 }
 
 // NewEntityData creates a new EntityData with default values initialised.
