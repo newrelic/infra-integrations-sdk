@@ -38,6 +38,7 @@ const DefaultEventCategory = "notifications"
 
 // Integration defines the format of the output JSON that integrations will
 // return.
+// Deprecated: use v2.Integration
 type Integration struct {
 	Name               string             `json:"name"`
 	ProtocolVersion    string             `json:"protocol_version"`
@@ -49,6 +50,7 @@ type Integration struct {
 }
 
 // NewIntegration initializes a new instance of integration data.
+// Deprecated: use v2.NewIntegration
 func NewIntegration(name string, version string, arguments interface{}) (*Integration, error) {
 	err := args.SetupArgs(arguments)
 	if err != nil {
