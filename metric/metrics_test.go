@@ -4,8 +4,10 @@ import (
 	"testing"
 	"time"
 
+	"fmt"
 	"github.com/newrelic/infra-integrations-sdk/cache"
 	"github.com/newrelic/infra-integrations-sdk/metric"
+	"github.com/stretchr/testify/assert"
 )
 
 type FakeData struct {
@@ -48,17 +50,14 @@ func TestSetMetric(t *testing.T) {
 	for _, tt := range metricTests {
 		ms.SetMetric(tt.key, tt.value, tt.metricType)
 
-		if ms[tt.key] != tt.out {
-			t.Errorf("SetMetric(\"%s\", %s, %v) => %s, want %s", tt.key, tt.value, tt.metricType, ms[tt.key], tt.out)
-		}
+		assert.Equal(t, ms[tt.key], tt.out, fmt.Sprintf("SetMetric(\"%s\", %+v, %d)", tt.key, tt.value, tt.metricType))
 
 		v, _, ok := cache.Get(tt.key)
-		if tt.cache != nil {
-			if !ok {
-				t.Errorf("cache.Get(\"%v\") ==> %v, want %v", true, v, ok)
-			} else if tt.cache != v {
-				t.Errorf("cache.Get(\"%v\") ==> %v, want %v", tt.key, v, tt.cache)
-			}
+		if tt.cache == nil {
+			continue
 		}
+
+		assert.Equal(t, ok, true, "cache.Get(\"%s\")", tt.key)
+		assert.Equal(t, tt.cache, v, fmt.Sprintf("cache.Get(\"%s\")", tt.key))
 	}
 }
