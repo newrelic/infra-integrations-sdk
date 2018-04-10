@@ -12,10 +12,12 @@ type JSON struct {
 	value interface{}
 }
 
+// NewJSON wraps a value inside JSON
 func NewJSON(value interface{}) *JSON {
 	return &JSON{value}
 }
 
+// Set sets the wrapped value
 func (i *JSON) Set(s string) error {
 	if err := json.Unmarshal([]byte(s), &(i.value)); err != nil {
 		return fmt.Errorf("bad JSON, %v", err)
@@ -23,8 +25,13 @@ func (i *JSON) Set(s string) error {
 	return nil
 }
 
-func (i *JSON) Get() interface{} { return i.value }
+// Get returns the wrapped value
+func (i *JSON) Get() interface{} {
+	return i.value
+}
 
+
+// String converts to string
 func (i *JSON) String() string {
 	s, _ := json.Marshal(&(i.value))
 	return string(s)

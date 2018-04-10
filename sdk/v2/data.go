@@ -34,7 +34,7 @@ type EntityData struct {
 	Entity    Entity             `json:"entity"`
 	Metrics   []metric.MetricSet `json:"metrics"`
 	Inventory Inventory       `json:"inventory"`
-	Events    []*Event        `json:"events"`
+	Events    []Event        `json:"events"`
 }
 
 // NewEntityData creates a new EntityData with default values initialised.
@@ -48,7 +48,7 @@ func NewEntityData(entityName, entityType string) (EntityData, error) {
 		// empty array or object preferred instead of null on marshaling.
 		Metrics:   []metric.MetricSet{},
 		Inventory: Inventory{},
-		Events:    []*Event{},
+		Events:    []Event{},
 	}
 
 	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
@@ -62,8 +62,8 @@ func NewEntityData(entityName, entityType string) (EntityData, error) {
 	return d, nil
 }
 
-// IntegrationProtocol2 defines the format of the output JSON that integrations will return for protocol 2.
-type IntegrationProtocol2 struct {
+// Integration defines the format of the output JSON that integrations will return for protocol 2.
+type Integration struct {
 	sync.Mutex
 	Name               string        `json:"name"`
 	ProtocolVersion    string        `json:"protocol_version"`
@@ -73,9 +73,9 @@ type IntegrationProtocol2 struct {
 	writer             io.Writer
 }
 
-// NewIntegrationProtocol2WithWriter initializes a new instance of the integration protocol 2 specifying a writer instead of using stdout by default.
-func NewIntegrationProtocol2WithWriter(name string, version string, arguments interface{}, writer io.Writer) (*IntegrationProtocol2, error) {
-	i, err := NewIntegrationProtocol2(name, version, arguments)
+// NewIntegrationWithWriter initializes a new instance of the integration protocol 2 specifying a writer instead of using stdout by default.
+func NewIntegrationWithWriter(name string, version string, arguments interface{}, writer io.Writer) (*Integration, error) {
+	i, err := NewIntegration(name, version, arguments)
 	if err != nil {
 		return nil, err
 	}
@@ -85,8 +85,8 @@ func NewIntegrationProtocol2WithWriter(name string, version string, arguments in
 	return i, nil
 }
 
-// NewIntegrationProtocol2 initializes a new instance of the integration protocol 2.
-func NewIntegrationProtocol2(name string, version string, arguments interface{}) (*IntegrationProtocol2, error) {
+// NewIntegration initializes a new instance of the integration protocol 2.
+func NewIntegration(name string, version string, arguments interface{}) (*Integration, error) {
 	err := args.SetupArgs(arguments)
 	if err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func NewIntegrationProtocol2(name string, version string, arguments interface{})
 		return nil, err
 	}
 
-	integration := &IntegrationProtocol2{
+	integration := &Integration{
 		Name:               name,
 		ProtocolVersion:    "2",
 		IntegrationVersion: version,
@@ -113,7 +113,7 @@ func NewIntegrationProtocol2(name string, version string, arguments interface{})
 }
 
 // Entity method creates or retrieves an already created EntityData.
-func (integration *IntegrationProtocol2) Entity(entityName, entityType string) (*EntityData, error) {
+func (integration *Integration) Entity(entityName, entityType string) (*EntityData, error) {
 	integration.Lock()
 	defer integration.Unlock()
 	for _, e := range integration.Data {
@@ -152,7 +152,7 @@ func (d *EntityData) AddEvent(e Event) error {
 		return fmt.Errorf("summary of the event cannot be empty")
 	}
 
-	d.Events = append(d.Events, &e)
+	d.Events = append(d.Events, e)
 	return nil
 }
 
@@ -160,7 +160,7 @@ func (d *EntityData) AddEvent(e Event) error {
 // stores the cache, prints the JSON representation of the integration using a writer (stdout by default)
 // and re-initializes the integration object (allowing re-use it during the
 // execution of your code).
-func (integration *IntegrationProtocol2) Publish() error {
+func (integration *Integration) Publish() error {
 	if err := cache.Save(); err != nil {
 		return err
 	}
@@ -178,7 +178,7 @@ func (integration *IntegrationProtocol2) Publish() error {
 
 // Clear re-initializes the Inventory, Metrics and Events for this integration.
 // Used after publishing so the object can be reused.
-func (integration *IntegrationProtocol2) Clear() {
+func (integration *Integration) Clear() {
 	integration.Lock()
 	defer integration.Unlock()
 	integration.Data = []*EntityData{} // empty array preferred instead of null on marshaling.
@@ -186,7 +186,7 @@ func (integration *IntegrationProtocol2) Clear() {
 
 // toJSON returns the integration as a JSON string. If the pretty attribute is
 // set to true, the JSON will be idented for easy reading.
-func (integration *IntegrationProtocol2) toJSON(pretty bool) (string, error) {
+func (integration *Integration) toJSON(pretty bool) (string, error) {
 	var output []byte
 	var err error
 

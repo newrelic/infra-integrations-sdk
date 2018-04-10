@@ -120,7 +120,7 @@ func main() {
 
 	if args.All || args.Metrics {
 		ms := integration.NewMetricSet("RedisSample")
-		fatalIfErr(populateMetrics(ms))
+		fatalIfErr(populateMetrics(&ms))
 	}
 
 	if args.All || args.Events {
