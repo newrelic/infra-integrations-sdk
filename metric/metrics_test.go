@@ -43,7 +43,7 @@ func TestSetMetric(t *testing.T) {
 	fd := FakeData{}
 	cache.SetNow(fd.Now)
 
-	ms := metric.NewMetricSet("eventType")
+	ms := metric.NewSet("eventType")
 
 	for _, tt := range metricTests {
 		ms.SetMetric(tt.key, tt.value, tt.metricType)

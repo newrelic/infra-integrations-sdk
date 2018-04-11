@@ -71,7 +71,9 @@ func NewCache() (*Cache, error) {
 		log.Warn(fmt.Sprintf("Cache file (%s) cannot be open for reading.", cachePath))
 		return cache, nil
 	}
-	json.Unmarshal(file, &cache)
+
+	// Ignoring unmarshalling errors, returning a clean cache
+	json.Unmarshal(file, &cache) // nolint: errcheck
 
 	return cache, nil
 }

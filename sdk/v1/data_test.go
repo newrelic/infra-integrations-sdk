@@ -10,8 +10,8 @@ import (
 	"testing"
 
 	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/stretchr/testify/assert"
 	"github.com/newrelic/infra-integrations-sdk/sdk/v1"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewIntegrationData(t *testing.T) {

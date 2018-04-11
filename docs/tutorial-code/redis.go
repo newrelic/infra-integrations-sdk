@@ -49,7 +49,7 @@ func populateInventory(inventory v1.Inventory) error {
 	return nil
 }
 
-func populateMetrics(ms *metric.MetricSet) error {
+func populateMetrics(ms *metric.Set) error {
 	cmd := exec.Command("/bin/sh", "-c", "redis-cli info | grep instantaneous_ops_per_sec:")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -63,7 +63,7 @@ func populateMetrics(ms *metric.MetricSet) error {
 	if err != nil {
 		return err
 	}
-	ms.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
+	ms.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE) // nolint: errcheck
 
 	cmd = exec.Command("/bin/sh", "-c", "redis-cli info | grep total_connections_received:")
 	output, err = cmd.CombinedOutput()
@@ -79,7 +79,7 @@ func populateMetrics(ms *metric.MetricSet) error {
 		return err
 	}
 
-	ms.SetMetric("net.connectionsReceivedPerSecond", metricValue, metric.RATE)
+	ms.SetMetric("net.connectionsReceivedPerSecond", metricValue, metric.RATE) // nolint: errcheck
 	return nil
 }
 
