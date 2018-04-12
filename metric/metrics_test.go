@@ -21,20 +21,20 @@ func (fd *FakeData) Now() time.Time {
 	return fd.timestamp
 }
 
-var metricTests = []struct {
-	key        string
-	value      interface{}
-	metricType metric.SourceType
-	out        interface{}
-	cache      interface{}
+var rateAndDeltaTests = []struct {
+	testCase string
+	key      string
+	value    interface{}
+	out      interface{}
+	cache    interface{}
 }{
-	{"rateKey1", 10, metric.RATE, 0.0, 10.0},
-	{"rateKey1", 100, metric.RATE, 90.0, 100.0},
-	{"key1", .22323333, metric.RATE, 0.0, 0.22323333},
-	{"key2", 100, metric.RATE, 0.0, 100.0},
-	{"key2", 110, metric.RATE, 10.0, 110.0},
-	{"key3", 10, metric.DELTA, 0.0, 10.0},
-	{"key3", 110, metric.DELTA, 100.0, 110.0},
+	{"1st data in key", "rateKey1", 10, 0.0, 10.0},
+	{"2nd data in key", "rateKey1", 100, 90.0, 100.0},
+	{"1st data in key", "key1", .22323333, 0.0, 0.22323333},
+	{"1st data in key", "key2", 100, 0.0, 100.0},
+	{"2nd data in key", "key2", 110, 10.0, 110.0},
+	//{"key3", 10, metric.DELTA, 0.0, 10.0},
+	//{"key3", 110, metric.DELTA, 100.0, 110.0},
 }
 
 func TestSet_SetMetricGauge(t *testing.T) {
@@ -63,24 +63,27 @@ func TestSet_SetMetricAttribute(t *testing.T) {
 	}
 }
 
-func TestSetMetricCache(t *testing.T) {
-	fd := FakeData{}
-	cache.SetNow(fd.Now)
+func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
+	for _, sourceType := range []metric.SourceType{metric.DELTA, metric.RATE} {
+		fd := FakeData{}
+		cache.SetNow(fd.Now)
 
-	ms := metric.NewSet("eventType")
+		ms := metric.NewSet("some-event-type")
 
-	for _, tt := range metricTests {
-		ms.SetMetric(tt.key, tt.value, tt.metricType)
+		for _, tt := range rateAndDeltaTests {
+			ms.SetMetric(tt.key, tt.value, sourceType)
 
-		if ms[tt.key] != tt.out {
-			t.Errorf("SetMetric(\"%s\", %s, %v) => %s, want %s", tt.key, tt.value, tt.metricType, ms[tt.key], tt.out)
-		}
+			if ms[tt.key] != tt.out {
+				t.Errorf("setting %s %s source-type %d and value %v returned: %v, expected: %v",
+					tt.testCase, tt.key, sourceType, tt.value, ms[tt.key], tt.out)
+			}
 
-		v, _, ok := cache.Get(tt.key)
-		if !ok {
-			t.Errorf("cache.Get(\"%v\") ==> %v, want %v", true, v, ok)
-		} else if tt.cache != v {
-			t.Errorf("cache.Get(\"%v\") ==> %v, want %v", tt.key, v, tt.cache)
+			v, _, ok := cache.Get(tt.key)
+			if !ok {
+				t.Errorf("key %s not in cache for case %s", tt.key, tt.testCase)
+			} else if tt.cache != v {
+				t.Errorf("cache.Get(\"%v\") ==> %v, want %v", tt.key, v, tt.cache)
+			}
 		}
 	}
 }
