@@ -42,7 +42,7 @@ func NewCache() (*Cache, error) {
 	if cachePath == "" {
 		_, fname := filepath.Split(os.Args[0])
 		cachePath = filepath.Join(os.TempDir(), fmt.Sprintf("%s.json", fname))
-		log.Warn("Environment variable NRIA_CACHE_PATH is not set, using default %s", cachePath)
+		log.Warnf("environment variable NRIA_CACHE_PATH is not set, using default %s", cachePath)
 	}
 
 	cache.path = cachePath
@@ -51,7 +51,7 @@ func NewCache() (*Cache, error) {
 	cacheDir := filepath.Dir(cache.path)
 	if _, err := os.Stat(cacheDir); err != nil {
 		if err = os.MkdirAll(cacheDir, 0755); err != nil {
-			return nil, fmt.Errorf("Cache directory in %s could not be created", cacheDir)
+			return nil, fmt.Errorf("cache directory in %s could not be created", cacheDir)
 		}
 	}
 
@@ -62,13 +62,13 @@ func NewCache() (*Cache, error) {
 	}
 
 	if now().Sub(stat.ModTime()) > cacheTTL {
-		log.Warn(fmt.Sprintf("Cache file (%s) is older than %v, skipping loading from disk.", cachePath, cacheTTL))
+		log.Warnf("cache file (%s) is older than %v, skipping loading from disk.", cachePath, cacheTTL)
 		return cache, nil
 	}
 
 	file, err := ioutil.ReadFile(cache.path)
 	if err != nil {
-		log.Warn(fmt.Sprintf("Cache file (%s) cannot be open for reading.", cachePath))
+		log.Warnf("cache file (%s) cannot be open for reading.", cachePath)
 		return cache, nil
 	}
 	json.Unmarshal(file, &cache)

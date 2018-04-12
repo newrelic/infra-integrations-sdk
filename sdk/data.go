@@ -141,7 +141,7 @@ func (integration *Integration) toJSON(pretty bool) (string, error) {
 	}
 
 	if err != nil {
-		return "", fmt.Errorf("Error marshalling to JSON: %s", err)
+		return "", fmt.Errorf("error marshalling to JSON: %s", err)
 	}
 
 	if string(output) == "null" {

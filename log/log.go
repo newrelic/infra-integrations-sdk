@@ -34,19 +34,23 @@ func ConfigureLogger(logger *logrus.Logger, verbose bool) {
 	}
 }
 
-func Debug(format string, args ...interface{}) {
+// Debugf logs a formatted message at level Debug.
+func Debugf(format string, args ...interface{}) {
 	logrus.Debugf(format, args...)
 }
 
-func Info(format string, args ...interface{}) {
+// Infof logs a formatted message at level Info.
+func Infof(format string, args ...interface{}) {
 	logrus.Infof(format, args...)
 }
 
-func Warn(format string, args ...interface{}) {
+// Warnf logs a formatted message at level Warn.
+func Warnf(format string, args ...interface{}) {
 	logrus.Warnf(format, args...)
 }
 
-func Error(format string, args ...interface{}) {
+// Errorf logs a formatted message at level Error.
+func Errorf(format string, args ...interface{}) {
 	logrus.Errorf(format, args...)
 }
 

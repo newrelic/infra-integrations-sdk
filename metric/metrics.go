@@ -44,7 +44,7 @@ func (ms MetricSet) SetMetric(name string, value interface{}, sourceType SourceT
 	switch sourceType {
 	case RATE, DELTA:
 		if !isNumeric(value) {
-			return fmt.Errorf("Invalid (non-numeric) data type for metric %s", name)
+			return fmt.Errorf("invalid (non-numeric) data type for metric %s", name)
 		}
 		newValue, err = ms.sample(name, value, sourceType)
 		if err != nil {
@@ -52,14 +52,14 @@ func (ms MetricSet) SetMetric(name string, value interface{}, sourceType SourceT
 		}
 	case GAUGE:
 		if !isNumeric(value) {
-			return fmt.Errorf("Invalid (non-numeric) data type for metric %s", name)
+			return fmt.Errorf("invalid (non-numeric) data type for metric %s", name)
 		}
 	case ATTRIBUTE:
 		if _, ok := value.(string); !ok {
-			return fmt.Errorf("Invalid data type for attribute %s", name)
+			return fmt.Errorf("invalid data type for attribute %s", name)
 		}
 	default:
-		return fmt.Errorf("Unknown source type for key %s", name)
+		return fmt.Errorf("unknown source type for key %s", name)
 	}
 
 	ms[name] = newValue
@@ -77,7 +77,7 @@ func (ms MetricSet) sample(name string, value interface{}, sourceType SourceType
 	// Convert the value to a float64 so we can compare it with the cached one
 	floatValue, err := strconv.ParseFloat(fmt.Sprintf("%v", value), 64)
 	if err != nil {
-		return sampledValue, fmt.Errorf("Can't sample metric of unknown type %s", name)
+		return sampledValue, fmt.Errorf("can't sample metric of unknown type %s", name)
 	}
 
 	// Retrieve the last value and timestamp from cache
@@ -88,11 +88,11 @@ func (ms MetricSet) sample(name string, value interface{}, sourceType SourceType
 	if ok {
 		duration := (newTime - oldTime)
 		if duration == 0 {
-			return sampledValue, fmt.Errorf("Samples for %s are too close in time, skipping sampling", name)
+			return sampledValue, fmt.Errorf("samples for %s are too close in time, skipping sampling", name)
 		}
 
 		if floatValue-oldval < 0 {
-			return sampledValue, fmt.Errorf("Source for %s was reseted, skipping sampling", name)
+			return sampledValue, fmt.Errorf("source for %s was reseted, skipping sampling", name)
 		}
 		if sourceType == DELTA {
 			sampledValue = floatValue - oldval
