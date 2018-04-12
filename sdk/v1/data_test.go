@@ -85,13 +85,13 @@ func TestNewIntegrationWithDefaultArguments(t *testing.T) {
 	if len(pd.Events) != 0 {
 		t.Error()
 	}
-	if al.All != true {
+	if !al.All {
 		t.Error()
 	}
-	if al.Pretty != false {
+	if al.Pretty {
 		t.Error()
 	}
-	if al.Verbose != false {
+	if al.Verbose {
 		t.Error()
 	}
 

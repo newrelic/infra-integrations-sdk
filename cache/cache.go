@@ -34,8 +34,8 @@ type Cache struct {
 // it is not set, this will act as a memory-only cache.
 func NewCache() (*Cache, error) {
 	cache := &Cache{
-		Data:       make(map[string]interface{}, 0),
-		Timestamps: make(map[string]int64, 0),
+		Data:       make(map[string]interface{}),
+		Timestamps: make(map[string]int64),
 	}
 
 	cachePath := os.Getenv("NRIA_CACHE_PATH")
@@ -90,12 +90,7 @@ func (cache *Cache) Save() error {
 		return err
 	}
 
-	err = ioutil.WriteFile(cache.path, data, 0644)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return ioutil.WriteFile(cache.path, data, 0644)
 }
 
 // Get looks for a key in the cache and returns its value together with the
