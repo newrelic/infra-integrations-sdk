@@ -10,7 +10,6 @@ import (
 
 	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/metric"
-	"github.com/newrelic/infra-integrations-sdk/sdk/v1"
 	"github.com/newrelic/infra-integrations-sdk/sdk/v2"
 )
 
@@ -254,7 +253,7 @@ func TestAddEvent_Entity(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = en.AddEvent(v1.Event{Summary: "TestSummary", Category: "TestCategory"})
+	err = en.AddEvent(v2.Event{Summary: "TestSummary", Category: "TestCategory"})
 	if err != nil {
 		t.Errorf("error not expected, got: %s", err)
 	}
@@ -274,11 +273,11 @@ func TestAddEvent_Entity_TheSameEvents_And_NoCategory(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = en.AddEvent(v1.Event{Summary: "TestSummary"})
+	err = en.AddEvent(v2.Event{Summary: "TestSummary"})
 	if err != nil {
 		t.Errorf("error not expected, got: %s", err)
 	}
-	err = en.AddEvent(v1.Event{Summary: "TestSummary"})
+	err = en.AddEvent(v2.Event{Summary: "TestSummary"})
 	if err != nil {
 		t.Errorf("error not expected, got: %s", err)
 	}
@@ -300,7 +299,7 @@ func TestAddEvent_Entity_EmptySummary_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = en.AddEvent(v1.Event{Category: "TestCategory"})
+	err = en.AddEvent(v2.Event{Category: "TestCategory"})
 	if err == nil {
 		t.Error("error was expected for empty summary")
 	}
