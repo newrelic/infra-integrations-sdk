@@ -1,4 +1,4 @@
-package v2
+package v2_test
 
 import (
 	"encoding/json"
@@ -11,10 +11,11 @@ import (
 	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/sdk/v1"
+	"github.com/newrelic/infra-integrations-sdk/sdk/v2"
 )
 
 func TestNewEntityData(t *testing.T) {
-	e, err := NewEntityData("TestEntityName", "TestEntityType")
+	e, err := v2.NewEntityData("TestEntityName", "TestEntityType")
 	if err != nil {
 		t.Error(err)
 	}
@@ -25,17 +26,17 @@ func TestNewEntityData(t *testing.T) {
 }
 
 func TestNewEntityData_MissingData(t *testing.T) {
-	e, err := NewEntityData("", "test")
+	e, err := v2.NewEntityData("", "test")
 	if err == nil {
 		t.Error("error was expected on partial entity data")
 	}
 
-	emptyEntity := Entity{}
+	emptyEntity := v2.Entity{}
 	if e.Entity != emptyEntity {
 		t.Error("no entity expected")
 	}
 
-	e, err = NewEntityData("Entity", "")
+	e, err = v2.NewEntityData("Entity", "")
 	if err == nil {
 		t.Error("error was expected on partial entity data")
 	}
@@ -44,7 +45,7 @@ func TestNewEntityData_MissingData(t *testing.T) {
 		t.Error("no entity expected")
 	}
 
-	e, err = NewEntityData("", "")
+	e, err = v2.NewEntityData("", "")
 	if err != nil {
 		t.Error(err)
 	}
@@ -55,7 +56,7 @@ func TestNewEntityData_MissingData(t *testing.T) {
 }
 
 func TestNewIntegrationProtocol2Data(t *testing.T) {
-	i, err := NewIntegrationProtocol2("TestIntegration", "1.0", new(struct{}))
+	i, err := v2.NewIntegrationProtocol2("TestIntegration", "1.0", new(struct{}))
 	if err != nil {
 		t.Fatal()
 	}
@@ -84,7 +85,7 @@ func TestNewIntegrationProtocol2WithDefaultArguments(t *testing.T) {
 	flag.CommandLine = flag.NewFlagSet("name", 0)
 
 	var al argumentList
-	i, err := NewIntegrationProtocol2("TestIntegration", "1.0", &al)
+	i, err := v2.NewIntegrationProtocol2("TestIntegration", "1.0", &al)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,13 +116,13 @@ func TestIntegrationProtocol2_Publish(t *testing.T) {
 	w := testWritter{
 		func(p []byte) {
 			expectedOutputRaw := []byte(`{"name":"TestIntegration","protocol_version":"2","integration_version":"1.0","data":[{"entity":{"name":"EntityOne","type":"test"},"metrics":[{"event_type":"EventTypeForEntityOne","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]},{"entity":{"name":"EntityTwo","type":"test"},"metrics":[{"event_type":"EventTypeForEntityTwo","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]},{"entity":{},"metrics":[{"event_type":"EventTypeForEntityThree","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},"events":[]}]}`)
-			expectedOutput := new(IntegrationProtocol2)
+			expectedOutput := new(v2.IntegrationProtocol2)
 			err := json.Unmarshal(expectedOutputRaw, expectedOutput)
 			if err != nil {
 				t.Fatal("error unmarshaling expected output raw test data sample")
 			}
 
-			integration := new(IntegrationProtocol2)
+			integration := new(v2.IntegrationProtocol2)
 			err = json.Unmarshal(p, integration)
 			if err != nil {
 				t.Error("error unmarshaling integration output", err)
@@ -133,7 +134,7 @@ func TestIntegrationProtocol2_Publish(t *testing.T) {
 		},
 	}
 
-	i, err := NewIntegrationProtocol2WithWriter("TestIntegration", "1.0", new(struct{}), w)
+	i, err := v2.NewIntegrationProtocol2WithWriter("TestIntegration", "1.0", new(struct{}), w)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,7 +173,7 @@ func TestIntegrationProtocol2_Publish(t *testing.T) {
 }
 
 func TestIntegrationProtocol2_EntityReturnsExistingEntity(t *testing.T) {
-	i, err := NewIntegrationProtocol2("TestIntegration", "1.0", new(struct{}))
+	i, err := v2.NewIntegrationProtocol2("TestIntegration", "1.0", new(struct{}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -199,7 +200,7 @@ func TestIntegrationProtocol2_EntityReturnsExistingEntity(t *testing.T) {
 // NOTE: This test does nothing as test but when running with -race flag we can detect data races.
 // See Lock and Unlock on Entity method.
 func TestIntegrationProtocol2_EntityHasNoDataRace(t *testing.T) {
-	in, err := NewIntegrationProtocol2("TestIntegration", "1.0", new(struct{}))
+	in, err := v2.NewIntegrationProtocol2("TestIntegration", "1.0", new(struct{}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -212,7 +213,7 @@ func TestIntegrationProtocol2_EntityHasNoDataRace(t *testing.T) {
 }
 
 func TestAddNotificationEvent_Entity(t *testing.T) {
-	en, err := NewEntityData("Entity1", "Type1")
+	en, err := v2.NewEntityData("Entity1", "Type1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -232,7 +233,7 @@ func TestAddNotificationEvent_Entity(t *testing.T) {
 }
 
 func TestAddNotificationEvent_Event_NoSummary_Error(t *testing.T) {
-	en, err := NewEntityData("Entity1", "Type1")
+	en, err := v2.NewEntityData("Entity1", "Type1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +249,7 @@ func TestAddNotificationEvent_Event_NoSummary_Error(t *testing.T) {
 }
 
 func TestAddEvent_Entity(t *testing.T) {
-	en, err := NewEntityData("Entity1", "Type1")
+	en, err := v2.NewEntityData("Entity1", "Type1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -268,7 +269,7 @@ func TestAddEvent_Entity(t *testing.T) {
 }
 
 func TestAddEvent_Entity_TheSameEvents_And_NoCategory(t *testing.T) {
-	en, err := NewEntityData("Entity1", "Type1")
+	en, err := v2.NewEntityData("Entity1", "Type1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -294,7 +295,7 @@ func TestAddEvent_Entity_TheSameEvents_And_NoCategory(t *testing.T) {
 }
 
 func TestAddEvent_Entity_EmptySummary_Error(t *testing.T) {
-	en, err := NewEntityData("Entity1", "Type1")
+	en, err := v2.NewEntityData("Entity1", "Type1")
 	if err != nil {
 		t.Fatal(err)
 	}
