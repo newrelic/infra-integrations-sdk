@@ -21,12 +21,20 @@ type Entity struct {
 	Type string `json:"type"`
 }
 
+// Inventory is the data type for inventory data produced by an integration data
+// source and emitted to the agent's inventory data store.
+type Inventory v1.Inventory
+
+// Event is the data type to represent arbitrary, one-off messages for key
+// activities on a system.
+type Event v1.Event
+
 // EntityData defines all the data related to a particular event from an entity.
 type EntityData struct {
 	Entity    Entity       `json:"entity"`
 	Metrics   []metric.Set `json:"metrics"`
-	Inventory v1.Inventory `json:"inventory"`
-	Events    []v1.Event   `json:"events"`
+	Inventory Inventory    `json:"inventory"`
+	Events    []Event      `json:"events"`
 }
 
 // NewEntityData creates a new EntityData with default values initialised.
@@ -39,8 +47,8 @@ func NewEntityData(entityName, entityType string) (EntityData, error) {
 	d := EntityData{
 		// empty array or object preferred instead of null on marshaling.
 		Metrics:   []metric.Set{},
-		Inventory: v1.Inventory{},
-		Events:    []v1.Event{},
+		Inventory: Inventory{},
+		Events:    []Event{},
 	}
 
 	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
@@ -135,11 +143,11 @@ func (d *EntityData) NewMetricSet(eventType string) metric.Set {
 
 // AddNotificationEvent method adds a new Event with default event category.
 func (d *EntityData) AddNotificationEvent(summary string) error {
-	return d.AddEvent(v1.Event{Summary: summary, Category: v1.DefaultEventCategory})
+	return d.AddEvent(Event{Summary: summary, Category: v1.DefaultEventCategory})
 }
 
 // AddEvent method adds a new Event.
-func (d *EntityData) AddEvent(e v1.Event) error {
+func (d *EntityData) AddEvent(e Event) error {
 	if e.Summary == "" {
 		return fmt.Errorf("summary of the event cannot be empty")
 	}
