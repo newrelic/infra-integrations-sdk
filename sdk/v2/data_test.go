@@ -1,4 +1,4 @@
-package v2
+package v2_test
 
 import (
 	"encoding/json"
@@ -11,11 +11,12 @@ import (
 	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/sdk/v1"
+	"github.com/newrelic/infra-integrations-sdk/sdk/v2"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewEntityData(t *testing.T) {
-	e, err := NewEntityData("TestEntityName", "TestEntityType")
+	e, err := v2.NewEntityData("TestEntityName", "TestEntityType")
 	if err != nil {
 		t.Error(err)
 	}
@@ -26,17 +27,17 @@ func TestNewEntityData(t *testing.T) {
 }
 
 func TestNewEntityData_MissingData(t *testing.T) {
-	e, err := NewEntityData("", "test")
+	e, err := v2.NewEntityData("", "test")
 	if err == nil {
 		t.Error("error was expected on partial entity data")
 	}
 
-	emptyEntity := Entity{}
+	emptyEntity := v2.Entity{}
 	if e.Entity != emptyEntity {
 		t.Error("no entity expected")
 	}
 
-	e, err = NewEntityData("Entity", "")
+	e, err = v2.NewEntityData("Entity", "")
 	if err == nil {
 		t.Error("error was expected on partial entity data")
 	}
@@ -45,7 +46,7 @@ func TestNewEntityData_MissingData(t *testing.T) {
 		t.Error("no entity expected")
 	}
 
-	e, err = NewEntityData("", "")
+	e, err = v2.NewEntityData("", "")
 	if err != nil {
 		t.Error(err)
 	}
@@ -56,7 +57,7 @@ func TestNewEntityData_MissingData(t *testing.T) {
 }
 
 func TestNewIntegrationData(t *testing.T) {
-	i, err := NewIntegration("TestIntegration", "1.0", new(struct{}))
+	i, err := v2.NewIntegration("TestIntegration", "1.0", new(struct{}))
 	if err != nil {
 		t.Fatal()
 	}
@@ -85,7 +86,7 @@ func TestNewIntegrationWithDefaultArguments(t *testing.T) {
 	flag.CommandLine = flag.NewFlagSet("name", 0)
 
 	var al argumentList
-	i, err := NewIntegration("TestIntegration", "1.0", &al)
+	i, err := v2.NewIntegration("TestIntegration", "1.0", &al)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,13 +124,13 @@ func TestIntegration_Publish(t *testing.T) {
 					`"events":[]},` +
 					`{"entity":{},"metrics":[{"event_type":"EventTypeForEntityThree","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},` +
 					`"events":[{"summary":"evnt3sum","category":"evnt3cat"}]}]}`)
-			expectedOutput := new(Integration)
+			expectedOutput := new(v2.Integration)
 			err := json.Unmarshal(expectedOutputRaw, expectedOutput)
 			if err != nil {
 				t.Fatal("error unmarshaling expected output raw test data sample")
 			}
 
-			integration := new(Integration)
+			integration := new(v2.Integration)
 			err = json.Unmarshal(p, integration)
 			if err != nil {
 				t.Error("error unmarshaling integration output", err)
@@ -141,7 +142,7 @@ func TestIntegration_Publish(t *testing.T) {
 		},
 	}
 
-	i, err := NewIntegrationWithWriter("TestIntegration", "1.0", new(struct{}), w)
+	i, err := v2.NewIntegrationWithWriter("TestIntegration", "1.0", new(struct{}), w)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -185,7 +186,7 @@ func TestIntegration_Publish(t *testing.T) {
 }
 
 func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
-	i, err := NewIntegration("TestIntegration", "1.0", new(struct{}))
+	i, err := v2.NewIntegration("TestIntegration", "1.0", new(struct{}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -210,7 +211,7 @@ func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
 // NOTE: This test does nothing as test but when running with -race flag we can detect data races.
 // See Lock and Unlock on Entity method.
 func TestIntegration_EntityHasNoDataRace(t *testing.T) {
-	in, err := NewIntegration("TestIntegration", "1.0", new(struct{}))
+	in, err := v2.NewIntegration("TestIntegration", "1.0", new(struct{}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,7 +224,7 @@ func TestIntegration_EntityHasNoDataRace(t *testing.T) {
 }
 
 func TestAddNotificationEvent_Entity(t *testing.T) {
-	en, err := NewEntityData("Entity1", "Type1")
+	en, err := v2.NewEntityData("Entity1", "Type1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -243,7 +244,7 @@ func TestAddNotificationEvent_Entity(t *testing.T) {
 }
 
 func TestAddNotificationEvent_Event_NoSummary_Error(t *testing.T) {
-	en, err := NewEntityData("Entity1", "Type1")
+	en, err := v2.NewEntityData("Entity1", "Type1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -259,7 +260,7 @@ func TestAddNotificationEvent_Event_NoSummary_Error(t *testing.T) {
 }
 
 func TestAddEvent_Entity(t *testing.T) {
-	en, err := NewEntityData("Entity1", "Type1")
+	en, err := v2.NewEntityData("Entity1", "Type1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -279,7 +280,7 @@ func TestAddEvent_Entity(t *testing.T) {
 }
 
 func TestAddEvent_Entity_TheSameEvents_And_NoCategory(t *testing.T) {
-	en, err := NewEntityData("Entity1", "Type1")
+	en, err := v2.NewEntityData("Entity1", "Type1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -305,7 +306,7 @@ func TestAddEvent_Entity_TheSameEvents_And_NoCategory(t *testing.T) {
 }
 
 func TestAddEvent_Entity_EmptySummary_Error(t *testing.T) {
-	en, err := NewEntityData("Entity1", "Type1")
+	en, err := v2.NewEntityData("Entity1", "Type1")
 	if err != nil {
 		t.Fatal(err)
 	}
