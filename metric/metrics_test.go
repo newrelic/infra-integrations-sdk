@@ -53,12 +53,14 @@ func TestSetMetric(t *testing.T) {
 		}
 
 		v, _, ok := cache.Get(tt.key)
-		if tt.cache != nil {
-			if !ok {
-				t.Errorf("cache.Get(\"%v\") ==> %v, want %v", true, v, ok)
-			} else if tt.cache != v {
-				t.Errorf("cache.Get(\"%v\") ==> %v, want %v", tt.key, v, tt.cache)
-			}
+		if tt.cache == nil {
+			continue
+		}
+
+		if !ok {
+			t.Errorf("cache.Get(\"%v\") ==> %v, want %v", true, v, ok)
+		} else if tt.cache != v {
+			t.Errorf("cache.Get(\"%v\") ==> %v, want %v", tt.key, v, tt.cache)
 		}
 	}
 }
