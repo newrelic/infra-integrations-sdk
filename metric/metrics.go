@@ -44,7 +44,7 @@ func (ms Set) SetMetric(name string, value interface{}, sourceType SourceType) e
 	switch sourceType {
 	case RATE, DELTA:
 		if !isNumeric(value) {
-			return fmt.Errorf("invalid (non-numeric) data type for metric %s", name)
+			return fmt.Errorf("non-numeric source type for rate/delta metric %s", name)
 		}
 		newValue, err = ms.sample(name, value, sourceType)
 		if err != nil {
@@ -52,11 +52,11 @@ func (ms Set) SetMetric(name string, value interface{}, sourceType SourceType) e
 		}
 	case GAUGE:
 		if !isNumeric(value) {
-			return fmt.Errorf("invalid (non-numeric) data type for metric %s", name)
+			return fmt.Errorf("non-numeric source type for gauge metric %s", name)
 		}
 	case ATTRIBUTE:
 		if _, ok := value.(string); !ok {
-			return fmt.Errorf("invalid data type for attribute %s", name)
+			return fmt.Errorf("non-string source type for attribute %s", name)
 		}
 	default:
 		return fmt.Errorf("unknown source type for key %s", name)
