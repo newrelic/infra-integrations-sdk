@@ -93,7 +93,7 @@ func TestCacheGet(t *testing.T) {
 	if ts == int64(0) {
 		t.Error()
 	}
-	if exists != true {
+	if !exists {
 		t.Error()
 	}
 
@@ -105,7 +105,7 @@ func TestCacheGet(t *testing.T) {
 	if ts != int64(0) {
 		t.Error()
 	}
-	if exists != false {
+	if exists {
 		t.Error()
 	}
 }
@@ -143,7 +143,7 @@ func TestCacheSave(t *testing.T) {
 	if ts == int64(0) {
 		t.Error()
 	}
-	if exists != true {
+	if !exists {
 		t.Error()
 	}
 
@@ -155,7 +155,7 @@ func TestCacheSave(t *testing.T) {
 	if ts == int64(0) {
 		t.Error()
 	}
-	if exists != true {
+	if !exists {
 		t.Error()
 	}
 }

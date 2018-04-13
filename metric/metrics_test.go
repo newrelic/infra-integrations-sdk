@@ -28,8 +28,6 @@ var metricTests = []struct {
 	out        interface{}
 	cache      interface{}
 }{
-	{"gaugeKey", 10, metric.GAUGE, 10, nil},
-	{"keyAtribute", "sadad", metric.ATTRIBUTE, "sadad", nil},
 	{"rateKey1", 10, metric.RATE, 0.0, 10.0},
 	{"rateKey1", 100, metric.RATE, 90.0, 100.0},
 	{"key1", .22323333, metric.RATE, 0.0, 0.22323333},
@@ -39,11 +37,37 @@ var metricTests = []struct {
 	{"key3", 110, metric.DELTA, 100.0, 110.0},
 }
 
-func TestSetMetric(t *testing.T) {
+func TestSet_SetMetricGauge(t *testing.T) {
 	fd := FakeData{}
 	cache.SetNow(fd.Now)
 
-	ms := metric.NewMetricSet("eventType")
+	ms := metric.NewSet("some-event-type")
+
+	ms.SetMetric("key", 10, metric.GAUGE)
+
+	if ms["key"] != 10 {
+		t.Errorf("metric stored not valid: %v", ms["key"])
+	}
+}
+
+func TestSet_SetMetricAttribute(t *testing.T) {
+	fd := FakeData{}
+	cache.SetNow(fd.Now)
+
+	ms := metric.NewSet("some-event-type")
+
+	ms.SetMetric("key", "some-attribute", metric.ATTRIBUTE)
+
+	if ms["key"] != "some-attribute" {
+		t.Errorf("metric stored not valid: %v", ms["key"])
+	}
+}
+
+func TestSetMetricCache(t *testing.T) {
+	fd := FakeData{}
+	cache.SetNow(fd.Now)
+
+	ms := metric.NewSet("eventType")
 
 	for _, tt := range metricTests {
 		ms.SetMetric(tt.key, tt.value, tt.metricType)
@@ -53,12 +77,10 @@ func TestSetMetric(t *testing.T) {
 		}
 
 		v, _, ok := cache.Get(tt.key)
-		if tt.cache != nil {
-			if !ok {
-				t.Errorf("cache.Get(\"%v\") ==> %v, want %v", true, v, ok)
-			} else if tt.cache != v {
-				t.Errorf("cache.Get(\"%v\") ==> %v, want %v", tt.key, v, tt.cache)
-			}
+		if !ok {
+			t.Errorf("cache.Get(\"%v\") ==> %v, want %v", true, v, ok)
+		} else if tt.cache != v {
+			t.Errorf("cache.Get(\"%v\") ==> %v, want %v", tt.key, v, tt.cache)
 		}
 	}
 }

@@ -1,4 +1,4 @@
-package sdk_test
+package v1_test
 
 import (
 	"bytes"
@@ -10,11 +10,12 @@ import (
 	"testing"
 
 	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/sdk"
+	"github.com/newrelic/infra-integrations-sdk/sdk/v1"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewIntegrationData(t *testing.T) {
-	pd, err := sdk.NewIntegration("TestPlugin", "1.0", new(struct{}))
+	pd, err := v1.NewIntegration("TestPlugin", "1.0", new(struct{}))
 	if err != nil {
 		t.Fatal()
 	}
@@ -40,20 +41,16 @@ func TestNewIntegrationData(t *testing.T) {
 }
 
 func TestNewMetricSet(t *testing.T) {
-	pd, err := sdk.NewIntegration("TestPlugin", "1.0", new(struct{}))
+	pd, err := v1.NewIntegration("TestPlugin", "1.0", new(struct{}))
 	if err != nil {
 		t.Fatal()
 	}
 
 	metric1 := pd.NewMetricSet("TestPlugin")
-	if metric1 != pd.Metrics[0] {
-		t.Error()
-	}
+	assert.Equal(t, metric1, pd.Metrics[0])
 
 	metric2 := pd.NewMetricSet("TestMetric2")
-	if metric2 != pd.Metrics[1] {
-		t.Error()
-	}
+	assert.Equal(t, metric2, pd.Metrics[1])
 }
 
 func TestNewIntegrationWithDefaultArguments(t *testing.T) {
@@ -66,7 +63,7 @@ func TestNewIntegrationWithDefaultArguments(t *testing.T) {
 	os.Args = []string{"cmd"}
 	flag.CommandLine = flag.NewFlagSet("name", 0)
 
-	pd, err := sdk.NewIntegration("TestPlugin", "1.0", &al)
+	pd, err := v1.NewIntegration("TestPlugin", "1.0", &al)
 	if err != nil {
 		t.Fail()
 	}
@@ -88,13 +85,13 @@ func TestNewIntegrationWithDefaultArguments(t *testing.T) {
 	if len(pd.Events) != 0 {
 		t.Error()
 	}
-	if al.All != true {
+	if !al.All {
 		t.Error()
 	}
-	if al.Pretty != false {
+	if al.Pretty {
 		t.Error()
 	}
-	if al.Verbose != false {
+	if al.Verbose {
 		t.Error()
 	}
 
@@ -108,7 +105,7 @@ func TestPublish(t *testing.T) {
 	var al argumentList
 	flag.CommandLine = flag.NewFlagSet("name", 0)
 
-	pd, err := sdk.NewIntegration("TestPlugin", "1.0", &al)
+	pd, err := v1.NewIntegration("TestPlugin", "1.0", &al)
 	if err != nil {
 		t.Error()
 	}
@@ -129,7 +126,7 @@ func TestPublish(t *testing.T) {
 	}
 	flag.CommandLine = flag.NewFlagSet("name", 0)
 
-	pd, err = sdk.NewIntegration("TestPlugin", "1.0", &al)
+	pd, err = v1.NewIntegration("TestPlugin", "1.0", &al)
 	if err != nil {
 		t.Error()
 	}
@@ -147,7 +144,7 @@ func TestPublish(t *testing.T) {
 }
 
 func TestSetInventoryItem(t *testing.T) {
-	pd, err := sdk.NewIntegration("TestIntegration", "1.0", new(struct{}))
+	pd, err := v1.NewIntegration("TestIntegration", "1.0", new(struct{}))
 	if err != nil {
 		t.Fatal()
 	}
@@ -172,7 +169,7 @@ func TestSetInventoryItem(t *testing.T) {
 }
 
 func TestAddNotificationEvent_Integration(t *testing.T) {
-	i, err := sdk.NewIntegration("TestIntegration", "1.0", new(struct{}))
+	i, err := v1.NewIntegration("TestIntegration", "1.0", new(struct{}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -192,7 +189,7 @@ func TestAddNotificationEvent_Integration(t *testing.T) {
 }
 
 func TestAddNotificationEvent_Integration_NoSummary_Error(t *testing.T) {
-	i, err := sdk.NewIntegration("TestIntegration", "1.0", new(struct{}))
+	i, err := v1.NewIntegration("TestIntegration", "1.0", new(struct{}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -208,12 +205,12 @@ func TestAddNotificationEvent_Integration_NoSummary_Error(t *testing.T) {
 }
 
 func TestAddEvent_Integration(t *testing.T) {
-	i, err := sdk.NewIntegration("TestIntegration", "1.0", new(struct{}))
+	i, err := v1.NewIntegration("TestIntegration", "1.0", new(struct{}))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = i.AddEvent(sdk.Event{Summary: "TestSummary", Category: "TestCategory"})
+	err = i.AddEvent(v1.Event{Summary: "TestSummary", Category: "TestCategory"})
 	if err != nil {
 		t.Errorf("error not expected, got: %s", err)
 	}
@@ -228,16 +225,16 @@ func TestAddEvent_Integration(t *testing.T) {
 }
 
 func TestAddEvent_Integration_TheSameEvents_And_NoCategory(t *testing.T) {
-	i, err := sdk.NewIntegration("TestIntegration", "1.0", new(struct{}))
+	i, err := v1.NewIntegration("TestIntegration", "1.0", new(struct{}))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = i.AddEvent(sdk.Event{Summary: "TestSummary"})
+	err = i.AddEvent(v1.Event{Summary: "TestSummary"})
 	if err != nil {
 		t.Errorf("error not expected, got: %s", err)
 	}
-	err = i.AddEvent(sdk.Event{Summary: "TestSummary"})
+	err = i.AddEvent(v1.Event{Summary: "TestSummary"})
 	if err != nil {
 		t.Errorf("error not expected, got: %s", err)
 	}
@@ -254,12 +251,12 @@ func TestAddEvent_Integration_TheSameEvents_And_NoCategory(t *testing.T) {
 }
 
 func TestAddEvent_Integration_EmptySummary_Error(t *testing.T) {
-	i, err := sdk.NewIntegration("TestIntegration", "1.0", new(struct{}))
+	i, err := v1.NewIntegration("TestIntegration", "1.0", new(struct{}))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = i.AddEvent(sdk.Event{Category: "TestCategory"})
+	err = i.AddEvent(v1.Event{Category: "TestCategory"})
 	if err == nil {
 		t.Error("error was expected for empty summary")
 	}
