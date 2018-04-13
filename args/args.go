@@ -114,26 +114,26 @@ func defineFlags(args interface{}) error {
 		case *int:
 			intVal, err := strconv.Atoi(defaultValue)
 			if err != nil {
-				return fmt.Errorf("Can't parse %s: not an integer", argName)
+				return fmt.Errorf("can't parse %s: not an integer", argName)
 			}
 			flag.IntVar(argDefault, argName, intVal, helpValue)
 		case *bool:
 			boolVal, err := strconv.ParseBool(defaultValue)
 			if err != nil {
-				return fmt.Errorf("Can't parse %s: not a boolean", argName)
+				return fmt.Errorf("can't parse %s: not a boolean", argName)
 			}
 			flag.BoolVar(argDefault, argName, boolVal, helpValue)
 		case *string:
 			flag.StringVar(argDefault, argName, defaultValue, helpValue)
 		case *JSON:
-			jsonVar(argDefault, argName, defaultValue, helpValue)
+			jsonVar(argDefault, argName, helpValue)
 		case *DefaultArgumentList:
 			err := defineFlags(argDefault)
 			if err != nil {
 				return err
 			}
 		default:
-			return fmt.Errorf("Can't parse %s: unsupported type", argName)
+			return fmt.Errorf("can't parse %s: unsupported type", argName)
 		}
 	}
 	return nil

@@ -114,10 +114,10 @@ func doQuery(out chan []byte, errorChan chan error, queryString []byte) {
 		out <- scanner.Bytes()
 	} else {
 		if err := scanner.Err(); err != nil {
-			errorChan <- fmt.Errorf("Error reading output from JMX tool: %v", err)
+			errorChan <- fmt.Errorf("error reading output from JMX tool: %v", err)
 		} else {
 			// If scanner.Scan() returns false but err is also nil, it hit EOF. We consider that a problem, so we should return an error.
-			errorChan <- fmt.Errorf("Got an EOF while reading JMX tool output")
+			errorChan <- fmt.Errorf("got an EOF while reading JMX tool output")
 		}
 	}
 }
@@ -136,10 +136,10 @@ func Query(objectPattern string, timeout int) (map[string]interface{}, error) {
 	case line := <-pipe:
 		if line == nil {
 			Close()
-			return nil, fmt.Errorf("Got empty result for query: %s", objectPattern)
+			return nil, fmt.Errorf("got empty result for query: %s", objectPattern)
 		}
 		if err := json.Unmarshal(line, &result); err != nil {
-			return nil, fmt.Errorf("Invalid return value for query: %s, %s", objectPattern, err)
+			return nil, fmt.Errorf("invalid return value for query: %s, %s", objectPattern, err)
 		}
 	case err := <-cmdErr: // Will receive an error if the nrjmx tool exited prematurely
 		return nil, err
@@ -148,7 +148,7 @@ func Query(objectPattern string, timeout int) (map[string]interface{}, error) {
 	case <-time.After(outTimeout):
 		// In case of timeout, we want to close the command to avoid mixing up results coming up latter
 		Close()
-		return nil, fmt.Errorf("Timeout while waiting for query: %s", objectPattern)
+		return nil, fmt.Errorf("timeout while waiting for query: %s", objectPattern)
 	}
 	return result, nil
 }

@@ -18,7 +18,7 @@ func NewJSON(value interface{}) *JSON {
 
 func (i *JSON) Set(s string) error {
 	if err := json.Unmarshal([]byte(s), &(i.value)); err != nil {
-		return fmt.Errorf("Bad JSON, %v", err)
+		return fmt.Errorf("bad JSON, %v", err)
 	}
 	return nil
 }
@@ -30,6 +30,6 @@ func (i *JSON) String() string {
 	return string(s)
 }
 
-func jsonVar(p *JSON, name string, value string, usage string) {
+func jsonVar(p *JSON, name string, usage string) {
 	flag.CommandLine.Var(p, name, usage)
 }
