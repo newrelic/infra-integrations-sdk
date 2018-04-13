@@ -28,13 +28,9 @@ var rateAndDeltaTests = []struct {
 	out      interface{}
 	cache    interface{}
 }{
-	{"1st data in key", "rateKey1", 10, 0.0, 10.0},
-	{"2nd data in key", "rateKey1", 100, 90.0, 100.0},
 	{"1st data in key", "key1", .22323333, 0.0, 0.22323333},
 	{"1st data in key", "key2", 100, 0.0, 100.0},
 	{"2nd data in key", "key2", 110, 10.0, 110.0},
-	//{"key3", 10, metric.DELTA, 0.0, 10.0},
-	//{"key3", 110, metric.DELTA, 100.0, 110.0},
 }
 
 func TestSet_SetMetricGauge(t *testing.T) {
