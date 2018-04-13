@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - **Breaking change**: Update `Event` type
 - **Breaking change**: Update `Integration` struct type
+- **Breaking change**: package `sdk` now divided into `v1` and `v2`
 ### Fixed
 - github.com/Sirupsen/logrus is now github.com/sirupsen/logrus since v1.0.0.
 
