@@ -57,7 +57,7 @@ func populateMetrics(ms *metric.MetricSet) error {
 	}
 	splittedLine := strings.Split(string(output), ":")
 	if len(splittedLine) != 2 {
-		return fmt.Errorf("Cannot split the output line")
+		return fmt.Errorf("cannot split the output line")
 	}
 	metricValue, err := strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
 	if err != nil {
@@ -72,7 +72,7 @@ func populateMetrics(ms *metric.MetricSet) error {
 	}
 	splittedLine = strings.Split(string(output), ":")
 	if len(splittedLine) != 2 {
-		return fmt.Errorf("Cannot split the output line")
+		return fmt.Errorf("cannot split the output line")
 	}
 	metricValue, err = strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
 	if err != nil {
@@ -91,7 +91,7 @@ func populateEvents(integration *v1.Integration) error {
 	}
 	splittedLine := strings.Split(string(output), ":")
 	if len(splittedLine) != 2 {
-		return fmt.Errorf("Cannot split the output line")
+		return fmt.Errorf("cannot split the output line")
 	}
 	uptime, err := strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
 	if err != nil {
@@ -126,7 +126,7 @@ func main() {
 	if args.All || args.Events {
 		err := populateEvents(integration)
 		if err != nil {
-			log.Debug("adding event failed, got: %s", err)
+			log.Debugf("adding event failed, got: %s", err)
 		}
 	}
 	fatalIfErr(integration.Publish())
