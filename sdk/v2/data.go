@@ -33,8 +33,8 @@ type Event v1.Event
 type EntityData struct {
 	Entity    Entity       `json:"entity"`
 	Metrics   []metric.Set `json:"metrics"`
-	Inventory Inventory `json:"inventory"`
-	Events    []Event   `json:"events"`
+	Inventory Inventory    `json:"inventory"`
+	Events    []Event      `json:"events"`
 }
 
 // NewEntityData creates a new EntityData with default values initialised.
