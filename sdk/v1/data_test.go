@@ -11,6 +11,7 @@ import (
 
 	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/sdk/v1"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewIntegrationData(t *testing.T) {
@@ -46,14 +47,10 @@ func TestNewMetricSet(t *testing.T) {
 	}
 
 	metric1 := pd.NewMetricSet("TestPlugin")
-	if metric1 != pd.Metrics[0] {
-		t.Error()
-	}
+	assert.Equal(t, metric1, pd.Metrics[0])
 
 	metric2 := pd.NewMetricSet("TestMetric2")
-	if metric2 != pd.Metrics[1] {
-		t.Error()
-	}
+	assert.Equal(t, metric2, pd.Metrics[1])
 }
 
 func TestNewIntegrationWithDefaultArguments(t *testing.T) {
@@ -88,13 +85,13 @@ func TestNewIntegrationWithDefaultArguments(t *testing.T) {
 	if len(pd.Events) != 0 {
 		t.Error()
 	}
-	if al.All != true {
+	if !al.All {
 		t.Error()
 	}
-	if al.Pretty != false {
+	if al.Pretty {
 		t.Error()
 	}
-	if al.Verbose != false {
+	if al.Verbose {
 		t.Error()
 	}
 

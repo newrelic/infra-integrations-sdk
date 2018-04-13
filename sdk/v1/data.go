@@ -38,17 +38,19 @@ const DefaultEventCategory = "notifications"
 
 // Integration defines the format of the output JSON that integrations will
 // return.
+// Deprecated: use v2.Integration
 type Integration struct {
-	Name               string              `json:"name"`
-	ProtocolVersion    string              `json:"protocol_version"`
-	IntegrationVersion string              `json:"integration_version"`
-	Metrics            []*metric.MetricSet `json:"metrics"`
-	Inventory          Inventory           `json:"inventory"`
-	Events             []*Event            `json:"events"`
+	Name               string       `json:"name"`
+	ProtocolVersion    string       `json:"protocol_version"`
+	IntegrationVersion string       `json:"integration_version"`
+	Metrics            []metric.Set `json:"metrics"`
+	Inventory          Inventory    `json:"inventory"`
+	Events             []Event      `json:"events"`
 	prettyOutput       bool
 }
 
 // NewIntegration initializes a new instance of integration data.
+// Deprecated: use v2.NewIntegration
 func NewIntegration(name string, version string, arguments interface{}) (*Integration, error) {
 	err := args.SetupArgs(arguments)
 	if err != nil {
@@ -68,20 +70,20 @@ func NewIntegration(name string, version string, arguments interface{}) (*Integr
 		ProtocolVersion:    "1",
 		IntegrationVersion: version,
 		Inventory:          make(Inventory),
-		Metrics:            make([]*metric.MetricSet, 0),
-		Events:             make([]*Event, 0),
+		Metrics:            make([]metric.Set, 0),
+		Events:             make([]Event, 0),
 		prettyOutput:       defaultArgs.Pretty,
 	}
 
 	return integration, nil
 }
 
-// NewMetricSet returns a new instance of MetricSet with its sample attached to
+// NewMetricSet returns a new instance of Set with its sample attached to
 // the IntegrationData.
-func (integration *Integration) NewMetricSet(eventType string) *metric.MetricSet {
-	ms := metric.NewMetricSet(eventType)
-	integration.Metrics = append(integration.Metrics, &ms)
-	return &ms
+func (integration *Integration) NewMetricSet(eventType string) metric.Set {
+	ms := metric.NewSet(eventType)
+	integration.Metrics = append(integration.Metrics, ms)
+	return ms
 }
 
 // AddNotificationEvent method adds a new Event with default event category.
@@ -95,7 +97,7 @@ func (integration *Integration) AddEvent(e Event) error {
 		return fmt.Errorf("summary of the event cannot be empty")
 	}
 
-	integration.Events = append(integration.Events, &e)
+	integration.Events = append(integration.Events, e)
 
 	return nil
 }
@@ -124,8 +126,8 @@ func (integration *Integration) Publish() error {
 // Used after publishing so the object can be reused.
 func (integration *Integration) Clear() {
 	integration.Inventory = make(Inventory)
-	integration.Metrics = make([]*metric.MetricSet, 0)
-	integration.Events = make([]*Event, 0)
+	integration.Metrics = make([]metric.Set, 0)
+	integration.Events = make([]Event, 0)
 }
 
 // toJSON returns the integration as a JSON string. If the pretty attribute is

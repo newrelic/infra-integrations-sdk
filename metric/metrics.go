@@ -23,20 +23,20 @@ const (
 	ATTRIBUTE SourceType = iota
 )
 
-// MetricSet is the basic structure for storing metrics.
-type MetricSet map[string]interface{}
+// Set is the basic structure for storing metrics.
+type Set map[string]interface{}
 
-// NewMetricSet returns a new MetricSet instance.
-func NewMetricSet(eventType string) MetricSet {
-	ms := MetricSet{}
-	ms.SetMetric("event_type", eventType, ATTRIBUTE)
+// NewSet returns a new Set instance.
+func NewSet(eventType string) Set {
+	ms := Set{}
+	ms.SetMetric("event_type", eventType, ATTRIBUTE) // nolint: errcheck
 	return ms
 }
 
-// SetMetric adds a metric to the MetricSet object or updates the metric value
+// SetMetric adds a metric to the Set object or updates the metric value
 // if the metric already exists, performing a calculation if the SourceType
 // (RATE, DELTA) requires it.
-func (ms MetricSet) SetMetric(name string, value interface{}, sourceType SourceType) error {
+func (ms Set) SetMetric(name string, value interface{}, sourceType SourceType) error {
 	var err error
 	var newValue = value
 
@@ -44,7 +44,7 @@ func (ms MetricSet) SetMetric(name string, value interface{}, sourceType SourceT
 	switch sourceType {
 	case RATE, DELTA:
 		if !isNumeric(value) {
-			return fmt.Errorf("invalid (non-numeric) data type for metric %s", name)
+			return fmt.Errorf("non-numeric source type for rate/delta metric %s", name)
 		}
 		newValue, err = ms.sample(name, value, sourceType)
 		if err != nil {
@@ -52,11 +52,11 @@ func (ms MetricSet) SetMetric(name string, value interface{}, sourceType SourceT
 		}
 	case GAUGE:
 		if !isNumeric(value) {
-			return fmt.Errorf("invalid (non-numeric) data type for metric %s", name)
+			return fmt.Errorf("non-numeric source type for gauge metric %s", name)
 		}
 	case ATTRIBUTE:
 		if _, ok := value.(string); !ok {
-			return fmt.Errorf("invalid data type for attribute %s", name)
+			return fmt.Errorf("non-string source type for attribute %s", name)
 		}
 	default:
 		return fmt.Errorf("unknown source type for key %s", name)
@@ -71,7 +71,7 @@ func isNumeric(value interface{}) bool {
 	return err == nil
 }
 
-func (ms MetricSet) sample(name string, value interface{}, sourceType SourceType) (float64, error) {
+func (ms Set) sample(name string, value interface{}, sourceType SourceType) (float64, error) {
 	sampledValue := 0.0
 
 	// Convert the value to a float64 so we can compare it with the cached one

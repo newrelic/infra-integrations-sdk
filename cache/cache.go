@@ -34,15 +34,15 @@ type Cache struct {
 // it is not set, this will act as a memory-only cache.
 func NewCache() (*Cache, error) {
 	cache := &Cache{
-		Data:       make(map[string]interface{}, 0),
-		Timestamps: make(map[string]int64, 0),
+		Data:       make(map[string]interface{}),
+		Timestamps: make(map[string]int64),
 	}
 
 	cachePath := os.Getenv("NRIA_CACHE_PATH")
 	if cachePath == "" {
 		_, fname := filepath.Split(os.Args[0])
 		cachePath = filepath.Join(os.TempDir(), fmt.Sprintf("%s.json", fname))
-		log.Warnf("environment variable NRIA_CACHE_PATH is not set, using default %s", cachePath)
+		log.Warn("environment variable NRIA_CACHE_PATH is not set, using default %s", cachePath)
 	}
 
 	cache.path = cachePath
@@ -62,16 +62,18 @@ func NewCache() (*Cache, error) {
 	}
 
 	if now().Sub(stat.ModTime()) > cacheTTL {
-		log.Warnf("cache file (%s) is older than %v, skipping loading from disk.", cachePath, cacheTTL)
+		log.Warn("cache file (%s) is older than %v, skipping loading from disk.", cachePath, cacheTTL)
 		return cache, nil
 	}
 
 	file, err := ioutil.ReadFile(cache.path)
 	if err != nil {
-		log.Warnf("cache file (%s) cannot be open for reading.", cachePath)
+		log.Warn("cache file (%s) cannot be open for reading.", cachePath)
 		return cache, nil
 	}
-	json.Unmarshal(file, &cache)
+
+	// Ignoring unmarshalling errors, returning a clean cache
+	json.Unmarshal(file, &cache) // nolint: errcheck
 
 	return cache, nil
 }
@@ -88,12 +90,7 @@ func (cache *Cache) Save() error {
 		return err
 	}
 
-	err = ioutil.WriteFile(cache.path, data, 0644)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return ioutil.WriteFile(cache.path, data, 0644)
 }
 
 // Get looks for a key in the cache and returns its value together with the
