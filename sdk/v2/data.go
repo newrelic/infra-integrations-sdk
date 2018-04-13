@@ -33,8 +33,8 @@ type Event v1.Event
 type EntityData struct {
 	Entity    Entity       `json:"entity"`
 	Metrics   []metric.Set `json:"metrics"`
-	Inventory v1.Inventory `json:"inventory"`
-	Events    []v1.Event   `json:"events"`
+	Inventory Inventory `json:"inventory"`
+	Events    []Event   `json:"events"`
 }
 
 // NewEntityData creates a new EntityData with default values initialised.
@@ -47,8 +47,8 @@ func NewEntityData(entityName, entityType string) (EntityData, error) {
 	d := EntityData{
 		// empty array or object preferred instead of null on marshaling.
 		Metrics:   []metric.Set{},
-		Inventory: v1.Inventory{},
-		Events:    []v1.Event{},
+		Inventory: Inventory{},
+		Events:    []Event{},
 	}
 
 	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.

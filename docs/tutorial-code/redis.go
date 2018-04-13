@@ -126,7 +126,7 @@ func main() {
 	if args.All || args.Events {
 		err := populateEvents(integration)
 		if err != nil {
-			log.Debugf("adding event failed, got: %s", err)
+			log.Debug("adding event failed, got: %s", err)
 		}
 	}
 	fatalIfErr(integration.Publish())
