@@ -128,7 +128,7 @@ func TestIntegration_Publish(t *testing.T) {
 				t.Fatal("error unmarshaling expected output raw test data sample")
 			}
 
-			integration := new(IntegrationProtocol2)
+			integration := new(Integration)
 			err = json.Unmarshal(p, integration)
 			if err != nil {
 				t.Error("error unmarshaling integration output", err)
@@ -155,8 +155,8 @@ func TestIntegration_Publish(t *testing.T) {
 	ms.SetMetric("metricTwo", 88, metric.GAUGE)
 	ms.SetMetric("metricThree", "test", metric.ATTRIBUTE)
 
-	e.AddEvent(v1.Event{Summary: "evnt1sum", Category: "evnt1cat"})
-	e.AddEvent(v1.Event{Summary: "evnt2sum", Category: "evnt2cat"})
+	e.AddEvent(Event{Summary: "evnt1sum", Category: "evnt1cat"})
+	e.AddEvent(Event{Summary: "evnt2sum", Category: "evnt2cat"})
 
 	e, err = i.Entity("EntityTwo", "test")
 	if err != nil {
@@ -178,12 +178,12 @@ func TestIntegration_Publish(t *testing.T) {
 	ms.SetMetric("metricTwo", 88, metric.GAUGE)
 	ms.SetMetric("metricThree", "test", metric.ATTRIBUTE)
 
-	e.AddEvent(v1.Event{Summary: "evnt3sum", Category: "evnt3cat"})
+	e.AddEvent(Event{Summary: "evnt3sum", Category: "evnt3cat"})
 
 	i.Publish()
 }
 
-func TestIntegrationProtocol2_EntityReturnsExistingEntity(t *testing.T) {
+func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
 	i, err := NewIntegration("TestIntegration", "1.0", new(struct{}))
 	if err != nil {
 		t.Fatal(err)
@@ -208,7 +208,7 @@ func TestIntegrationProtocol2_EntityReturnsExistingEntity(t *testing.T) {
 
 // NOTE: This test does nothing as test but when running with -race flag we can detect data races.
 // See Lock and Unlock on Entity method.
-func TestIntegrationProtocol2_EntityHasNoDataRace(t *testing.T) {
+func TestIntegration_EntityHasNoDataRace(t *testing.T) {
 	in, err := NewIntegration("TestIntegration", "1.0", new(struct{}))
 	if err != nil {
 		t.Fatal(err)
