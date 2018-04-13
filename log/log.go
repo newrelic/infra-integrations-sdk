@@ -3,58 +3,54 @@ package log
 import (
 	"os"
 
-	"github.com/sirupsen/logrus"
+	"log"
+	"io"
 )
 
-// SetupLogging redirects logs to stderr and configures the log level.
-func SetupLogging(verbose bool) {
-	logrus.SetOutput(os.Stderr)
-	if verbose {
-		logrus.SetLevel(logrus.DebugLevel)
-	} else {
-		logrus.SetLevel(logrus.InfoLevel)
-	}
+type Logger interface {
+	Debug(format string, args ...interface{})
+	Info(format string, args ...interface{})
+	Error(format string, args ...interface{})
 }
 
-// New creates an already configured logger.
-func New(verbose bool) *logrus.Logger {
-	l := logrus.New()
-	ConfigureLogger(l, verbose)
-
-	return l
+type defaultLogger struct {
+	logger *log.Logger
+	debug  bool
 }
 
-// ConfigureLogger configures an already created logger. Redirects logs to stderr and configures the log level.
-func ConfigureLogger(logger *logrus.Logger, verbose bool) {
-	logger.Out = os.Stderr
-	if verbose {
-		logger.SetLevel(logrus.DebugLevel)
-	} else {
-		logger.SetLevel(logrus.InfoLevel)
+// New creates a logger with stderr output, verbose enables Debug output
+func NewStdErr(debug bool) Logger {
+	return New(debug, os.Stderr)
+}
+
+// New creates a logger using provided writer, verbose enables Debug output
+func New(debug bool, w io.Writer) Logger {
+	return &defaultLogger{
+		logger: log.New(w, "", 0),
+		debug:  debug,
 	}
 }
 
 // Debug logs a formatted message at level Debug.
-func Debug(format string, args ...interface{}) {
-	logrus.Debugf(format, args...)
+func (l *defaultLogger) Debug(format string, args ...interface{}) {
+	if l.debug {
+		l.prefixPrint("DEBUG", format, args)
+	}
 }
 
 // Info logs a formatted message at level Info.
-func Info(format string, args ...interface{}) {
-	logrus.Infof(format, args...)
-}
-
-// Warn logs a formatted message at level Warn.
-func Warn(format string, args ...interface{}) {
-	logrus.Warnf(format, args...)
+func (l *defaultLogger) Info(format string, args ...interface{}) {
+	l.prefixPrint("INFO", format, args)
 }
 
 // Error logs a formatted message at level Error.
-func Error(format string, args ...interface{}) {
-	logrus.Errorf(format, args...)
+func (l *defaultLogger) Error(format string, args ...interface{}) {
+	l.prefixPrint("ERR", format, args)
 }
 
-// Fatal logs an error at level Fatal, and makes the program exit with an error code.
-func Fatal(err error) {
-	logrus.WithError(err).Fatal("can't continue")
+func (l *defaultLogger) prefixPrint(prefix string, format string, args ...interface{}) {
+	prev := log.Prefix()
+	log.SetPrefix(prefix)
+	l.logger.Printf(format, args...)
+	log.SetPrefix(prev)
 }
