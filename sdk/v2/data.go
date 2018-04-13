@@ -4,12 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"sync"
 
-	"github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/cache"
-	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/sdk/v1"
 	"github.com/pkg/errors"
@@ -33,8 +30,8 @@ type Event v1.Event
 type EntityData struct {
 	Entity    Entity       `json:"entity"`
 	Metrics   []metric.Set `json:"metrics"`
-	Inventory Inventory `json:"inventory"`
-	Events    []Event   `json:"events"`
+	Inventory Inventory    `json:"inventory"`
+	Events    []Event      `json:"events"`
 }
 
 // NewEntityData creates a new EntityData with default values initialised.
@@ -64,7 +61,7 @@ func NewEntityData(entityName, entityType string) (EntityData, error) {
 
 // Integration defines the format of the output JSON that integrations will return for protocol 2.
 type Integration struct {
-	sync.Mutex
+	locker             sync.Locker
 	Name               string        `json:"name"`
 	ProtocolVersion    string        `json:"protocol_version"`
 	IntegrationVersion string        `json:"integration_version"`
@@ -73,49 +70,10 @@ type Integration struct {
 	writer             io.Writer
 }
 
-// NewIntegrationWithWriter initializes a new instance of the integration protocol 2 specifying a writer instead of using stdout by default.
-func NewIntegrationWithWriter(name string, version string, arguments interface{}, writer io.Writer) (*Integration, error) {
-	i, err := NewIntegration(name, version, arguments)
-	if err != nil {
-		return nil, err
-	}
-
-	i.writer = writer
-
-	return i, nil
-}
-
-// NewIntegration initializes a new instance of the integration protocol 2.
-func NewIntegration(name string, version string, arguments interface{}) (*Integration, error) {
-	err := args.SetupArgs(arguments)
-	if err != nil {
-		return nil, err
-	}
-	defaultArgs := args.GetDefaultArgs(arguments)
-
-	log.SetupLogging(defaultArgs.Verbose)
-
-	// Avoid working with an uninitialized or in error state cache
-	if err = cache.Status(); err != nil {
-		return nil, err
-	}
-
-	integration := &Integration{
-		Name:               name,
-		ProtocolVersion:    "2",
-		IntegrationVersion: version,
-		prettyOutput:       defaultArgs.Pretty,
-		Data:               []*EntityData{}, // we do because we don't want a null but an empty array on marshaling.
-		writer:             os.Stdout,       // StdOut by default
-	}
-
-	return integration, nil
-}
-
 // Entity method creates or retrieves an already created EntityData.
 func (integration *Integration) Entity(entityName, entityType string) (*EntityData, error) {
-	integration.Lock()
-	defer integration.Unlock()
+	integration.locker.Lock()
+	defer integration.locker.Unlock()
 	for _, e := range integration.Data {
 		if e.Entity.Name == entityName && e.Entity.Type == entityType {
 			return e, nil
@@ -179,8 +137,8 @@ func (integration *Integration) Publish() error {
 // Clear re-initializes the Inventory, Metrics and Events for this integration.
 // Used after publishing so the object can be reused.
 func (integration *Integration) Clear() {
-	integration.Lock()
-	defer integration.Unlock()
+	integration.locker.Lock()
+	defer integration.locker.Unlock()
 	integration.Data = []*EntityData{} // empty array preferred instead of null on marshaling.
 }
 

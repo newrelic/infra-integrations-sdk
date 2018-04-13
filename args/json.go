@@ -28,7 +28,6 @@ func (i *JSON) Set(s string) error {
 // Get returns the hold value
 func (i *JSON) Get() interface{} { return i.value }
 
-
 // String converts to string
 func (i *JSON) String() string {
 	s, _ := json.Marshal(&(i.value))
