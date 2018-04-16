@@ -8,7 +8,6 @@ import (
 
 	"github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/cache"
-	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/pkg/errors"
 )
 
@@ -89,7 +88,7 @@ func (b *integrationBuilderImpl) Build() (*Integration, error) {
 	}
 	defaultArgs := args.GetDefaultArgs(b.arguments)
 
-	log.SetupLogging(defaultArgs.Verbose)
+	cache.SetupLogging(defaultArgs.Verbose)
 
 	// Avoid working with an uninitialized or in error state cache
 	if err = cache.Status(); err != nil { // Todo: cache should not be a singleton
