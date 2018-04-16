@@ -15,8 +15,8 @@ func TestNew(t *testing.T) {
 	l := New(false, &writer)
 
 
-	l.Error("foo")
-	l.Error("bar")
+	l.Errorf("foo")
+	l.Errorf("bar")
 
 	logged := writer.String()
 

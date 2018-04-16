@@ -42,7 +42,7 @@ func NewCache(l log.Logger) (*Cache, error) {
 	if cachePath == "" {
 		_, fname := filepath.Split(os.Args[0])
 		cachePath = filepath.Join(os.TempDir(), fmt.Sprintf("%s.json", fname))
-		l.Info("environment variable NRIA_CACHE_PATH is not set, using default %s", cachePath)
+		l.Infof("environment variable NRIA_CACHE_PATH is not set, using default %s", cachePath)
 	}
 
 	cache.path = cachePath
@@ -62,13 +62,13 @@ func NewCache(l log.Logger) (*Cache, error) {
 	}
 
 	if now().Sub(stat.ModTime()) > cacheTTL {
-		l.Info("cache file (%s) is older than %v, skipping loading from disk.", cachePath, cacheTTL)
+		l.Infof("cache file (%s) is older than %v, skipping loading from disk.", cachePath, cacheTTL)
 		return cache, nil
 	}
 
 	file, err := ioutil.ReadFile(cache.path)
 	if err != nil {
-		l.Info("cache file (%s) cannot be open for reading.", cachePath)
+		l.Infof("cache file (%s) cannot be open for reading.", cachePath)
 		return cache, nil
 	}
 

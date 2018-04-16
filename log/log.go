@@ -8,9 +8,9 @@ import (
 )
 
 type Logger interface {
-	Debug(format string, args ...interface{})
-	Info(format string, args ...interface{})
-	Error(format string, args ...interface{})
+	Debugf(format string, args ...interface{})
+	Infof(format string, args ...interface{})
+	Errorf(format string, args ...interface{})
 	SetDebug(enable bool) // deprecated TODO remove when deleting global scope from cache
 }
 
@@ -32,20 +32,20 @@ func New(debug bool, w io.Writer) Logger {
 	}
 }
 
-// Debug logs a formatted message at level Debug.
-func (l *defaultLogger) Debug(format string, args ...interface{}) {
+// Debugf logs a formatted message at level Debug.
+func (l *defaultLogger) Debugf(format string, args ...interface{}) {
 	if l.debug {
 		l.prefixPrint("DEBUG", format, args)
 	}
 }
 
-// Info logs a formatted message at level Info.
-func (l *defaultLogger) Info(format string, args ...interface{}) {
+// Infof logs a formatted message at level Info.
+func (l *defaultLogger) Infof(format string, args ...interface{}) {
 	l.prefixPrint("INFO", format, args)
 }
 
-// Error logs a formatted message at level Error.
-func (l *defaultLogger) Error(format string, args ...interface{}) {
+// Errorf logs a formatted message at level Error.
+func (l *defaultLogger) Errorf(format string, args ...interface{}) {
 	l.prefixPrint("ERR", format, args)
 }
 

@@ -126,7 +126,7 @@ func main() {
 	if args.All || args.Events {
 		err := populateEvents(integration)
 		if err != nil {
-			cache.GlobalLog.Debug("adding event failed, got: %s", err)
+			cache.GlobalLog.Debugf("adding event failed, got: %s", err)
 		}
 	}
 	panicOnErr(integration.Publish())
