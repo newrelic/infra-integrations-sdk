@@ -2,7 +2,6 @@ package v2
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"os"
 	"sync"
@@ -46,7 +45,7 @@ func NewEntityData(entityName, entityType string) (EntityData, error) {
 	d := EntityData{
 		// empty array or object preferred instead of null on marshaling.
 		Metrics:   []metric.Set{},
-		Inventory: Inventory{},
+		Inventory: make(Inventory),
 		Events:    []Event{},
 	}
 
@@ -148,7 +147,7 @@ func (d *EntityData) AddNotificationEvent(summary string) error {
 // AddEvent method adds a new Event.
 func (d *EntityData) AddEvent(e Event) error {
 	if e.Summary == "" {
-		return fmt.Errorf("summary of the event cannot be empty")
+		return errors.New("summary of the event cannot be empty")
 	}
 
 	d.Events = append(d.Events, e)
@@ -169,7 +168,7 @@ func (integration *Integration) Publish() error {
 		return err
 	}
 
-	fmt.Fprint(integration.writer, output)
+	integration.writer.Write(output)
 	integration.Clear()
 
 	return nil
@@ -185,7 +184,7 @@ func (integration *Integration) Clear() {
 
 // toJSON returns the integration as a JSON string. If the pretty attribute is
 // set to true, the JSON will be idented for easy reading.
-func (integration *Integration) toJSON(pretty bool) (string, error) {
+func (integration *Integration) toJSON(pretty bool) ([]byte, error) {
 	var output []byte
 	var err error
 
@@ -196,12 +195,12 @@ func (integration *Integration) toJSON(pretty bool) (string, error) {
 	}
 
 	if err != nil {
-		return "", fmt.Errorf("error marshalling to JSON: %s", err)
+		return []byte(""), errors.Errorf("error marshalling to JSON: %s", err)
 	}
 
 	if string(output) == "null" {
-		return "[]", nil
+		return []byte("[]"), nil
 	}
 
-	return string(output), nil
+	return output, nil
 }
