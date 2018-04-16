@@ -1,6 +1,7 @@
 package v2
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"reflect"
@@ -26,10 +27,17 @@ type IntegrationBuilder interface {
 	// Writer sets the output stream where the integration resulting payload will be written to.
 	// By default, the standard output (os.Stdout).
 	Writer(io.Writer) IntegrationBuilder
+	// Cache sets the Cache implementation that will be used to persist data between executions of the same integration.
+	// By default, it will be a Disk-backed cache named stored in the file returned by the
+	// cache.DefaultPath(integrationName) function.
+	Cache(cache.Cache) IntegrationBuilder
+	// NoCache disables the cache for this integration.
+	NoCache() IntegrationBuilder
 }
 
 type integrationBuilderImpl struct {
 	integration *Integration
+	hasCache    bool
 	arguments   interface{}
 }
 
@@ -48,6 +56,7 @@ func NewIntegration(name string, version string) IntegrationBuilder {
 			Data:               []*EntityData{},
 			writer:             os.Stdout, // defaults to stdout
 		},
+		hasCache: true,
 	}
 }
 
@@ -63,6 +72,18 @@ func (b *integrationBuilderImpl) Writer(writer io.Writer) IntegrationBuilder {
 
 func (b *integrationBuilderImpl) ParsedArguments(dstPointer interface{}) IntegrationBuilder {
 	b.arguments = dstPointer
+	return b
+}
+
+func (b *integrationBuilderImpl) Cache(c cache.Cache) IntegrationBuilder {
+	b.integration.Cache = c
+	b.hasCache = true
+	return b
+}
+
+func (b *integrationBuilderImpl) NoCache() IntegrationBuilder {
+	b.integration.Cache = nil
+	b.hasCache = false
 	return b
 }
 
@@ -90,9 +111,12 @@ func (b *integrationBuilderImpl) Build() (*Integration, error) {
 
 	cache.SetupLogging(defaultArgs.Verbose)
 
-	// Avoid working with an uninitialized or in error state cache
-	if err = cache.Status(); err != nil { // Todo: cache should not be a singleton
-		return nil, err
+	if b.integration.Cache == nil && b.hasCache {
+		// TODO: set Log(log) function to this builder
+		b.integration.Cache, err = cache.NewCache(cache.DefaultPath(b.integration.Name), cache.GlobalLog)
+		if err != nil {
+			return nil, fmt.Errorf("can't create cache: %s", err.Error())
+		}
 	}
 
 	b.integration.prettyOutput = defaultArgs.Pretty

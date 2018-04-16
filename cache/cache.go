@@ -11,6 +11,8 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/log"
 )
 
+const pathEnvVar = "NRIA_CACHE_PATH"
+
 var now = time.Now
 
 // SetNow forces a different "current time" for the cache.
@@ -21,28 +23,31 @@ func SetNow(newNow func() time.Time) {
 
 const cacheTTL = 1 * time.Minute
 
-// Cache is a map-like structure that is initialized and stored in a JSON
-// file. It also saves the timestamp when a key was stored.
-type Cache struct {
+// Cache is a key-value structure that is initialized and stored in a persistent device.
+// It also saves the timestamp when a key was stored.
+type Cache interface {
+	// Save persists all the data in the cache.
+	Save() error
+	// Get looks for a key in the cache and returns its value together with the
+	// timestamp of when it was last set. The third returned value indicates whether
+	// the key has been found or not.
+	Get(name string) (float64, int64, bool)
+	// Set adds a value into the cache and with the current timestamp. The data is not persisted until the Save()
+	// function is invoked.
+	Set(name string, value float64) int64
+}
+
+type cacheImpl struct {
 	path       string
 	Data       map[string]interface{}
 	Timestamps map[string]int64
 }
 
-// NewCache will create and initialize a DiskCache object. It expects the
-// NRIA_CACHE_PATH environment variable to point to the file with the cache. If
-// it is not set, this will act as a memory-only cache.
-func NewCache(l log.Logger) (*Cache, error) {
-	cache := &Cache{
+// NewCache will create and initialize a disk-backed cache object.
+func NewCache(cachePath string, l log.Logger) (Cache, error) {
+	cache := &cacheImpl{
 		Data:       make(map[string]interface{}),
 		Timestamps: make(map[string]int64),
-	}
-
-	cachePath := os.Getenv("NRIA_CACHE_PATH")
-	if cachePath == "" {
-		_, fname := filepath.Split(os.Args[0])
-		cachePath = filepath.Join(os.TempDir(), fmt.Sprintf("%s.json", fname))
-		l.Infof("environment variable NRIA_CACHE_PATH is not set, using default %s", cachePath)
 	}
 
 	cache.path = cachePath
@@ -78,9 +83,8 @@ func NewCache(l log.Logger) (*Cache, error) {
 	return cache, nil
 }
 
-// Save marshalls and stores the data a Cache is holding into disk as a JSON
-// file.
-func (cache *Cache) Save() error {
+// Save persists all the data in the cache.
+func (cache *cacheImpl) Save() error {
 	if cache.path == "" {
 		return nil
 	}
@@ -96,7 +100,7 @@ func (cache *Cache) Save() error {
 // Get looks for a key in the cache and returns its value together with the
 // timestamp of when it was last set. The third returned value indicates whether
 // the key has been found or not.
-func (cache *Cache) Get(name string) (float64, int64, bool) {
+func (cache *cacheImpl) Get(name string) (float64, int64, bool) {
 	val, ok := cache.Data[name]
 	if ok {
 		ts, ok := cache.Timestamps[name]
@@ -108,7 +112,7 @@ func (cache *Cache) Get(name string) (float64, int64, bool) {
 }
 
 // Set adds a value into the cache and it also stores the current timestamp.
-func (cache *Cache) Set(name string, value float64) int64 {
+func (cache *cacheImpl) Set(name string, value float64) int64 {
 	cache.Data[name] = value
 	cache.Timestamps[name] = now().Unix()
 	return cache.Timestamps[name]

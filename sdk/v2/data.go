@@ -62,6 +62,7 @@ func NewEntityData(entityName, entityType string) (EntityData, error) {
 // Integration defines the format of the output JSON that integrations will return for protocol 2.
 type Integration struct {
 	locker             sync.Locker
+	Cache              cache.Cache   `json:"-"`
 	Name               string        `json:"name"`
 	ProtocolVersion    string        `json:"protocol_version"`
 	IntegrationVersion string        `json:"integration_version"`
@@ -119,8 +120,10 @@ func (d *EntityData) AddEvent(e Event) error {
 // and re-initializes the integration object (allowing re-use it during the
 // execution of your code).
 func (integration *Integration) Publish() error {
-	if err := cache.Save(); err != nil {
-		return err
+	if integration.Cache != nil {
+		if err := integration.Cache.Save(); err != nil {
+			return err
+		}
 	}
 
 	output, err := integration.toJSON(integration.prettyOutput)
