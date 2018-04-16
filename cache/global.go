@@ -1,6 +1,18 @@
 package cache
 
-var instance, err = NewCache()
+import "github.com/newrelic/infra-integrations-sdk/log"
+
+// DefaultDebug default debug mode for the cache.
+const DefaultDebug = false
+
+// TODO delete when removing these globals
+var GlobalLog = log.NewStdErr(DefaultDebug)
+
+var instance, err = NewCache(GlobalLog)
+
+func SetupLogging(verbose bool) {
+	GlobalLog.SetDebug(verbose)
+}
 
 // Save marshalls and stores the data the cache is holding into disk as a JSON file.
 func Save() error {
