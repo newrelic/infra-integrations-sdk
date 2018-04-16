@@ -6,7 +6,6 @@ import (
 
 	"github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/cache"
-	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/metric"
 )
 
@@ -58,7 +57,7 @@ func NewIntegration(name string, version string, arguments interface{}) (*Integr
 	}
 	defaultArgs := args.GetDefaultArgs(arguments)
 
-	log.SetupLogging(defaultArgs.Verbose)
+	cache.GlobalLog.SetDebug(defaultArgs.Verbose)
 
 	// Avoid working with an uninitialized or in error state cache
 	if err = cache.Status(); err != nil {

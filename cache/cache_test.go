@@ -1,33 +1,30 @@
-package cache_test
+package cache
 
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/newrelic/infra-integrations-sdk/cache"
 )
 
 func TestDiskCache(t *testing.T) {
 	file, err := ioutil.TempFile("", "cache")
 	if err != nil {
-		log.Fatal("Can't create temporary cache file")
+		t.Error("Can't create temporary cache file")
 	}
 	defer os.Remove(file.Name())
 
 	// Create cache with existing file in env
 	os.Setenv("NRIA_CACHE_PATH", file.Name())
-	_, err = cache.NewCache()
+	_, err = NewCache(GlobalLog)
 	if err != nil {
 		t.Error()
 	}
 
 	// Create cache with unexisting file in env
 	os.Setenv("NRIA_CACHE_PATH", "newfile.json")
-	_, err = cache.NewCache()
+	_, err = NewCache(GlobalLog)
 	defer os.Remove("newfile.json")
 	if err != nil {
 		t.Error()
@@ -35,7 +32,7 @@ func TestDiskCache(t *testing.T) {
 
 	// Create cache with default file
 	os.Setenv("NRIA_CACHE_PATH", "")
-	dc, err := cache.NewCache()
+	dc, err := NewCache(GlobalLog)
 	if err != nil {
 		t.Fail()
 	}
@@ -55,8 +52,8 @@ func TestCacheSet(t *testing.T) {
 	os.Setenv("NRIA_CACHE_PATH", "")
 	curdir, _ := os.Getwd()
 
-	dc, err := cache.NewCache()
-	defer os.Remove(curdir + "/cache.json")
+	dc, err := NewCache(GlobalLog)
+	defer os.Remove(curdir + "/json")
 
 	if err != nil {
 		t.Fatal()
@@ -76,8 +73,8 @@ func TestCacheGet(t *testing.T) {
 	os.Setenv("NRIA_CACHE_PATH", "")
 	curdir, _ := os.Getwd()
 
-	dc, err := cache.NewCache()
-	defer os.Remove(curdir + "/cache.json")
+	dc, err := NewCache(GlobalLog)
+	defer os.Remove(curdir + "/json")
 
 	if err != nil {
 		t.Fatal()
@@ -112,11 +109,11 @@ func TestCacheGet(t *testing.T) {
 
 func TestCacheSave(t *testing.T) {
 	// Create cache with default file
-	os.Setenv("NRIA_CACHE_PATH", "cache.json")
+	os.Setenv("NRIA_CACHE_PATH", "json")
 	curdir, _ := os.Getwd()
 
-	dc, err := cache.NewCache()
-	defer os.Remove(curdir + "/cache.json")
+	dc, err := NewCache(GlobalLog)
+	defer os.Remove(curdir + "/json")
 
 	if err != nil {
 		t.Fail()
@@ -130,7 +127,7 @@ func TestCacheSave(t *testing.T) {
 		t.Error()
 	}
 
-	dc, err = cache.NewCache()
+	dc, err = NewCache(GlobalLog)
 	if err != nil {
 		t.Fail()
 	}

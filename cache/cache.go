@@ -32,7 +32,7 @@ type Cache struct {
 // NewCache will create and initialize a DiskCache object. It expects the
 // NRIA_CACHE_PATH environment variable to point to the file with the cache. If
 // it is not set, this will act as a memory-only cache.
-func NewCache() (*Cache, error) {
+func NewCache(l log.Logger) (*Cache, error) {
 	cache := &Cache{
 		Data:       make(map[string]interface{}),
 		Timestamps: make(map[string]int64),
@@ -42,7 +42,7 @@ func NewCache() (*Cache, error) {
 	if cachePath == "" {
 		_, fname := filepath.Split(os.Args[0])
 		cachePath = filepath.Join(os.TempDir(), fmt.Sprintf("%s.json", fname))
-		log.Warn("environment variable NRIA_CACHE_PATH is not set, using default %s", cachePath)
+		l.Infof("environment variable NRIA_CACHE_PATH is not set, using default %s", cachePath)
 	}
 
 	cache.path = cachePath
@@ -62,13 +62,13 @@ func NewCache() (*Cache, error) {
 	}
 
 	if now().Sub(stat.ModTime()) > cacheTTL {
-		log.Warn("cache file (%s) is older than %v, skipping loading from disk.", cachePath, cacheTTL)
+		l.Infof("cache file (%s) is older than %v, skipping loading from disk.", cachePath, cacheTTL)
 		return cache, nil
 	}
 
 	file, err := ioutil.ReadFile(cache.path)
 	if err != nil {
-		log.Warn("cache file (%s) cannot be open for reading.", cachePath)
+		l.Infof("cache file (%s) cannot be open for reading.", cachePath)
 		return cache, nil
 	}
 
