@@ -20,14 +20,14 @@ func TestDiskCache(t *testing.T) {
 
 	// Create cache with existing file in env
 	os.Setenv("NRIA_CACHE_PATH", file.Name())
-	_, err = cache.NewCache()
+	_, err = cache.NewCache(cache.GlobalLog)
 	if err != nil {
 		t.Error()
 	}
 
 	// Create cache with unexisting file in env
 	os.Setenv("NRIA_CACHE_PATH", "newfile.json")
-	_, err = cache.NewCache()
+	_, err = cache.NewCache(cache.GlobalLog)
 	defer os.Remove("newfile.json")
 	if err != nil {
 		t.Error()
@@ -35,7 +35,7 @@ func TestDiskCache(t *testing.T) {
 
 	// Create cache with default file
 	os.Setenv("NRIA_CACHE_PATH", "")
-	dc, err := cache.NewCache()
+	dc, err := cache.NewCache(cache.GlobalLog)
 	if err != nil {
 		t.Fail()
 	}
@@ -55,7 +55,7 @@ func TestCacheSet(t *testing.T) {
 	os.Setenv("NRIA_CACHE_PATH", "")
 	curdir, _ := os.Getwd()
 
-	dc, err := cache.NewCache()
+	dc, err := cache.NewCache(cache.GlobalLog)
 	defer os.Remove(curdir + "/cache.json")
 
 	if err != nil {
@@ -76,7 +76,7 @@ func TestCacheGet(t *testing.T) {
 	os.Setenv("NRIA_CACHE_PATH", "")
 	curdir, _ := os.Getwd()
 
-	dc, err := cache.NewCache()
+	dc, err := cache.NewCache(cache.GlobalLog)
 	defer os.Remove(curdir + "/cache.json")
 
 	if err != nil {
@@ -115,7 +115,7 @@ func TestCacheSave(t *testing.T) {
 	os.Setenv("NRIA_CACHE_PATH", "cache.json")
 	curdir, _ := os.Getwd()
 
-	dc, err := cache.NewCache()
+	dc, err := cache.NewCache(cache.GlobalLog)
 	defer os.Remove(curdir + "/cache.json")
 
 	if err != nil {
@@ -130,7 +130,7 @@ func TestCacheSave(t *testing.T) {
 		t.Error()
 	}
 
-	dc, err = cache.NewCache()
+	dc, err = cache.NewCache(cache.GlobalLog)
 	if err != nil {
 		t.Fail()
 	}

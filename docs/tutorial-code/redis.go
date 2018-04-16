@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/sdk/v1"
+	"github.com/newrelic/infra-integrations-sdk/cache"
 )
 
 type argumentList struct {
@@ -112,28 +112,28 @@ func populateEvents(integration *v1.Integration) error {
 
 func main() {
 	integration, err := v1.NewIntegration(integrationName, integrationVersion, &args)
-	fatalIfErr(err)
+	panicOnErr(err)
 
 	if args.All || args.Inventory {
-		fatalIfErr(populateInventory(integration.Inventory))
+		panicOnErr(populateInventory(integration.Inventory))
 	}
 
 	if args.All || args.Metrics {
 		ms := integration.NewMetricSet("RedisSample")
-		fatalIfErr(populateMetrics(&ms))
+		panicOnErr(populateMetrics(&ms))
 	}
 
 	if args.All || args.Events {
 		err := populateEvents(integration)
 		if err != nil {
-			log.Debug("adding event failed, got: %s", err)
+			cache.GlobalLog.Debug("adding event failed, got: %s", err)
 		}
 	}
-	fatalIfErr(integration.Publish())
+	panicOnErr(integration.Publish())
 }
 
-func fatalIfErr(err error) {
+func panicOnErr(err error) {
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 }

@@ -11,6 +11,7 @@ type Logger interface {
 	Debug(format string, args ...interface{})
 	Info(format string, args ...interface{})
 	Error(format string, args ...interface{})
+	SetDebug(enable bool) // deprecated TODO remove when deleting global scope from cache
 }
 
 type defaultLogger struct {
@@ -53,4 +54,9 @@ func (l *defaultLogger) prefixPrint(prefix string, format string, args ...interf
 	log.SetPrefix(prefix)
 	l.logger.Printf(format, args...)
 	log.SetPrefix(prev)
+}
+
+// deprecated TODO remove when deleting global scope from cache
+func (l *defaultLogger) SetDebug(enable bool) {
+	l.debug = enable
 }
