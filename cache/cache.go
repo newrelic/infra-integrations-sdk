@@ -23,9 +23,9 @@ func SetNow(newNow func() time.Time) {
 
 const cacheTTL = 1 * time.Minute
 
-// Cache is a key-value structure that is initialized and stored in a persistent device.
+// Cacher is a key-value structure that is initialized and stored in a persistent device.
 // It also saves the timestamp when a key was stored.
-type Cache interface {
+type Cacher interface {
 	// Save persists all the data in the cache.
 	Save() error
 	// Get looks for a key in the cache and returns its value together with the
@@ -37,15 +37,15 @@ type Cache interface {
 	Set(name string, value float64) int64
 }
 
-type cacheImpl struct {
+type cacher struct {
 	path       string
 	Data       map[string]interface{}
 	Timestamps map[string]int64
 }
 
 // NewCache will create and initialize a disk-backed cache object.
-func NewCache(cachePath string, l log.Logger) (Cache, error) {
-	cache := &cacheImpl{
+func NewCache(cachePath string, l log.Logger) (Cacher, error) {
+	cache := &cacher{
 		Data:       make(map[string]interface{}),
 		Timestamps: make(map[string]int64),
 	}
@@ -84,26 +84,26 @@ func NewCache(cachePath string, l log.Logger) (Cache, error) {
 }
 
 // Save persists all the data in the cache.
-func (cache *cacheImpl) Save() error {
-	if cache.path == "" {
+func (c *cacher) Save() error {
+	if c.path == "" {
 		return nil
 	}
 
-	data, err := json.Marshal(cache)
+	data, err := json.Marshal(c)
 	if err != nil {
 		return err
 	}
 
-	return ioutil.WriteFile(cache.path, data, 0644)
+	return ioutil.WriteFile(c.path, data, 0644)
 }
 
 // Get looks for a key in the cache and returns its value together with the
 // timestamp of when it was last set. The third returned value indicates whether
 // the key has been found or not.
-func (cache *cacheImpl) Get(name string) (float64, int64, bool) {
-	val, ok := cache.Data[name]
+func (c *cacher) Get(name string) (float64, int64, bool) {
+	val, ok := c.Data[name]
 	if ok {
-		ts, ok := cache.Timestamps[name]
+		ts, ok := c.Timestamps[name]
 		if ok {
 			return val.(float64), int64(ts), ok
 		}
@@ -112,8 +112,8 @@ func (cache *cacheImpl) Get(name string) (float64, int64, bool) {
 }
 
 // Set adds a value into the cache and it also stores the current timestamp.
-func (cache *cacheImpl) Set(name string, value float64) int64 {
-	cache.Data[name] = value
-	cache.Timestamps[name] = now().Unix()
-	return cache.Timestamps[name]
+func (c *cacher) Set(name string, value float64) int64 {
+	c.Data[name] = value
+	c.Timestamps[name] = now().Unix()
+	return c.Timestamps[name]
 }

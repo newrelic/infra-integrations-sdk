@@ -112,7 +112,7 @@ func TestDefaultCache(t *testing.T) {
 	assert.NoError(t, err)
 
 	// And some values
-	integration.Cache.Set("hello", 12.33)
+	integration.Cacher.Set("hello", 12.33)
 
 	// When publishing the data
 	assert.NoError(t, integration.Publish())
@@ -133,11 +133,11 @@ func TestNoCache(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Given an integration with the no cache
-	integration, err := v2.NewIntegration("cool-integration", "1.0").Writer(output).NoCache().Build()
+	integration, err := v2.NewIntegration("cool-integration", "1.0").Writer(output).NoCacher().Build()
 	assert.NoError(t, err)
 
 	// The built integration cache is nil
-	assert.Nil(t, integration.Cache)
+	assert.Nil(t, integration.Cacher)
 
 	// And the data can be published anyway
 	assert.NoError(t, integration.Publish())
@@ -151,7 +151,7 @@ func TestCustomCache(t *testing.T) {
 
 	// Given an integration with a custom cache
 	customCache := fakeCache{}
-	integration, err := v2.NewIntegration("cool-integration", "1.0").Writer(output).Cache(&customCache).Build()
+	integration, err := v2.NewIntegration("cool-integration", "1.0").Writer(output).Cacher(&customCache).Build()
 	assert.NoError(t, err)
 
 	// When publishing the data

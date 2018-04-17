@@ -9,25 +9,29 @@ import (
 )
 
 // DefaultDebug default debug mode for the cache.
-const DefaultDebug = false
+const (
+	DefaultDebug     = false
+	cacheDirFilePerm = 0755
+	integrationsDir  = "nr-integrations"
+)
 
 // TODO delete when removing these globals
-var GlobalLog = log.NewStdErr(DefaultDebug)
+var (
+	GlobalLog = log.NewStdErr(DefaultDebug)
+	instance  Cacher
+	err       error
+)
 
 func SetupLogging(verbose bool) {
 	GlobalLog.SetDebug(verbose)
 }
-
-const integrationsDir = "nr-integrations"
-const cacheDirFilePerm = 0755
 
 // DefaultPath returns a default folder/filename path to a cache for an integration from the given name. The name of
 // the file will be the name of the integration with the .json extension.
 func DefaultPath(integrationName string) string {
 	baseDir := filepath.Join(os.TempDir(), integrationsDir)
 	// Create integrations cache directory
-	err := os.MkdirAll(baseDir, cacheDirFilePerm)
-	if err != nil {
+	if os.MkdirAll(baseDir, cacheDirFilePerm) != nil {
 		baseDir = os.TempDir()
 	}
 	return filepath.Join(baseDir, fmt.Sprint(integrationName, ".json"))
@@ -41,9 +45,6 @@ func globalPath() string {
 	}
 	return cachePath
 }
-
-var instance Cache
-var err error
 
 func checkInstance() {
 	if instance == nil {
@@ -74,7 +75,7 @@ func Set(name string, value float64) int64 {
 	return instance.Set(name, value)
 }
 
-// Status will return an error if any was found during global Cache creation.
+// Status will return an error if any was found during global Cacher creation.
 // Deprecated: don't use global cache. Create your own or let `IntegrationBuilder` create a default cache for you.
 func Status() error {
 	checkInstance()

@@ -27,12 +27,12 @@ type IntegrationBuilder interface {
 	// Writer sets the output stream where the integration resulting payload will be written to.
 	// By default, the standard output (os.Stdout).
 	Writer(io.Writer) IntegrationBuilder
-	// Cache sets the Cache implementation that will be used to persist data between executions of the same integration.
+	// Cacher sets the cache implementation that will be used to persist data between executions of the same integration.
 	// By default, it will be a Disk-backed cache named stored in the file returned by the
 	// cache.DefaultPath(integrationName) function.
-	Cache(cache.Cache) IntegrationBuilder
+	Cacher(cache.Cacher) IntegrationBuilder
 	// NoCache disables the cache for this integration.
-	NoCache() IntegrationBuilder
+	NoCacher() IntegrationBuilder
 }
 
 type integrationBuilderImpl struct {
@@ -75,14 +75,14 @@ func (b *integrationBuilderImpl) ParsedArguments(dstPointer interface{}) Integra
 	return b
 }
 
-func (b *integrationBuilderImpl) Cache(c cache.Cache) IntegrationBuilder {
-	b.integration.Cache = c
+func (b *integrationBuilderImpl) Cacher(c cache.Cacher) IntegrationBuilder {
+	b.integration.Cacher = c
 	b.hasCache = true
 	return b
 }
 
-func (b *integrationBuilderImpl) NoCache() IntegrationBuilder {
-	b.integration.Cache = nil
+func (b *integrationBuilderImpl) NoCacher() IntegrationBuilder {
+	b.integration.Cacher = nil
 	b.hasCache = false
 	return b
 }
@@ -111,9 +111,9 @@ func (b *integrationBuilderImpl) Build() (*Integration, error) {
 
 	cache.SetupLogging(defaultArgs.Verbose)
 
-	if b.integration.Cache == nil && b.hasCache {
+	if b.integration.Cacher == nil && b.hasCache {
 		// TODO: set Log(log) function to this builder
-		b.integration.Cache, err = cache.NewCache(cache.DefaultPath(b.integration.Name), cache.GlobalLog)
+		b.integration.Cacher, err = cache.NewCache(cache.DefaultPath(b.integration.Name), cache.GlobalLog)
 		if err != nil {
 			return nil, fmt.Errorf("can't create cache: %s", err.Error())
 		}
