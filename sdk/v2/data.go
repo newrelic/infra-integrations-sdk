@@ -6,8 +6,8 @@ import (
 	"io"
 	"sync"
 
-	"github.com/newrelic/infra-integrations-sdk/cache"
 	"github.com/newrelic/infra-integrations-sdk/metric"
+	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/newrelic/infra-integrations-sdk/sdk/v1"
 	"github.com/pkg/errors"
 )
@@ -62,11 +62,11 @@ func NewEntityData(entityName, entityType string) (EntityData, error) {
 // Integration defines the format of the output JSON that integrations will return for protocol 2.
 type Integration struct {
 	locker             sync.Locker
-	Cacher             cache.Cacher  `json:"-"`
-	Name               string        `json:"name"`
-	ProtocolVersion    string        `json:"protocol_version"`
-	IntegrationVersion string        `json:"integration_version"`
-	Data               []*EntityData `json:"data"`
+	Storer             persist.Storer `json:"-"`
+	Name               string         `json:"name"`
+	ProtocolVersion    string         `json:"protocol_version"`
+	IntegrationVersion string         `json:"integration_version"`
+	Data               []*EntityData  `json:"data"`
 	prettyOutput       bool
 	writer             io.Writer
 }
@@ -116,12 +116,12 @@ func (d *EntityData) AddEvent(e Event) error {
 }
 
 // Publish runs all necessary tasks before publishing the data. Currently, it
-// stores the cache, prints the JSON representation of the integration using a writer (stdout by default)
+// stores the Storer, prints the JSON representation of the integration using a writer (stdout by default)
 // and re-initializes the integration object (allowing re-use it during the
 // execution of your code).
 func (integration *Integration) Publish() error {
-	if integration.Cacher != nil {
-		if err := integration.Cacher.Save(); err != nil {
+	if integration.Storer != nil {
+		if err := integration.Storer.Save(); err != nil {
 			return err
 		}
 	}

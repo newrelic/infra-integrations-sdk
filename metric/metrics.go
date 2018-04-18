@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/newrelic/infra-integrations-sdk/cache"
+	"github.com/newrelic/infra-integrations-sdk/persist"
 )
 
 // SourceType defines the kind of data source. Based on this SourceType, metric
@@ -74,16 +74,16 @@ func isNumeric(value interface{}) bool {
 func (ms Set) sample(name string, value interface{}, sourceType SourceType) (float64, error) {
 	sampledValue := 0.0
 
-	// Convert the value to a float64 so we can compare it with the cached one
+	// Convert the value to a float64 so we can compare it with the stored one
 	floatValue, err := strconv.ParseFloat(fmt.Sprintf("%v", value), 64)
 	if err != nil {
 		return sampledValue, fmt.Errorf("can't sample metric of unknown type %s", name)
 	}
 
-	// Retrieve the last value and timestamp from cache
-	oldval, oldTime, ok := cache.Get(name)
+	// Retrieve the last value and timestamp from Storer
+	oldval, oldTime, ok := persist.Get(name)
 	// And replace it with the new value which we want to keep
-	newTime := cache.Set(name, floatValue)
+	newTime := persist.Set(name, floatValue)
 
 	if ok {
 		duration := (newTime - oldTime)

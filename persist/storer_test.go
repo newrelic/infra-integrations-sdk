@@ -1,4 +1,4 @@
-package cache_test
+package persist_test
 
 import (
 	"io/ioutil"
@@ -6,32 +6,32 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/newrelic/infra-integrations-sdk/cache"
+	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDiskCache(t *testing.T) {
+func TestDiskStorer(t *testing.T) {
 	file, err := ioutil.TempFile("", "cache")
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 
-	// Create cache with existing file in env
-	_, err = cache.NewCache(file.Name(), cache.GlobalLog)
+	// Create Storer with existing file in env
+	_, err = persist.NewStorer(file.Name(), persist.GlobalLog)
 	assert.NoError(t, err)
 
-	// Create cache with unexisting file in env
+	// Create Storer with unexisting file in env
 	tmpDir, err := ioutil.TempDir("", "cache-test")
 	assert.NoError(t, err)
-	_, err = cache.NewCache(filepath.Join(tmpDir, "newfile.json"), cache.GlobalLog)
+	_, err = persist.NewStorer(filepath.Join(tmpDir, "newfile.json"), persist.GlobalLog)
 	assert.NoError(t, err)
 }
 
-func TestCacheSet(t *testing.T) {
+func TestStorerSet(t *testing.T) {
 	file, err := ioutil.TempFile("", "cache.json")
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 
-	dc, err := cache.NewCache(file.Name(), cache.GlobalLog)
+	dc, err := persist.NewStorer(file.Name(), persist.GlobalLog)
 
 	assert.NoError(t, err)
 
@@ -42,12 +42,12 @@ func TestCacheSet(t *testing.T) {
 	assert.NotEqual(t, 0, ts)
 }
 
-func TestCacheGet(t *testing.T) {
+func TestStorerGet(t *testing.T) {
 	file, err := ioutil.TempFile("", "cache.json")
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 
-	dc, err := cache.NewCache(file.Name(), cache.GlobalLog)
+	dc, err := persist.NewStorer(file.Name(), persist.GlobalLog)
 
 	assert.NoError(t, err)
 
@@ -78,13 +78,13 @@ func TestCacheGet(t *testing.T) {
 	}
 }
 
-func TestCacheSave(t *testing.T) {
+func TestStorerSave(t *testing.T) {
 
 	file, err := ioutil.TempFile("", "cache.json")
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 
-	dc, err := cache.NewCache(file.Name(), cache.GlobalLog)
+	dc, err := persist.NewStorer(file.Name(), persist.GlobalLog)
 
 	assert.NoError(t, err)
 
@@ -94,7 +94,7 @@ func TestCacheSave(t *testing.T) {
 	err = dc.Save()
 	assert.NoError(t, err)
 
-	dc, err = cache.NewCache(file.Name(), cache.GlobalLog)
+	dc, err = persist.NewStorer(file.Name(), persist.GlobalLog)
 	assert.NoError(t, err)
 
 	value, ts, exists := dc.Get("key1")

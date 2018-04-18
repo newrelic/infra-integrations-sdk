@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/cache"
+	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/newrelic/infra-integrations-sdk/sdk/v2"
 	"github.com/stretchr/testify/assert"
 )
@@ -102,7 +102,7 @@ func TestWrongArguments(t *testing.T) {
 	}
 }
 
-func TestDefaultCache(t *testing.T) {
+func TestDefaultStorer(t *testing.T) {
 	// Redirecting standard output to a file
 	output, err := ioutil.TempFile("", "stdout")
 	assert.NoError(t, err)
@@ -112,13 +112,13 @@ func TestDefaultCache(t *testing.T) {
 	assert.NoError(t, err)
 
 	// And some values
-	integration.Cacher.Set("hello", 12.33)
+	integration.Storer.Set("hello", 12.33)
 
 	// When publishing the data
 	assert.NoError(t, integration.Publish())
 
 	// The data has been cached
-	c, err := cache.NewCache(cache.DefaultPath("cool-integration"), cache.GlobalLog)
+	c, err := persist.NewStorer(persist.DefaultPath("cool-integration"), persist.GlobalLog)
 	assert.NoError(t, err)
 
 	v, ts, ok := c.Get("hello")
@@ -127,53 +127,53 @@ func TestDefaultCache(t *testing.T) {
 	assert.InDelta(t, 12.33, v, 0.1)
 }
 
-func TestNoCache(t *testing.T) {
+func TestNoStorer(t *testing.T) {
 	// Redirecting standard output to a file
 	output, err := ioutil.TempFile("", "stdout")
 	assert.NoError(t, err)
 
 	// Given an integration with the no cache
-	integration, err := v2.NewIntegration("cool-integration", "1.0").Writer(output).NoCacher().Build()
+	integration, err := v2.NewIntegration("cool-integration", "1.0").Writer(output).NoStorer().Build()
 	assert.NoError(t, err)
 
 	// The built integration cache is nil
-	assert.Nil(t, integration.Cacher)
+	assert.Nil(t, integration.Storer)
 
 	// And the data can be published anyway
 	assert.NoError(t, integration.Publish())
 }
 
-func TestCustomCache(t *testing.T) {
+func TestCustomStorer(t *testing.T) {
 
 	// Redirecting standard output to a file
 	output, err := ioutil.TempFile("", "stdout")
 	assert.NoError(t, err)
 
 	// Given an integration with a custom cache
-	customCache := fakeCache{}
-	integration, err := v2.NewIntegration("cool-integration", "1.0").Writer(output).Cacher(&customCache).Build()
+	customStorer := fakeStorer{}
+	integration, err := v2.NewIntegration("cool-integration", "1.0").Writer(output).Storer(&customStorer).Build()
 	assert.NoError(t, err)
 
 	// When publishing the data
 	assert.NoError(t, integration.Publish())
 
 	// The data has been cached
-	assert.True(t, customCache.saved)
+	assert.True(t, customStorer.saved)
 }
 
-type fakeCache struct {
+type fakeStorer struct {
 	saved bool
 }
 
-func (m *fakeCache) Save() error {
+func (m *fakeStorer) Save() error {
 	m.saved = true
 	return nil
 }
 
-func (fakeCache) Get(name string) (float64, int64, bool) {
+func (fakeStorer) Get(name string) (float64, int64, bool) {
 	return 0, 0, false
 }
 
-func (fakeCache) Set(name string, value float64) int64 {
+func (fakeStorer) Set(name string, value float64) int64 {
 	return 0
 }

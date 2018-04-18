@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/cache"
+	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/pkg/errors"
 )
 
@@ -27,17 +27,17 @@ type IntegrationBuilder interface {
 	// Writer sets the output stream where the integration resulting payload will be written to.
 	// By default, the standard output (os.Stdout).
 	Writer(io.Writer) IntegrationBuilder
-	// Cacher sets the cache implementation that will be used to persist data between executions of the same integration.
-	// By default, it will be a Disk-backed cache named stored in the file returned by the
-	// cache.DefaultPath(integrationName) function.
-	Cacher(cache.Cacher) IntegrationBuilder
-	// NoCache disables the cache for this integration.
-	NoCacher() IntegrationBuilder
+	// Storer sets the persistence implementation that will be used to persist data between executions of the same integration.
+	// By default, it will be a Disk-backed storage named stored in the file returned by the
+	// persist.DefaultPath(integrationName) function.
+	Storer(persist.Storer) IntegrationBuilder
+	// NoStorer disables the storage for this integration.
+	NoStorer() IntegrationBuilder
 }
 
 type integrationBuilderImpl struct {
 	integration *Integration
-	hasCache    bool
+	hasStore    bool
 	arguments   interface{}
 }
 
@@ -56,7 +56,7 @@ func NewIntegration(name string, version string) IntegrationBuilder {
 			Data:               []*EntityData{},
 			writer:             os.Stdout, // defaults to stdout
 		},
-		hasCache: true,
+		hasStore: true,
 	}
 }
 
@@ -75,15 +75,15 @@ func (b *integrationBuilderImpl) ParsedArguments(dstPointer interface{}) Integra
 	return b
 }
 
-func (b *integrationBuilderImpl) Cacher(c cache.Cacher) IntegrationBuilder {
-	b.integration.Cacher = c
-	b.hasCache = true
+func (b *integrationBuilderImpl) Storer(c persist.Storer) IntegrationBuilder {
+	b.integration.Storer = c
+	b.hasStore = true
 	return b
 }
 
-func (b *integrationBuilderImpl) NoCacher() IntegrationBuilder {
-	b.integration.Cacher = nil
-	b.hasCache = false
+func (b *integrationBuilderImpl) NoStorer() IntegrationBuilder {
+	b.integration.Storer = nil
+	b.hasStore = false
 	return b
 }
 
@@ -109,13 +109,13 @@ func (b *integrationBuilderImpl) Build() (*Integration, error) {
 	}
 	defaultArgs := args.GetDefaultArgs(b.arguments)
 
-	cache.SetupLogging(defaultArgs.Verbose)
+	persist.SetupLogging(defaultArgs.Verbose)
 
-	if b.integration.Cacher == nil && b.hasCache {
+	if b.integration.Storer == nil && b.hasStore {
 		// TODO: set Log(log) function to this builder
-		b.integration.Cacher, err = cache.NewCache(cache.DefaultPath(b.integration.Name), cache.GlobalLog)
+		b.integration.Storer, err = persist.NewStorer(persist.DefaultPath(b.integration.Name), persist.GlobalLog)
 		if err != nil {
-			return nil, fmt.Errorf("can't create cache: %s", err.Error())
+			return nil, fmt.Errorf("can't create store: %s", err.Error())
 		}
 	}
 

@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/newrelic/infra-integrations-sdk/cache"
 	"github.com/newrelic/infra-integrations-sdk/metric"
+	"github.com/newrelic/infra-integrations-sdk/persist"
 )
 
 type FakeData struct {
@@ -26,7 +26,7 @@ var metricTests = []struct {
 	value      interface{}
 	metricType metric.SourceType
 	out        interface{}
-	cache      interface{}
+	storer     interface{}
 }{
 	{"rateKey1", 10, metric.RATE, 0.0, 10.0},
 	{"rateKey1", 100, metric.RATE, 90.0, 100.0},
@@ -39,7 +39,7 @@ var metricTests = []struct {
 
 func TestSet_SetMetricGauge(t *testing.T) {
 	fd := FakeData{}
-	cache.SetNow(fd.Now)
+	persist.SetNow(fd.Now)
 
 	ms := metric.NewSet("some-event-type")
 
@@ -52,7 +52,7 @@ func TestSet_SetMetricGauge(t *testing.T) {
 
 func TestSet_SetMetricAttribute(t *testing.T) {
 	fd := FakeData{}
-	cache.SetNow(fd.Now)
+	persist.SetNow(fd.Now)
 
 	ms := metric.NewSet("some-event-type")
 
@@ -63,9 +63,9 @@ func TestSet_SetMetricAttribute(t *testing.T) {
 	}
 }
 
-func TestSetMetricCache(t *testing.T) {
+func TestSetMetricStorer(t *testing.T) {
 	fd := FakeData{}
-	cache.SetNow(fd.Now)
+	persist.SetNow(fd.Now)
 
 	ms := metric.NewSet("eventType")
 
@@ -76,11 +76,11 @@ func TestSetMetricCache(t *testing.T) {
 			t.Errorf("SetMetric(\"%s\", %s, %v) => %s, want %s", tt.key, tt.value, tt.metricType, ms[tt.key], tt.out)
 		}
 
-		v, _, ok := cache.Get(tt.key)
+		v, _, ok := persist.Get(tt.key)
 		if !ok {
-			t.Errorf("cache.Get(\"%v\") ==> %v, want %v", true, v, ok)
-		} else if tt.cache != v {
-			t.Errorf("cache.Get(\"%v\") ==> %v, want %v", tt.key, v, tt.cache)
+			t.Errorf("persist.Get(\"%v\") ==> %v, want %v", true, v, ok)
+		} else if tt.storer != v {
+			t.Errorf("persist.Get(\"%v\") ==> %v, want %v", tt.key, v, tt.storer)
 		}
 	}
 }

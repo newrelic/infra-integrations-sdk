@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/cache"
 	"github.com/newrelic/infra-integrations-sdk/metric"
+	"github.com/newrelic/infra-integrations-sdk/persist"
 )
 
 type inventoryItem map[string]interface{}
@@ -57,10 +57,10 @@ func NewIntegration(name string, version string, arguments interface{}) (*Integr
 	}
 	defaultArgs := args.GetDefaultArgs(arguments)
 
-	cache.GlobalLog.SetDebug(defaultArgs.Verbose)
+	persist.GlobalLog.SetDebug(defaultArgs.Verbose)
 
-	// Avoid working with an uninitialized or in error state cache
-	if err = cache.Status(); err != nil {
+	// Avoid working with an uninitialized or in error state storage
+	if err = persist.Status(); err != nil {
 		return nil, err
 	}
 
@@ -102,11 +102,11 @@ func (integration *Integration) AddEvent(e Event) error {
 }
 
 // Publish runs all necessary tasks before publishing the data. Currently, it
-// stores the cache, prints the JSON representation of the integration to stdout
+// stores the data, prints the JSON representation of the integration to stdout
 // and re-initializes the integration object (allowing re-use it during the
 // execution of your code).
 func (integration *Integration) Publish() error {
-	if err := cache.Save(); err != nil {
+	if err := persist.Save(); err != nil {
 		return err
 	}
 
