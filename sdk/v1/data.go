@@ -1,8 +1,10 @@
 package v1
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/metric"
@@ -116,6 +118,39 @@ func (integration *Integration) Publish() error {
 	}
 
 	fmt.Println(output)
+	integration.Clear()
+
+	return nil
+}
+
+// PublishHTTP runs all necessary tasks before publishing the data. Currently, it
+// stores the cache, posts the JSON representation of the integration to a URL
+// and re-initializes the integration object (allowing re-use it during the
+// execution of your code).
+func (integration *Integration) PublishHTTP(url string) error {
+	if err := cache.Save(); err != nil {
+		return err
+	}
+
+	output, err := integration.toJSON(integration.prettyOutput)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Payload: ", output)
+	jsonBytes := []byte(output)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("HTTP Response Status: ", resp.Status)
+	resp.Body.Close()
+
 	integration.Clear()
 
 	return nil
