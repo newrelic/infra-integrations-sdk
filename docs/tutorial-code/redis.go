@@ -8,8 +8,8 @@ import (
 
 	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/metric"
+	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/newrelic/infra-integrations-sdk/sdk/v1"
-	"github.com/newrelic/infra-integrations-sdk/cache"
 )
 
 type argumentList struct {
@@ -126,7 +126,7 @@ func main() {
 	if args.All || args.Events {
 		err := populateEvents(integration)
 		if err != nil {
-			cache.GlobalLog.Debugf("adding event failed, got: %s", err)
+			persist.GlobalLog.Debugf("adding event failed, got: %s", err)
 		}
 	}
 	panicOnErr(integration.Publish())

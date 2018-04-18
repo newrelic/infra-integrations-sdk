@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/newrelic/infra-integrations-sdk/args"
+	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/newrelic/infra-integrations-sdk/sdk/v2"
 	"github.com/stretchr/testify/assert"
 )
@@ -34,7 +35,7 @@ func TestDefaultValues(t *testing.T) {
 	assert.Equal(t, 0, len(integration.Data))
 
 	// And when publishing the payload
-	integration.Publish()
+	assert.NoError(t, integration.Publish())
 	f.Close()
 
 	// It is redirected to standard output, and non-prettified
@@ -99,4 +100,80 @@ func TestWrongArguments(t *testing.T) {
 		_, err := v2.NewIntegration("integration", "7.0").ParsedArguments(arg).Build()
 		assert.Error(t, err)
 	}
+}
+
+func TestDefaultStorer(t *testing.T) {
+	// Redirecting standard output to a file
+	output, err := ioutil.TempFile("", "stdout")
+	assert.NoError(t, err)
+
+	// Given an integration with the default cache
+	integration, err := v2.NewIntegration("cool-integration", "1.0").Writer(output).Build()
+	assert.NoError(t, err)
+
+	// And some values
+	integration.Storer.Set("hello", 12.33)
+
+	// When publishing the data
+	assert.NoError(t, integration.Publish())
+
+	// The data has been cached
+	c, err := persist.NewStorer(persist.DefaultPath("cool-integration"), persist.GlobalLog)
+	assert.NoError(t, err)
+
+	v, ts, ok := c.Get("hello")
+	assert.True(t, ok)
+	assert.NotEqual(t, 0, ts)
+	assert.InDelta(t, 12.33, v, 0.1)
+}
+
+func TestNoStorer(t *testing.T) {
+	// Redirecting standard output to a file
+	output, err := ioutil.TempFile("", "stdout")
+	assert.NoError(t, err)
+
+	// Given an integration with the no cache
+	integration, err := v2.NewIntegration("cool-integration", "1.0").Writer(output).NoStorer().Build()
+	assert.NoError(t, err)
+
+	// The built integration cache is nil
+	assert.Nil(t, integration.Storer)
+
+	// And the data can be published anyway
+	assert.NoError(t, integration.Publish())
+}
+
+func TestCustomStorer(t *testing.T) {
+
+	// Redirecting standard output to a file
+	output, err := ioutil.TempFile("", "stdout")
+	assert.NoError(t, err)
+
+	// Given an integration with a custom cache
+	customStorer := fakeStorer{}
+	integration, err := v2.NewIntegration("cool-integration", "1.0").Writer(output).Storer(&customStorer).Build()
+	assert.NoError(t, err)
+
+	// When publishing the data
+	assert.NoError(t, integration.Publish())
+
+	// The data has been cached
+	assert.True(t, customStorer.saved)
+}
+
+type fakeStorer struct {
+	saved bool
+}
+
+func (m *fakeStorer) Save() error {
+	m.saved = true
+	return nil
+}
+
+func (fakeStorer) Get(name string) (float64, int64, bool) {
+	return 0, 0, false
+}
+
+func (fakeStorer) Set(name string, value float64) int64 {
+	return 0
 }
