@@ -182,8 +182,8 @@ func (integration *Integration) Clear() {
 	integration.Data = []*EntityData{} // empty array preferred instead of null on marshaling.
 }
 
-// toJSON returns the integration as a JSON string. If the pretty attribute is
-// set to true, the JSON will be idented for easy reading.
+// toJSON serializes integration as JSON. If the pretty attribute is
+// set to true, the JSON will be indented for easy reading.
 func (integration *Integration) toJSON(pretty bool) ([]byte, error) {
 	var output []byte
 	var err error
