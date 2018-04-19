@@ -187,14 +187,10 @@ func (integration *Integration) Clear() {
 func (integration *Integration) MarshalJSON() (output []byte, err error) {
 	output, err = json.Marshal(*integration)
 	if err != nil {
-		return []byte(""), errors.Errorf("error marshalling to JSON: %s", err)
+		err = errors.Wrap(err, "error marshalling to JSON")
 	}
 
-	if string(output) == "null" {
-		return []byte("[]"), nil
-	}
-
-	return output, nil
+	return
 }
 
 // toJSON serializes integration as JSON. If the pretty attribute is
