@@ -55,7 +55,7 @@ func TestNewEntityData_MissingData(t *testing.T) {
 }
 
 func TestNewIntegrationData(t *testing.T) {
-	i, err := NewIntegration("TestIntegration", "1.0", new(struct{}))
+	i, err := NewIntegration("TestIntegration", "1.0").Build()
 	if err != nil {
 		t.Fatal()
 	}
@@ -84,7 +84,7 @@ func TestNewIntegrationWithDefaultArguments(t *testing.T) {
 	flag.CommandLine = flag.NewFlagSet("name", 0)
 
 	var al argumentList
-	i, err := NewIntegration("TestIntegration", "1.0", &al)
+	i, err := NewIntegration("TestIntegration", "1.0").ParsedArguments(&al).Build()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,6 +107,31 @@ func TestNewIntegrationWithDefaultArguments(t *testing.T) {
 		t.Error()
 	}
 	if al.Verbose {
+		t.Error()
+	}
+}
+
+func TestNewIntegrationWithOverridenAndDefaultArguments(t *testing.T) {
+	type argumentList struct {
+		sdk_args.DefaultArgumentList
+	}
+
+	// Needed for initialising os.Args + flags (emulating).
+	os.Args = []string{"cmd", "--pretty", "--verbose", "--all"}
+	flag.CommandLine = flag.NewFlagSet("name", 0)
+
+	var al argumentList
+	_, err := NewIntegration("TestIntegration", "1.0").ParsedArguments(&al).Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !al.All {
+		t.Error()
+	}
+	if !al.Pretty {
+		t.Error()
+	}
+	if !al.Verbose {
 		t.Error()
 	}
 }
@@ -140,7 +165,7 @@ func TestIntegration_Publish(t *testing.T) {
 		},
 	}
 
-	i, err := NewIntegrationWithWriter("TestIntegration", "1.0", new(struct{}), w)
+	i, err := NewIntegration("TestIntegration", "1.0").Writer(w).Build()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,7 +209,7 @@ func TestIntegration_Publish(t *testing.T) {
 }
 
 func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
-	i, err := NewIntegration("TestIntegration", "1.0", new(struct{}))
+	i, err := NewIntegration("TestIntegration", "1.0").Build()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -209,7 +234,7 @@ func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
 // NOTE: This test does nothing as test but when running with -race flag we can detect data races.
 // See Lock and Unlock on Entity method.
 func TestIntegration_EntityHasNoDataRace(t *testing.T) {
-	in, err := NewIntegration("TestIntegration", "1.0", new(struct{}))
+	in, err := NewIntegration("TestIntegration", "1.0").Build()
 	if err != nil {
 		t.Fatal(err)
 	}

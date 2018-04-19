@@ -81,17 +81,25 @@ func SetupArgs(args interface{}) error {
 // and returns this struct.  If there is no 'DefaultArgumentList' field, it
 // returns a DefaultArgumentList with default values.
 func GetDefaultArgs(arguments interface{}) *DefaultArgumentList {
+	if args, ok := arguments.(*DefaultArgumentList); ok {
+		fixAllFlag(args)
+		return args
+	}
+
 	defaultArgsI := reflect.ValueOf(arguments).Elem().FieldByName("DefaultArgumentList")
 
 	if defaultArgsI.IsValid() {
 		defaultArgs := defaultArgsI.Addr().Interface().(*DefaultArgumentList)
-
-		if !defaultArgs.All && !defaultArgs.Inventory && !defaultArgs.Metrics && !defaultArgs.Events {
-			defaultArgs.All = true
-		}
+		fixAllFlag(defaultArgs)
 		return defaultArgs
 	}
 	return &DefaultArgumentList{}
+}
+
+func fixAllFlag(arguments *DefaultArgumentList) {
+	if !arguments.All && !arguments.Inventory && !arguments.Metrics && !arguments.Events {
+		arguments.All = true
+	}
 }
 
 func defineFlags(args interface{}) error {
