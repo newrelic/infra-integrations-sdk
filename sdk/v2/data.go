@@ -11,6 +11,7 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/sdk/v1"
 	"github.com/pkg/errors"
+	"bytes"
 )
 
 // Entity is the producer of the data. Entity could be a host, a container, a pod, or whatever unit of meaning.
@@ -182,18 +183,9 @@ func (integration *Integration) Clear() {
 	integration.Data = []*EntityData{} // empty array preferred instead of null on marshaling.
 }
 
-// toJSON serializes integration as JSON. If the pretty attribute is
-// set to true, the JSON will be indented for easy reading.
-func (integration *Integration) toJSON(pretty bool) ([]byte, error) {
-	var output []byte
-	var err error
-
-	if pretty {
-		output, err = json.MarshalIndent(integration, "", "\t")
-	} else {
-		output, err = json.Marshal(integration)
-	}
-
+// MarshalJSON serializes integration to JSON, fulfilling Marshaler interface.
+func (integration *Integration) MarshalJSON() (output []byte, err error) {
+	output, err = json.Marshal(*integration)
 	if err != nil {
 		return []byte(""), errors.Errorf("error marshalling to JSON: %s", err)
 	}
@@ -203,4 +195,21 @@ func (integration *Integration) toJSON(pretty bool) ([]byte, error) {
 	}
 
 	return output, nil
+}
+
+// toJSON serializes integration as JSON. If the pretty attribute is
+// set to true, the JSON will be indented for easy reading.
+func (integration *Integration) toJSON(pretty bool) (output []byte, err error) {
+	output, err = integration.MarshalJSON()
+	if !pretty {
+		return
+	}
+
+	var buf bytes.Buffer
+	err = json.Indent(&buf, output,  "", "\t")
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }
