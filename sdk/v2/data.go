@@ -2,7 +2,6 @@ package v2
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"sync"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/newrelic/infra-integrations-sdk/sdk/v1"
 	"github.com/pkg/errors"
+	"bytes"
 )
 
 // Entity is the producer of the data. Entity could be a host, a container, a pod, or whatever unit of meaning.
@@ -44,7 +44,7 @@ func NewEntityData(entityName, entityType string) (EntityData, error) {
 	d := EntityData{
 		// empty array or object preferred instead of null on marshaling.
 		Metrics:   []metric.Set{},
-		Inventory: Inventory{},
+		Inventory: make(Inventory),
 		Events:    []Event{},
 	}
 
@@ -108,7 +108,7 @@ func (d *EntityData) AddNotificationEvent(summary string) error {
 // AddEvent method adds a new Event.
 func (d *EntityData) AddEvent(e Event) error {
 	if e.Summary == "" {
-		return fmt.Errorf("summary of the event cannot be empty")
+		return errors.New("summary of the event cannot be empty")
 	}
 
 	d.Events = append(d.Events, e)
@@ -131,7 +131,7 @@ func (integration *Integration) Publish() error {
 		return err
 	}
 
-	fmt.Fprint(integration.writer, output)
+	integration.writer.Write(output)
 	integration.Clear()
 
 	return nil
@@ -145,25 +145,29 @@ func (integration *Integration) Clear() {
 	integration.Data = []*EntityData{} // empty array preferred instead of null on marshaling.
 }
 
-// toJSON returns the integration as a JSON string. If the pretty attribute is
-// set to true, the JSON will be idented for easy reading.
-func (integration *Integration) toJSON(pretty bool) (string, error) {
-	var output []byte
-	var err error
-
-	if pretty {
-		output, err = json.MarshalIndent(integration, "", "\t")
-	} else {
-		output, err = json.Marshal(integration)
-	}
-
+// MarshalJSON serializes integration to JSON, fulfilling Marshaler interface.
+func (integration *Integration) MarshalJSON() (output []byte, err error) {
+	output, err = json.Marshal(*integration)
 	if err != nil {
-		return "", fmt.Errorf("error marshalling to JSON: %s", err)
+		err = errors.Wrap(err, "error marshalling to JSON")
 	}
 
-	if string(output) == "null" {
-		return "[]", nil
+	return
+}
+
+// toJSON serializes integration as JSON. If the pretty attribute is
+// set to true, the JSON will be indented for easy reading.
+func (integration *Integration) toJSON(pretty bool) (output []byte, err error) {
+	output, err = integration.MarshalJSON()
+	if !pretty {
+		return
 	}
 
-	return string(output), nil
+	var buf bytes.Buffer
+	err = json.Indent(&buf, output,  "", "\t")
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }
