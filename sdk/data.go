@@ -1,4 +1,4 @@
-package v2
+package sdk
 
 import (
 	"encoding/json"
@@ -9,7 +9,6 @@ import (
 
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/persist"
-	"github.com/newrelic/infra-integrations-sdk/sdk/v1"
 	"github.com/pkg/errors"
 )
 
@@ -19,13 +18,30 @@ type Entity struct {
 	Type string `json:"type"`
 }
 
+type inventoryItem map[string]interface{}
+
 // Inventory is the data type for inventory data produced by an integration data
 // source and emitted to the agent's inventory data store.
-type Inventory v1.Inventory
+type Inventory map[string]inventoryItem
+
+// SetItem stores a value into the inventory data structure.
+func (i Inventory) SetItem(key string, field string, value interface{}) {
+	if _, ok := i[key]; ok {
+		i[key][field] = value
+	} else {
+		i[key] = inventoryItem{field: value}
+	}
+
+}
+
+const defaultEventCategory = "notifications"
 
 // Event is the data type to represent arbitrary, one-off messages for key
 // activities on a system.
-type Event v1.Event
+type Event struct {
+	Summary  string `json:"summary"`
+	Category string `json:"category,omitempty"`
+}
 
 // EntityData defines all the data related to a particular event from an entity.
 type EntityData struct {
@@ -103,7 +119,7 @@ func (d *EntityData) NewMetricSet(eventType string) metric.Set {
 
 // AddNotificationEvent method adds a new Event with default event category.
 func (d *EntityData) AddNotificationEvent(summary string) error {
-	return d.AddEvent(Event{Summary: summary, Category: v1.DefaultEventCategory})
+	return d.AddEvent(Event{Summary: summary, Category: defaultEventCategory})
 }
 
 // AddEvent method adds a new Event.
