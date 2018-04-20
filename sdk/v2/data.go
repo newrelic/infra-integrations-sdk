@@ -132,10 +132,10 @@ func (integration *Integration) Publish() error {
 		return err
 	}
 
-	integration.writer.Write(output) // nolint: errcheck
-	integration.Clear()
+	_, err = integration.writer.Write(output)
+	defer integration.Clear()
 
-	return nil
+	return err
 }
 
 // Clear re-initializes the Inventory, Metrics and Events for this integration.
