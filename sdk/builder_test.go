@@ -1,4 +1,4 @@
-package v2_test
+package sdk_test
 
 import (
 	"flag"
@@ -6,10 +6,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/persist"
-	"github.com/newrelic/infra-integrations-sdk/sdk/v2"
-	"github.com/stretchr/testify/assert"
+	"github.com/newrelic/infra-integrations-sdk/sdk"
 )
 
 func TestDefaultValues(t *testing.T) {
@@ -23,7 +24,7 @@ func TestDefaultValues(t *testing.T) {
 	os.Stdout = f
 
 	// Given an integration builder without parameters
-	integration, err := v2.NewIntegration("integration", "4.0").Build()
+	integration, err := sdk.NewIntegration("integration", "4.0").Build()
 
 	// The Build method does not return any error
 	assert.NoError(t, err)
@@ -56,7 +57,7 @@ func TestIntegrationBuilder(t *testing.T) {
 
 	// Given an integration builder with all the parameters set
 	var arguments args.DefaultArgumentList
-	integration, err := v2.NewIntegration("integration", "7.0").
+	integration, err := sdk.NewIntegration("integration", "7.0").
 		ParsedArguments(&arguments).
 		Writer(output).
 		Build()
@@ -97,7 +98,7 @@ func TestWrongArguments(t *testing.T) {
 		{d},
 	}
 	for _, arg := range arguments {
-		_, err := v2.NewIntegration("integration", "7.0").ParsedArguments(arg).Build()
+		_, err := sdk.NewIntegration("integration", "7.0").ParsedArguments(arg).Build()
 		assert.Error(t, err)
 	}
 }
@@ -108,7 +109,7 @@ func TestDefaultStorer(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Given an integration with the default cache
-	integration, err := v2.NewIntegration("cool-integration", "1.0").Writer(output).Build()
+	integration, err := sdk.NewIntegration("cool-integration", "1.0").Writer(output).Build()
 	assert.NoError(t, err)
 
 	// And some values
@@ -133,7 +134,7 @@ func TestNoStorer(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Given an integration with the no cache
-	integration, err := v2.NewIntegration("cool-integration", "1.0").Writer(output).NoStorer().Build()
+	integration, err := sdk.NewIntegration("cool-integration", "1.0").Writer(output).NoStorer().Build()
 	assert.NoError(t, err)
 
 	// The built integration cache is nil
@@ -151,7 +152,7 @@ func TestCustomStorer(t *testing.T) {
 
 	// Given an integration with a custom cache
 	customStorer := fakeStorer{}
-	integration, err := v2.NewIntegration("cool-integration", "1.0").Writer(output).Storer(&customStorer).Build()
+	integration, err := sdk.NewIntegration("cool-integration", "1.0").Writer(output).Storer(&customStorer).Build()
 	assert.NoError(t, err)
 
 	// When publishing the data
