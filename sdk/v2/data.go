@@ -5,11 +5,12 @@ import (
 	"io"
 	"sync"
 
+	"bytes"
+
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/newrelic/infra-integrations-sdk/sdk/v1"
 	"github.com/pkg/errors"
-	"bytes"
 )
 
 // Entity is the producer of the data. Entity could be a host, a container, a pod, or whatever unit of meaning.
@@ -131,7 +132,7 @@ func (integration *Integration) Publish() error {
 		return err
 	}
 
-	integration.writer.Write(output)
+	integration.writer.Write(output) // nolint: errcheck
 	integration.Clear()
 
 	return nil
@@ -164,7 +165,7 @@ func (integration *Integration) toJSON(pretty bool) (output []byte, err error) {
 	}
 
 	var buf bytes.Buffer
-	err = json.Indent(&buf, output,  "", "\t")
+	err = json.Indent(&buf, output, "", "\t")
 	if err != nil {
 		return nil, err
 	}

@@ -3,7 +3,7 @@ GOTOOLS = github.com/golang/lint/golint \
           github.com/axw/gocov/gocov \
           github.com/AlekSi/gocov-xml \
 
-all: test
+all: validate test
 
 deps: tools
 	@go get -v -d -t ./...
