@@ -22,7 +22,7 @@ var (
 	err       error
 )
 
-// SetupLogging sets the global logger
+// SetupLogging setup the global logger verbosity.
 func SetupLogging(verbose bool) {
 	GlobalLog.SetDebug(verbose)
 }
