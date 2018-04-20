@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/newrelic/infra-integrations-sdk/args"
+	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/pkg/errors"
 )
@@ -109,11 +110,9 @@ func (b *integrationBuilderImpl) Build() (*Integration, error) {
 	}
 	defaultArgs := args.GetDefaultArgs(b.arguments)
 
-	persist.SetupLogging(defaultArgs.Verbose)
-
 	if b.integration.Storer == nil && b.hasStore {
-		// TODO: set Log(log) function to this builder
-		b.integration.Storer, err = persist.NewStorer(persist.DefaultPath(b.integration.Name), persist.GlobalLog)
+		// TODO: remove this log and add Log(log) function to this builder
+		b.integration.Storer, err = persist.NewStorer(persist.DefaultPath(b.integration.Name), log.NewStdErr(false))
 		if err != nil {
 			return nil, fmt.Errorf("can't create store: %s", err.Error())
 		}

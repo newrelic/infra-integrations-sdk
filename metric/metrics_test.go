@@ -1,11 +1,14 @@
 package metric_test
 
 import (
+	"io/ioutil"
 	"testing"
 	"time"
 
+	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/persist"
+	"github.com/stretchr/testify/assert"
 )
 
 type FakeData struct {
@@ -41,12 +44,12 @@ func TestSet_SetMetricGauge(t *testing.T) {
 	fd := FakeData{}
 	persist.SetNow(fd.Now)
 
-	ms := metric.NewSet("some-event-type")
+	ms := metric.NewSet("some-event-type", nil)
 
 	ms.SetMetric("key", 10, metric.GAUGE)
 
-	if ms["key"] != 10 {
-		t.Errorf("metric stored not valid: %v", ms["key"])
+	if ms.Metrics["key"] != 10 {
+		t.Errorf("metric stored not valid: %v", ms.Metrics["key"])
 	}
 }
 
@@ -54,29 +57,34 @@ func TestSet_SetMetricAttribute(t *testing.T) {
 	fd := FakeData{}
 	persist.SetNow(fd.Now)
 
-	ms := metric.NewSet("some-event-type")
+	ms := metric.NewSet("some-event-type", nil)
 
 	ms.SetMetric("key", "some-attribute", metric.ATTRIBUTE)
 
-	if ms["key"] != "some-attribute" {
-		t.Errorf("metric stored not valid: %v", ms["key"])
+	if ms.Metrics["key"] != "some-attribute" {
+		t.Errorf("metric stored not valid: %v", ms.Metrics["key"])
 	}
 }
 
 func TestSetMetricStorer(t *testing.T) {
+	storePath, err := ioutil.TempDir("", "test-metricset-storer")
+	assert.NoError(t, err)
+	storer, err := persist.NewStorer(storePath, log.NewStdErr(false))
+	assert.NoError(t, err)
+
 	fd := FakeData{}
 	persist.SetNow(fd.Now)
 
-	ms := metric.NewSet("eventType")
+	ms := metric.NewSet("eventType", storer)
 
 	for _, tt := range metricTests {
 		ms.SetMetric(tt.key, tt.value, tt.metricType)
 
-		if ms[tt.key] != tt.out {
-			t.Errorf("SetMetric(\"%s\", %s, %v) => %s, want %s", tt.key, tt.value, tt.metricType, ms[tt.key], tt.out)
+		if ms.Metrics[tt.key] != tt.out {
+			t.Errorf("SetMetric(\"%s\", %s, %v) => %s, want %s", tt.key, tt.value, tt.metricType, ms.Metrics[tt.key], tt.out)
 		}
 
-		v, _, ok := persist.Get(tt.key)
+		v, _, ok := storer.Get(tt.key)
 		if !ok {
 			t.Errorf("persist.Get(\"%v\") ==> %v, want %v", true, v, ok)
 		} else if tt.storer != v {

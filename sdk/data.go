@@ -45,13 +45,15 @@ type Event struct {
 
 // EntityData defines all the data related to a particular event from an entity.
 type EntityData struct {
-	Entity    Entity       `json:"entity"`
-	Metrics   []metric.Set `json:"metrics"`
-	Inventory Inventory    `json:"inventory"`
-	Events    []Event      `json:"events"`
+	storer    persist.Storer
+	Entity    Entity        `json:"entity"`
+	Metrics   []*metric.Set `json:"metrics"`
+	Inventory Inventory     `json:"inventory"`
+	Events    []Event       `json:"events"`
 }
 
 // NewEntityData creates a new EntityData with default values initialised.
+// TODO: do it private
 func NewEntityData(entityName, entityType string) (EntityData, error) {
 	// If one of the attributes is defined, both Name and Type are needed.
 	if entityName == "" && entityType != "" || entityName != "" && entityType == "" {
@@ -60,7 +62,7 @@ func NewEntityData(entityName, entityType string) (EntityData, error) {
 
 	d := EntityData{
 		// empty array or object preferred instead of null on marshaling.
-		Metrics:   []metric.Set{},
+		Metrics:   []*metric.Set{},
 		Inventory: make(Inventory),
 		Events:    []Event{},
 	}
@@ -110,8 +112,8 @@ func (integration *Integration) Entity(entityName, entityType string) (*EntityDa
 
 // NewMetricSet returns a new instance of Set with its sample attached to
 // the IntegrationData.
-func (d *EntityData) NewMetricSet(eventType string) metric.Set {
-	ms := metric.NewSet(eventType)
+func (d *EntityData) NewMetricSet(eventType string) *metric.Set {
+	ms := metric.NewSet(eventType, d.storer)
 	d.Metrics = append(d.Metrics, ms)
 
 	return ms

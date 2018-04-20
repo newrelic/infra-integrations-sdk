@@ -1,6 +1,7 @@
 package metric
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -24,25 +25,41 @@ const (
 )
 
 // Set is the basic structure for storing metrics.
-type Set map[string]interface{}
+type Set struct {
+	// The storer is required for deltas and rates, but forces us overriding marshaller and makes unmarshaller
+	// impossible. We should set back metrics. Set to a simple map, and manage it from a metrics.SetManager class, or the
+	// Integration class.
+	// This forces us, for the WHOLE integration. Do a clear separation between logic and data.
+	// TODO: global refactor, separating for all the classes, the JSON payload from the entities that manage it
+	storer  persist.Storer
+	Metrics map[string]interface{}
+}
 
 // NewSet returns a new Set instance.
-func NewSet(eventType string) Set {
-	ms := Set{}
+// TODO: this function should not be visible to the SDK user (move it to another package?)
+func NewSet(eventType string, storer persist.Storer) *Set {
+	ms := Set{
+		Metrics: map[string]interface{}{},
+		storer:  storer,
+	}
 	ms.SetMetric("event_type", eventType, ATTRIBUTE) // nolint: errcheck
-	return ms
+	return &ms
 }
 
 // SetMetric adds a metric to the Set object or updates the metric value
 // if the metric already exists, performing a calculation if the SourceType
 // (RATE, DELTA) requires it.
-func (ms Set) SetMetric(name string, value interface{}, sourceType SourceType) error {
+func (ms *Set) SetMetric(name string, value interface{}, sourceType SourceType) error {
 	var err error
 	var newValue = value
 
 	// Only sample metrics of numeric type
 	switch sourceType {
 	case RATE, DELTA:
+		if ms.storer == nil {
+			// This will only happen if the user explicitly builds the integration invoking 'NoCache' function
+			return fmt.Errorf("integrations built with IntegrationBuilder.NoStore() can't use DELTAs and RATEs")
+		}
 		if !isNumeric(value) {
 			return fmt.Errorf("non-numeric source type for rate/delta metric %s", name)
 		}
@@ -62,7 +79,7 @@ func (ms Set) SetMetric(name string, value interface{}, sourceType SourceType) e
 		return fmt.Errorf("unknown source type for key %s", name)
 	}
 
-	ms[name] = newValue
+	ms.Metrics[name] = newValue
 	return nil
 }
 
@@ -71,7 +88,7 @@ func isNumeric(value interface{}) bool {
 	return err == nil
 }
 
-func (ms Set) sample(name string, value interface{}, sourceType SourceType) (float64, error) {
+func (ms *Set) sample(name string, value interface{}, sourceType SourceType) (float64, error) {
 	sampledValue := 0.0
 
 	// Convert the value to a float64 so we can compare it with the stored one
@@ -81,9 +98,9 @@ func (ms Set) sample(name string, value interface{}, sourceType SourceType) (flo
 	}
 
 	// Retrieve the last value and timestamp from Storer
-	oldval, oldTime, ok := persist.Get(name)
+	oldval, oldTime, ok := ms.storer.Get(name)
 	// And replace it with the new value which we want to keep
-	newTime := persist.Set(name, floatValue)
+	newTime := ms.storer.Set(name, floatValue)
 
 	if ok {
 		duration := (newTime - oldTime)
@@ -102,4 +119,9 @@ func (ms Set) sample(name string, value interface{}, sourceType SourceType) (flo
 	}
 
 	return sampledValue, nil
+}
+
+// MarshalJSON adapts the internal structure of the metrics Set to the payload that is compliant with the protocol
+func (ms Set) MarshalJSON() ([]byte, error) {
+	return json.Marshal(ms.Metrics)
 }
