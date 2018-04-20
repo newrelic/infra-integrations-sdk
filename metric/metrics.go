@@ -58,7 +58,7 @@ func (ms *Set) SetMetric(name string, value interface{}, sourceType SourceType) 
 	case RATE, DELTA:
 		if ms.storer == nil {
 			// This will only happen if the user explicitly builds the integration invoking 'NoCache' function
-			return fmt.Errorf("integrations built with IntegrationBuilder.NoStore() can't use DELTAs and RATEs")
+			return fmt.Errorf("integrations built with no-store can't use DELTAs and RATEs")
 		}
 		if !isNumeric(value) {
 			return fmt.Errorf("non-numeric source type for rate/delta metric %s", name)
