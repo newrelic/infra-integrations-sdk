@@ -7,6 +7,7 @@ import (
 	"log"
 )
 
+// Logger defines a facade for a simple logger
 type Logger interface {
 	Debugf(format string, args ...interface{})
 	Infof(format string, args ...interface{})
@@ -19,7 +20,7 @@ type defaultLogger struct {
 	debug  bool
 }
 
-// New creates a logger with stderr output, verbose enables Debug output
+// NewStdErr creates a logger with stderr output, verbose enables Debug output
 func NewStdErr(debug bool) Logger {
 	return New(debug, os.Stderr)
 }

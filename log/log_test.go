@@ -14,7 +14,6 @@ func TestNew(t *testing.T) {
 
 	l := New(false, &writer)
 
-
 	l.Errorf("foo")
 	l.Errorf("bar")
 
