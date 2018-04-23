@@ -13,45 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewEntityData(t *testing.T) {
-	e, err := NewEntityData("TestEntityName", "TestEntityType")
-	if err != nil {
-		t.Error(err)
-	}
+func TestNewEntity(t *testing.T) {
+	e, err := NewEntity("name", "type")
 
-	if e.Entity.Name != "TestEntityName" || e.Entity.Type != "TestEntityType" {
-		t.Error("entity malformed")
-	}
-}
-
-func TestNewEntityData_MissingData(t *testing.T) {
-	e, err := NewEntityData("", "test")
-	if err == nil {
-		t.Error("error was expected on partial entity data")
-	}
-
-	emptyEntity := Entity{}
-	if e.Entity != emptyEntity {
-		t.Error("no entity expected")
-	}
-
-	e, err = NewEntityData("Entity", "")
-	if err == nil {
-		t.Error("error was expected on partial entity data")
-	}
-
-	if e.Entity != emptyEntity {
-		t.Error("no entity expected")
-	}
-
-	e, err = NewEntityData("", "")
-	if err != nil {
-		t.Error(err)
-	}
-
-	if e.Entity != emptyEntity {
-		t.Error("no entity expected")
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, "name", e.Metadata.Name)
+	assert.Equal(t, "type", e.Metadata.Type)
 }
 
 func TestNewIntegrationData(t *testing.T) {
@@ -247,7 +214,7 @@ func TestIntegration_EntityHasNoDataRace(t *testing.T) {
 }
 
 func TestAddNotificationEvent_Entity(t *testing.T) {
-	en, err := NewEntityData("Entity1", "Type1")
+	en, err := NewEntity("Entity1", "Type1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -267,7 +234,7 @@ func TestAddNotificationEvent_Entity(t *testing.T) {
 }
 
 func TestAddNotificationEvent_Event_NoSummary_Error(t *testing.T) {
-	en, err := NewEntityData("Entity1", "Type1")
+	en, err := NewEntity("Entity1", "Type1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -283,7 +250,7 @@ func TestAddNotificationEvent_Event_NoSummary_Error(t *testing.T) {
 }
 
 func TestAddEvent_Entity(t *testing.T) {
-	en, err := NewEntityData("Entity1", "Type1")
+	en, err := NewEntity("Entity1", "Type1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -303,7 +270,7 @@ func TestAddEvent_Entity(t *testing.T) {
 }
 
 func TestAddEvent_Entity_TheSameEvents_And_NoCategory(t *testing.T) {
-	en, err := NewEntityData("Entity1", "Type1")
+	en, err := NewEntity("Entity1", "Type1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -329,7 +296,7 @@ func TestAddEvent_Entity_TheSameEvents_And_NoCategory(t *testing.T) {
 }
 
 func TestAddEvent_Entity_EmptySummary_Error(t *testing.T) {
-	en, err := NewEntityData("Entity1", "Type1")
+	en, err := NewEntity("Entity1", "Type1")
 	if err != nil {
 		t.Fatal(err)
 	}

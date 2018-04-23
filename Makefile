@@ -7,7 +7,7 @@ GOTOOLS = github.com/golang/lint/golint \
 # TODO: uncomment below commented lines and remove any line that uses $(NODOCS)
 NODOCS = $(shell go list ./... | grep -v /docs/)
 
-all: validate test
+all: lint test
 
 deps: tools
 #	@go get -v -d -t ./...
@@ -27,10 +27,6 @@ tools:
 tools-update:
 	@go get -u $(GOTOOLS)
 	@gometalinter.v2 --install
-
-validate: lint
-
-validate-all: lint-all
 
 lint: deps
 	@gometalinter.v2 --config=.gometalinter.json ./...
