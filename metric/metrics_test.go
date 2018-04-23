@@ -69,7 +69,7 @@ func TestSet_SetMetricAttribute(t *testing.T) {
 func TestSetMetricStorer(t *testing.T) {
 	storePath, err := ioutil.TempDir("", "test-metricset-storer")
 	assert.NoError(t, err)
-	storer, err := persist.NewStorer(storePath, log.NewStdErr(false))
+	storer, err := persist.NewFileStore(storePath, log.NewStdErr(false))
 	assert.NoError(t, err)
 
 	fd := FakeData{}

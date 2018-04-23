@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
+	"github.com/newrelic/infra-integrations-sdk/integration/v1"
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/persist"
-	"github.com/newrelic/infra-integrations-sdk/sdk/v1"
 )
 
 type argumentList struct {

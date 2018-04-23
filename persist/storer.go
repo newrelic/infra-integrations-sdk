@@ -51,20 +51,30 @@ type Storer interface {
 	Set(name string, value float64) int64
 }
 
-type storer struct {
-	path       string
+type inMemoryStore struct {
 	Data       map[string]interface{}
 	Timestamps map[string]int64
 }
 
-// NewStorer will create and initialize a disk-backed Storer object.
-func NewStorer(storePath string, l log.Logger) (Storer, error) {
-	store := &storer{
+type fileStore struct {
+	inMemoryStore
+	path string
+}
+
+// NewInMemoryStore will create and initialize an in-memory Storer.
+func NewInMemoryStore() Storer {
+	return &inMemoryStore{
 		Data:       make(map[string]interface{}),
 		Timestamps: make(map[string]int64),
 	}
+}
 
-	store.path = storePath
+// NewFileStore will create and initialize a disk-backed Storer.
+func NewFileStore(storePath string, l log.Logger) (Storer, error) {
+	store := &fileStore{
+		inMemoryStore: *NewInMemoryStore().(*inMemoryStore),
+		path:          storePath,
+	}
 
 	// Create the external directory for user-generated json
 	storeDir := filepath.Dir(store.path)
@@ -92,18 +102,18 @@ func NewStorer(storePath string, l log.Logger) (Storer, error) {
 	}
 
 	// Ignoring unmarshalling errors, returning a clean store
-	json.Unmarshal(file, &store) // nolint: errcheck
+	_ = json.Unmarshal(file, &store.inMemoryStore) // nolint: errcheck
 
 	return store, nil
 }
 
 // Save persists all the data in the Storer.
-func (c *storer) Save() error {
+func (c *fileStore) Save() error {
 	if c.path == "" {
 		return nil
 	}
 
-	data, err := json.Marshal(c)
+	data, err := json.Marshal(c.inMemoryStore)
 	if err != nil {
 		return err
 	}
@@ -111,10 +121,15 @@ func (c *storer) Save() error {
 	return ioutil.WriteFile(c.path, data, 0644)
 }
 
+// Save won't persist on disk.
+func (c *inMemoryStore) Save() error {
+	return nil
+}
+
 // Get looks for a key in the store and returns its value together with the
 // timestamp of when it was last set. The third returned value indicates whether
 // the key has been found or not.
-func (c *storer) Get(name string) (float64, int64, bool) {
+func (c *inMemoryStore) Get(name string) (float64, int64, bool) {
 	val, ok := c.Data[name]
 	if ok {
 		ts, ok := c.Timestamps[name]
@@ -126,7 +141,7 @@ func (c *storer) Get(name string) (float64, int64, bool) {
 }
 
 // Set adds a value into the store and it also stores the current timestamp.
-func (c *storer) Set(name string, value float64) int64 {
+func (c *inMemoryStore) Set(name string, value float64) int64 {
 	c.Data[name] = value
 	c.Timestamps[name] = now().Unix()
 	return c.Timestamps[name]

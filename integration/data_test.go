@@ -1,4 +1,4 @@
-package sdk
+package integration
 
 import (
 	"encoding/json"
@@ -55,7 +55,7 @@ func TestNewEntityData_MissingData(t *testing.T) {
 }
 
 func TestNewIntegrationData(t *testing.T) {
-	i, err := NewIntegration("TestIntegration", "1.0").Build()
+	i, err := NewBuilder("TestIntegration", "1.0").Build()
 	if err != nil {
 		t.Fatal()
 	}
@@ -84,7 +84,7 @@ func TestNewIntegrationWithDefaultArguments(t *testing.T) {
 	flag.CommandLine = flag.NewFlagSet("name", 0)
 
 	var al argumentList
-	i, err := NewIntegration("TestIntegration", "1.0").ParsedArguments(&al).Build()
+	i, err := NewBuilder("TestIntegration", "1.0").ParsedArguments(&al).Build()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +121,7 @@ func TestNewIntegrationWithOverridenAndDefaultArguments(t *testing.T) {
 	flag.CommandLine = flag.NewFlagSet("name", 0)
 
 	var al argumentList
-	_, err := NewIntegration("TestIntegration", "1.0").ParsedArguments(&al).Build()
+	_, err := NewBuilder("TestIntegration", "1.0").ParsedArguments(&al).Build()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,7 +165,7 @@ func TestIntegration_Publish(t *testing.T) {
 		},
 	}
 
-	i, err := NewIntegration("TestIntegration", "1.0").Writer(w).Build()
+	i, err := NewBuilder("TestIntegration", "1.0").Writer(w).Build()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -209,7 +209,7 @@ func TestIntegration_Publish(t *testing.T) {
 }
 
 func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
-	i, err := NewIntegration("TestIntegration", "1.0").Build()
+	i, err := NewBuilder("TestIntegration", "1.0").Build()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -234,7 +234,7 @@ func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
 // NOTE: This test does nothing as test but when running with -race flag we can detect data races.
 // See Lock and Unlock on Entity method.
 func TestIntegration_EntityHasNoDataRace(t *testing.T) {
-	in, err := NewIntegration("TestIntegration", "1.0").Build()
+	in, err := NewBuilder("TestIntegration", "1.0").Build()
 	if err != nil {
 		t.Fatal(err)
 	}
