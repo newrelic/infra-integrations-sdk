@@ -19,6 +19,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 - github.com/Sirupsen/logrus is now github.com/sirupsen/logrus since v1.0.0.
 
+## 2.1.0
+
+### Added
+- Adding basic travis config file
+
+### Fixed
+- Logrus package name update (to lowercase) after update
+
 ## 2.0.0 (2017-10-11)
 ### Fixed
 - Allow executing JMX queries to a server without authentication required
