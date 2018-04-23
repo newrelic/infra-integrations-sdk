@@ -92,8 +92,13 @@ func NewEntity(entityName, entityType string) (Entity, error) {
 }
 
 // NewMetricSet returns a new instance of Set with its sample attached to the integration.
-func (e *Entity) NewMetricSet(eventType string) *metric.Set {
-	e.Metrics = append(e.Metrics, metric.NewSet(eventType, e.storer))
+func (e *Entity) NewMetricSet(eventType string) (s *metric.Set, err error) {
+	s, err = metric.NewSet(eventType, e.storer)
+	if err != nil {
+		return
+	}
+
+	e.Metrics = append(e.Metrics, s)
 
 	return metric.NewSet(eventType, e.storer)
 }

@@ -32,14 +32,15 @@ type Set struct {
 }
 
 // NewSet creates new metrics set.
-func NewSet(eventType string, storer persist.Storer) *Set {
+func NewSet(eventType string, storer persist.Storer) (*Set, error) {
 	ms := Set{
 		Metrics: map[string]interface{}{},
 		storer:  storer,
 	}
-	ms.SetMetric("event_type", eventType, ATTRIBUTE) // nolint: errcheck
 
-	return &ms
+	err := ms.SetMetric("event_type", eventType, ATTRIBUTE)
+
+	return &ms, err
 }
 
 // SetMetric adds a metric to the Set object or updates the metric value
