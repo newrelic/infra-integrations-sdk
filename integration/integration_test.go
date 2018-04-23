@@ -142,8 +142,8 @@ func TestIntegration_Publish(t *testing.T) {
 	ms.SetMetric("metricTwo", 88, metric.GAUGE)
 	ms.SetMetric("metricThree", "test", metric.ATTRIBUTE)
 
-	e.AddEvent(Event{Summary: "evnt1sum", Category: "evnt1cat"})
-	e.AddEvent(Event{Summary: "evnt2sum", Category: "evnt2cat"})
+	e.AddEvent(metric.Event{Summary: "evnt1sum", Category: "evnt1cat"})
+	e.AddEvent(metric.Event{Summary: "evnt2sum", Category: "evnt2cat"})
 
 	e, err = i.Entity("EntityTwo", "test")
 	if err != nil {
@@ -167,7 +167,7 @@ func TestIntegration_Publish(t *testing.T) {
 	ms.SetMetric("metricTwo", 88, metric.GAUGE)
 	ms.SetMetric("metricThree", "test", metric.ATTRIBUTE)
 
-	e.AddEvent(Event{Summary: "evnt3sum", Category: "evnt3cat"})
+	e.AddEvent(metric.Event{Summary: "evnt3sum", Category: "evnt3cat"})
 
 	i.Publish()
 }
@@ -216,7 +216,7 @@ func TestAddNotificationEvent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = en.AddEvent(*NewNotification("TestSummary"))
+	err = en.AddEvent(*metric.NewNotification("TestSummary"))
 	assert.NoError(t, err)
 
 	assert.Len(t, en.Events, 1)
@@ -232,7 +232,7 @@ func TestAddNotificationWithEmptySummaryFails(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = en.AddEvent(*NewNotification(""))
+	err = en.AddEvent(*metric.NewNotification(""))
 	assert.Error(t, err)
 
 	assert.Len(t, en.Events, 0)
@@ -244,7 +244,7 @@ func TestAddEvent_Entity(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = en.AddEvent(Event{Summary: "TestSummary", Category: "TestCategory"})
+	err = en.AddEvent(metric.Event{Summary: "TestSummary", Category: "TestCategory"})
 	if err != nil {
 		t.Errorf("error not expected, got: %s", err)
 	}
@@ -264,11 +264,11 @@ func TestAddEvent_Entity_TheSameEvents_And_NoCategory(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = en.AddEvent(Event{Summary: "TestSummary"})
+	err = en.AddEvent(metric.Event{Summary: "TestSummary"})
 	if err != nil {
 		t.Errorf("error not expected, got: %s", err)
 	}
-	err = en.AddEvent(Event{Summary: "TestSummary"})
+	err = en.AddEvent(metric.Event{Summary: "TestSummary"})
 	if err != nil {
 		t.Errorf("error not expected, got: %s", err)
 	}
@@ -290,7 +290,7 @@ func TestAddEvent_Entity_EmptySummary_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = en.AddEvent(Event{Category: "TestCategory"})
+	err = en.AddEvent(metric.Event{Category: "TestCategory"})
 	if err == nil {
 		t.Error("error was expected for empty summary")
 	}
