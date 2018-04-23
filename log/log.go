@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"io"
+	"io/ioutil"
 	"log"
 )
 
@@ -12,8 +13,12 @@ type Logger interface {
 	Debugf(format string, args ...interface{})
 	Infof(format string, args ...interface{})
 	Errorf(format string, args ...interface{})
-	SetDebug(enable bool) // deprecated TODO remove when deleting global scope from storer
 }
+
+var (
+	// Discard provides a discard all policy logger
+	Discard = New(false, ioutil.Discard)
+)
 
 type defaultLogger struct {
 	logger *log.Logger
@@ -55,9 +60,4 @@ func (l *defaultLogger) prefixPrint(prefix string, format string, args ...interf
 	log.SetPrefix(prefix)
 	l.logger.Printf(format, args...)
 	log.SetPrefix(prev)
-}
-
-// deprecated TODO remove when deleting global scope from storer
-func (l *defaultLogger) SetDebug(enable bool) {
-	l.debug = enable
 }

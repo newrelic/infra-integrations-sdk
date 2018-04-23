@@ -11,8 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testLog = log.NewStdErr(false)
-
 func TestDefaultPath(t *testing.T) {
 	assert.Equal(t, filepath.Join(os.TempDir(), "nr-integrations", "file.json"), persist.DefaultPath("file"))
 }
@@ -23,13 +21,13 @@ func TestDiskStorer(t *testing.T) {
 	defer os.Remove(file.Name())
 
 	// Create Storer with existing file in env
-	_, err = persist.NewStorer(file.Name(), testLog)
+	_, err = persist.NewStorer(file.Name(), log.Discard)
 	assert.NoError(t, err)
 
 	// Create Storer with unexisting file in env
 	tmpDir, err := ioutil.TempDir("", "cache-test")
 	assert.NoError(t, err)
-	_, err = persist.NewStorer(filepath.Join(tmpDir, "newfile.json"), testLog)
+	_, err = persist.NewStorer(filepath.Join(tmpDir, "newfile.json"), log.Discard)
 	assert.NoError(t, err)
 }
 
@@ -38,7 +36,7 @@ func TestStorerSet(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 
-	dc, err := persist.NewStorer(file.Name(), testLog)
+	dc, err := persist.NewStorer(file.Name(), log.Discard)
 
 	assert.NoError(t, err)
 
@@ -54,7 +52,7 @@ func TestStorerGet(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 
-	dc, err := persist.NewStorer(file.Name(), testLog)
+	dc, err := persist.NewStorer(file.Name(), log.Discard)
 
 	assert.NoError(t, err)
 
@@ -91,7 +89,7 @@ func TestStorerSave(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 
-	dc, err := persist.NewStorer(file.Name(), testLog)
+	dc, err := persist.NewStorer(file.Name(), log.Discard)
 
 	assert.NoError(t, err)
 
@@ -101,7 +99,7 @@ func TestStorerSave(t *testing.T) {
 	err = dc.Save()
 	assert.NoError(t, err)
 
-	dc, err = persist.NewStorer(file.Name(), testLog)
+	dc, err = persist.NewStorer(file.Name(), log.Discard)
 	assert.NoError(t, err)
 
 	value, ts, exists := dc.Get("key1")

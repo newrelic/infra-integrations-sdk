@@ -26,17 +26,13 @@ const (
 
 // Set is the basic structure for storing metrics.
 type Set struct {
-	// The storer is required for deltas and rates, but forces us overriding marshaller and makes unmarshaller
-	// impossible. We should set back metrics. Set to a simple map, and manage it from a metrics.SetManager class, or the
-	// Integration class.
-	// This forces us, for the WHOLE integration. Do a clear separation between logic and data.
-	// TODO: global refactor, separating for all the classes, the JSON payload from the entities that manage it
+	// TODO: global refactor, separate JSON structs from entities that manage it
 	storer  persist.Storer
 	Metrics map[string]interface{}
 }
 
 // NewSet returns a new Set instance.
-// TODO: this function should not be visible to the SDK user (move it to another package?)
+// TODO: this function should not be visible to the SDK user
 func NewSet(eventType string, storer persist.Storer) *Set {
 	ms := Set{
 		Metrics: map[string]interface{}{},
