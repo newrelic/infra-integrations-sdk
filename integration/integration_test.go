@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"testing"
 
+	"io/ioutil"
+
 	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/stretchr/testify/assert"
@@ -168,7 +170,7 @@ func TestIntegration_Publish(t *testing.T) {
 }
 
 func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
-	i, err := NewBuilder("TestIntegration", "1.0").Build()
+	i, err := NewBuilder("TestIntegration", "1.0").Writer(ioutil.Discard).Build()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -193,7 +195,7 @@ func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
 // NOTE: This test does nothing as test but when running with -race flag we can detect data races.
 // See Lock and Unlock on Entity method.
 func TestIntegration_EntityHasNoDataRace(t *testing.T) {
-	in, err := NewBuilder("TestIntegration", "1.0").Build()
+	in, err := NewBuilder("TestIntegration", "1.0").Writer(ioutil.Discard).Build()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -205,40 +207,32 @@ func TestIntegration_EntityHasNoDataRace(t *testing.T) {
 	}
 }
 
-func TestAddNotificationEvent_Entity(t *testing.T) {
+func TestAddNotificationEvent(t *testing.T) {
 	en, err := NewEntity("Entity1", "Type1")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = en.AddNotificationEvent("TestSummary")
-	if err != nil {
-		t.Errorf("error not expected, got: %s", err)
-	}
+	err = en.AddEvent(*NewNotification("TestSummary"))
+	assert.NoError(t, err)
+
+	assert.Len(t, en.Events, 1)
 
 	if en.Events[0].Summary != "TestSummary" || en.Events[0].Category != "notifications" {
-		t.Error("event malformed")
-	}
-
-	if len(en.Events) != 1 {
-		t.Error("not expected length of events")
+		t.Error("malformed event")
 	}
 }
 
-func TestAddNotificationEvent_Event_NoSummary_Error(t *testing.T) {
+func TestAddNotificationWithEmptySummaryFails(t *testing.T) {
 	en, err := NewEntity("Entity1", "Type1")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = en.AddNotificationEvent("")
-	if err == nil {
-		t.Error("error was expected for empty summary")
-	}
+	err = en.AddEvent(*NewNotification(""))
+	assert.Error(t, err)
 
-	if len(en.Events) != 0 {
-		t.Error("not expected length of events")
-	}
+	assert.Len(t, en.Events, 0)
 }
 
 func TestAddEvent_Entity(t *testing.T) {

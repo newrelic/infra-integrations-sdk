@@ -31,14 +31,14 @@ type Set struct {
 	Metrics map[string]interface{}
 }
 
-// NewSet returns a new Set instance.
-// TODO: this function should not be visible to the SDK user
+// NewSet creates new metrics set.
 func NewSet(eventType string, storer persist.Storer) *Set {
 	ms := Set{
 		Metrics: map[string]interface{}{},
 		storer:  storer,
 	}
 	ms.SetMetric("event_type", eventType, ATTRIBUTE) // nolint: errcheck
+
 	return &ms
 }
 

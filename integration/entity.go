@@ -53,8 +53,20 @@ type Event struct {
 	Category string `json:"category,omitempty"`
 }
 
-// NewEntity creates a new EntityData with default values initialised.
-// TODO: do it private
+// NewEvent creates a new event.
+func NewEvent(summary, category string) *Event {
+	return &Event{
+		Summary:  summary,
+		Category: category,
+	}
+}
+
+// NewNotification creates a new notification event.
+func NewNotification(summary string) *Event {
+	return NewEvent(summary, defaultEventCategory)
+}
+
+// NewEntity creates a new remote-entity.
 func NewEntity(entityName, entityType string) (Entity, error) {
 	// If one of the attributes is defined, both Name and Type are needed.
 	if entityName == "" && entityType != "" || entityName != "" && entityType == "" {
@@ -79,8 +91,7 @@ func NewEntity(entityName, entityType string) (Entity, error) {
 	return d, nil
 }
 
-// NewMetricSet returns a new instance of Set with its sample attached to
-// the IntegrationData.
+// NewMetricSet returns a new instance of Set with its sample attached to the integration.
 func (e *Entity) NewMetricSet(eventType string) *metric.Set {
 	e.Metrics = append(e.Metrics, *metric.NewSet(eventType, e.storer))
 
@@ -99,11 +110,5 @@ func (e *Entity) AddEvent(event Event) error {
 	}
 
 	e.Events = append(e.Events, event)
-	return nil
-}
-
-// AddMetric method adds a new Metric.
-func (e *Entity) AddMetric(name string, value interface{}, sourceType metric.SourceType, eventType string) error {
-	// TODO
 	return nil
 }
