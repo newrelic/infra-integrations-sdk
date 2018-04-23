@@ -13,14 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewEntity(t *testing.T) {
-	e, err := NewEntity("name", "type")
-
-	assert.NoError(t, err)
-	assert.Equal(t, "name", e.Metadata.Name)
-	assert.Equal(t, "type", e.Metadata.Type)
-}
-
 func TestNewIntegrationData(t *testing.T) {
 	i, err := NewBuilder("TestIntegration", "1.0").Build()
 	if err != nil {

@@ -17,11 +17,13 @@ type Entity struct {
 	storer    persist.Storer
 }
 
+// EntityMetadata stores entity Metadata
 type EntityMetadata struct {
 	Name string `json:"name"`
 	Type string `json:"type""`
 }
 
+// MarshalJSON implements json.Marshaler
 func (e *Entity) MarshalJSON() ([]byte, error) {
 	return json.Marshal(*e)
 }
@@ -79,23 +81,29 @@ func NewEntity(entityName, entityType string) (Entity, error) {
 
 // NewMetricSet returns a new instance of Set with its sample attached to
 // the IntegrationData.
-func (d *Entity) NewMetricSet(eventType string) *metric.Set {
-	d.Metrics = append(d.Metrics, *metric.NewSet(eventType, d.storer))
+func (e *Entity) NewMetricSet(eventType string) *metric.Set {
+	e.Metrics = append(e.Metrics, *metric.NewSet(eventType, e.storer))
 
-	return metric.NewSet(eventType, d.storer)
+	return metric.NewSet(eventType, e.storer)
 }
 
 // AddNotificationEvent method adds a new Event with default event category.
-func (d *Entity) AddNotificationEvent(summary string) error {
-	return d.AddEvent(Event{Summary: summary, Category: defaultEventCategory})
+func (e *Entity) AddNotificationEvent(summary string) error {
+	return e.AddEvent(Event{Summary: summary, Category: defaultEventCategory})
 }
 
 // AddEvent method adds a new Event.
-func (d *Entity) AddEvent(e Event) error {
-	if e.Summary == "" {
+func (e *Entity) AddEvent(event Event) error {
+	if event.Summary == "" {
 		return errors.New("summary of the event cannot be empty")
 	}
 
-	d.Events = append(d.Events, e)
+	e.Events = append(e.Events, event)
+	return nil
+}
+
+// AddMetric method adds a new Metric.
+func (e *Entity) AddMetric(name string, value interface{}, sourceType metric.SourceType, eventType string) error {
+	// TODO
 	return nil
 }
