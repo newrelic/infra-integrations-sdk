@@ -70,6 +70,11 @@ func (e *Entity) AddEvent(event metric.Event) error {
 	return nil
 }
 
+// AddInventory method adds a inventory item.
+func (e *Entity) AddInventory(key string, field string, value interface{}) {
+	e.Inventory.SetItem(key, field, value)
+}
+
 // MarshalJSON implements json.Marshaler
 func (e *Entity) MarshalJSON() ([]byte, error) {
 	return json.Marshal(*e)
