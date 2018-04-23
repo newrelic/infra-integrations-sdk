@@ -26,8 +26,13 @@ type disabledLocker struct{}
 func (disabledLocker) Lock()   {}
 func (disabledLocker) Unlock() {}
 
+// New creates new integration with sane default values.
+func New(name, version string) (*Integration, error) {
+	return NewBuilder(name, version).Build()
+}
+
 // NewBuilder creates a new Builder for the given integration name and version.
-func NewBuilder(name string, version string) *Builder {
+func NewBuilder(name, version string) *Builder {
 	return &Builder{
 		integration: &Integration{
 			Name:               name,

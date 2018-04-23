@@ -91,10 +91,10 @@ type Integration struct {
 }
 
 // Entity method creates or retrieves an already created EntityData.
-func (integration *Integration) Entity(entityName, entityType string) (*EntityData, error) {
-	integration.locker.Lock()
-	defer integration.locker.Unlock()
-	for _, e := range integration.Data {
+func (i *Integration) Entity(entityName, entityType string) (*EntityData, error) {
+	i.locker.Lock()
+	defer i.locker.Unlock()
+	for _, e := range i.Data {
 		if e.Entity.Name == entityName && e.Entity.Type == entityType {
 			return e, nil
 		}
@@ -105,7 +105,7 @@ func (integration *Integration) Entity(entityName, entityType string) (*EntityDa
 		return nil, err
 	}
 
-	integration.Data = append(integration.Data, &d)
+	i.Data = append(i.Data, &d)
 
 	return &d, nil
 }
@@ -137,35 +137,35 @@ func (d *EntityData) AddEvent(e Event) error {
 // stores the Storer, prints the JSON representation of the integration using a writer (stdout by default)
 // and re-initializes the integration object (allowing re-use it during the
 // execution of your code).
-func (integration *Integration) Publish() error {
-	if integration.Storer != nil {
-		if err := integration.Storer.Save(); err != nil {
+func (i *Integration) Publish() error {
+	if i.Storer != nil {
+		if err := i.Storer.Save(); err != nil {
 			return err
 		}
 	}
 
-	output, err := integration.toJSON(integration.prettyOutput)
+	output, err := i.toJSON(i.prettyOutput)
 	if err != nil {
 		return err
 	}
 
-	_, err = integration.writer.Write(output)
-	defer integration.Clear()
+	_, err = i.writer.Write(output)
+	defer i.Clear()
 
 	return err
 }
 
 // Clear re-initializes the Inventory, Metrics and Events for this integration.
 // Used after publishing so the object can be reused.
-func (integration *Integration) Clear() {
-	integration.locker.Lock()
-	defer integration.locker.Unlock()
-	integration.Data = []*EntityData{} // empty array preferred instead of null on marshaling.
+func (i *Integration) Clear() {
+	i.locker.Lock()
+	defer i.locker.Unlock()
+	i.Data = []*EntityData{} // empty array preferred instead of null on marshaling.
 }
 
 // MarshalJSON serializes integration to JSON, fulfilling Marshaler interface.
-func (integration *Integration) MarshalJSON() (output []byte, err error) {
-	output, err = json.Marshal(*integration)
+func (i *Integration) MarshalJSON() (output []byte, err error) {
+	output, err = json.Marshal(*i)
 	if err != nil {
 		err = errors.Wrap(err, "error marshalling to JSON")
 	}
@@ -175,8 +175,8 @@ func (integration *Integration) MarshalJSON() (output []byte, err error) {
 
 // toJSON serializes integration as JSON. If the pretty attribute is
 // set to true, the JSON will be indented for easy reading.
-func (integration *Integration) toJSON(pretty bool) (output []byte, err error) {
-	output, err = integration.MarshalJSON()
+func (i *Integration) toJSON(pretty bool) (output []byte, err error) {
+	output, err = i.MarshalJSON()
 	if !pretty {
 		return
 	}
