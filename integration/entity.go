@@ -11,9 +11,9 @@ import (
 // Entity is the producer of the data. Entity could be a host, a container, a pod, or whatever unit of meaning.
 type Entity struct {
 	Metadata  EntityMetadata `json:"entity"`
-	Metrics   []metric.Set   `json:"metrics"`
+	Metrics   []*metric.Set  `json:"metrics"`
 	Inventory Inventory      `json:"inventory"`
-	Events    []Event        `json:"events"`
+	Events    []*Event       `json:"events"`
 	storer    persist.Storer
 }
 
@@ -75,9 +75,9 @@ func NewEntity(entityName, entityType string) (Entity, error) {
 
 	d := Entity{
 		// empty array or object preferred instead of null on marshaling.
-		Metrics:   []metric.Set{},
+		Metrics:   []*metric.Set{},
 		Inventory: make(Inventory),
-		Events:    []Event{},
+		Events:    []*Event{},
 	}
 
 	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
@@ -93,7 +93,7 @@ func NewEntity(entityName, entityType string) (Entity, error) {
 
 // NewMetricSet returns a new instance of Set with its sample attached to the integration.
 func (e *Entity) NewMetricSet(eventType string) *metric.Set {
-	e.Metrics = append(e.Metrics, *metric.NewSet(eventType, e.storer))
+	e.Metrics = append(e.Metrics, metric.NewSet(eventType, e.storer))
 
 	return metric.NewSet(eventType, e.storer)
 }
@@ -109,6 +109,6 @@ func (e *Entity) AddEvent(event Event) error {
 		return errors.New("summary of the event cannot be empty")
 	}
 
-	e.Events = append(e.Events, event)
+	e.Events = append(e.Events, &event)
 	return nil
 }
