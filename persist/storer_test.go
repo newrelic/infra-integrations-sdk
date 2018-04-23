@@ -6,9 +6,14 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestDefaultPath(t *testing.T) {
+	assert.Equal(t, filepath.Join(os.TempDir(), "nr-integrations", "file.json"), persist.DefaultPath("file"))
+}
 
 func TestDiskStorer(t *testing.T) {
 	file, err := ioutil.TempFile("", "cache")
@@ -16,13 +21,13 @@ func TestDiskStorer(t *testing.T) {
 	defer os.Remove(file.Name())
 
 	// Create Storer with existing file in env
-	_, err = persist.NewStorer(file.Name(), persist.GlobalLog)
+	_, err = persist.NewStorer(file.Name(), log.Discard)
 	assert.NoError(t, err)
 
 	// Create Storer with unexisting file in env
 	tmpDir, err := ioutil.TempDir("", "cache-test")
 	assert.NoError(t, err)
-	_, err = persist.NewStorer(filepath.Join(tmpDir, "newfile.json"), persist.GlobalLog)
+	_, err = persist.NewStorer(filepath.Join(tmpDir, "newfile.json"), log.Discard)
 	assert.NoError(t, err)
 }
 
@@ -31,7 +36,7 @@ func TestStorerSet(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 
-	dc, err := persist.NewStorer(file.Name(), persist.GlobalLog)
+	dc, err := persist.NewStorer(file.Name(), log.Discard)
 
 	assert.NoError(t, err)
 
@@ -47,7 +52,7 @@ func TestStorerGet(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 
-	dc, err := persist.NewStorer(file.Name(), persist.GlobalLog)
+	dc, err := persist.NewStorer(file.Name(), log.Discard)
 
 	assert.NoError(t, err)
 
@@ -84,7 +89,7 @@ func TestStorerSave(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 
-	dc, err := persist.NewStorer(file.Name(), persist.GlobalLog)
+	dc, err := persist.NewStorer(file.Name(), log.Discard)
 
 	assert.NoError(t, err)
 
@@ -94,7 +99,7 @@ func TestStorerSave(t *testing.T) {
 	err = dc.Save()
 	assert.NoError(t, err)
 
-	dc, err = persist.NewStorer(file.Name(), persist.GlobalLog)
+	dc, err = persist.NewStorer(file.Name(), log.Discard)
 	assert.NoError(t, err)
 
 	value, ts, exists := dc.Get("key1")

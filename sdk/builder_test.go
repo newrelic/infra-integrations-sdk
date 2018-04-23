@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/newrelic/infra-integrations-sdk/args"
+	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/newrelic/infra-integrations-sdk/sdk"
 )
@@ -119,7 +120,7 @@ func TestDefaultStorer(t *testing.T) {
 	assert.NoError(t, integration.Publish())
 
 	// The data has been cached
-	c, err := persist.NewStorer(persist.DefaultPath("cool-integration"), persist.GlobalLog)
+	c, err := persist.NewStorer(persist.DefaultPath("cool-integration"), log.NewStdErr(false))
 	assert.NoError(t, err)
 
 	v, ts, ok := c.Get("hello")

@@ -11,8 +11,6 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/log"
 )
 
-const pathEnvVar = "NRIA_CACHE_PATH"
-
 var now = time.Now
 
 // SetNow forces a different "current time" for the Storer.
@@ -22,6 +20,22 @@ func SetNow(newNow func() time.Time) {
 }
 
 const ttl = 1 * time.Minute
+
+const (
+	dirFilePerm     = 0755
+	integrationsDir = "nr-integrations"
+)
+
+// DefaultPath returns a default folder/filename path to a Storer for an integration from the given name. The name of
+// the file will be the name of the integration with the .json extension.
+func DefaultPath(integrationName string) string {
+	baseDir := filepath.Join(os.TempDir(), integrationsDir)
+	// Create integrations Storer directory
+	if os.MkdirAll(baseDir, dirFilePerm) != nil {
+		baseDir = os.TempDir()
+	}
+	return filepath.Join(baseDir, fmt.Sprint(integrationName, ".json"))
+}
 
 // Storer is a key-value structure that is initialized and stored in a persistent device.
 // It also saves the timestamp when a key was stored.
