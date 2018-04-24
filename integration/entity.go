@@ -11,7 +11,7 @@ import (
 
 // Entity is the producer of the data. Entity could be a host, a container, a pod, or whatever unit of meaning.
 type Entity struct {
-	Lock      sync.Mutex
+	lock      sync.Mutex
 	Metadata  EntityMetadata   `json:"entity"`
 	Metrics   []*metric.Set    `json:"metrics"`
 	Inventory metric.Inventory `json:"inventory"`
@@ -60,8 +60,8 @@ func (e *Entity) NewMetricSet(eventType string) (s *metric.Set, err error) {
 		return
 	}
 
-	e.Lock.Lock()
-	defer e.Lock.Unlock()
+	e.lock.Lock()
+	defer e.lock.Unlock()
 	e.Metrics = append(e.Metrics, s)
 	return metric.NewSet(eventType, e.storer)
 }
@@ -72,16 +72,16 @@ func (e *Entity) AddEvent(event *metric.Event) error {
 		return errors.New("summary of the event cannot be empty")
 	}
 
-	e.Lock.Lock()
-	defer e.Lock.Unlock()
+	e.lock.Lock()
+	defer e.lock.Unlock()
 	e.Events = append(e.Events, event)
 	return nil
 }
 
 // AddInventory method adds a inventory item.
 func (e *Entity) AddInventory(key string, field string, value interface{}) {
-	e.Lock.Lock()
-	defer e.Lock.Unlock()
+	e.lock.Lock()
+	defer e.lock.Unlock()
 	e.Inventory.SetItem(key, field, value)
 }
 
