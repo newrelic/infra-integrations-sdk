@@ -23,23 +23,24 @@ type Integration struct {
 }
 
 // Entity method creates or retrieves an already created EntityData.
-func (i *Integration) Entity(entityName, entityType string) (*Entity, error) {
+func (i *Integration) Entity(entityName, entityType string) (e *Entity, err error) {
 	i.locker.Lock()
 	defer i.locker.Unlock()
-	for _, e := range i.Data {
+
+	for _, e = range i.Data {
 		if e.Metadata.Name == entityName && e.Metadata.Type == entityType {
 			return e, nil
 		}
 	}
 
-	d, err := NewEntity(entityName, entityType)
+	e, err = NewEntity(entityName, entityType)
 	if err != nil {
 		return nil, err
 	}
 
-	i.Data = append(i.Data, &d)
+	i.Data = append(i.Data, e)
 
-	return &d, nil
+	return e, nil
 }
 
 // Publish runs all necessary tasks before publishing the data. Currently, it

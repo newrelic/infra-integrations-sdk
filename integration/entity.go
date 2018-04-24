@@ -1,6 +1,9 @@
 package integration
 
 import (
+	"fmt"
+	"sync"
+
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/pkg/errors"
@@ -8,6 +11,7 @@ import (
 
 // Entity is the producer of the data. Entity could be a host, a container, a pod, or whatever unit of meaning.
 type Entity struct {
+	Lock      sync.Mutex
 	Metadata  EntityMetadata   `json:"entity"`
 	Metrics   []*metric.Set    `json:"metrics"`
 	Inventory metric.Inventory `json:"inventory"`
@@ -21,11 +25,14 @@ type EntityMetadata struct {
 	Type string `json:"type""`
 }
 
+// EntityID entity identifier
+type EntityID string
+
 // NewEntity creates a new remote-entity.
-func NewEntity(entityName, entityType string) (Entity, error) {
+func NewEntity(entityName, entityType string) (*Entity, error) {
 	// If one of the attributes is defined, both Name and Type are needed.
 	if entityName == "" && entityType != "" || entityName != "" && entityType == "" {
-		return Entity{}, errors.New("entity name and type are required when defining one")
+		return &Entity{}, errors.New("entity name and type are required when defining one")
 	}
 
 	d := Entity{
@@ -43,7 +50,7 @@ func NewEntity(entityName, entityType string) (Entity, error) {
 		}
 	}
 
-	return d, nil
+	return &d, nil
 }
 
 // NewMetricSet returns a new instance of Set with its sample attached to the integration.
@@ -53,8 +60,9 @@ func (e *Entity) NewMetricSet(eventType string) (s *metric.Set, err error) {
 		return
 	}
 
+	e.Lock.Lock()
+	defer e.Lock.Unlock()
 	e.Metrics = append(e.Metrics, s)
-
 	return metric.NewSet(eventType, e.storer)
 }
 
@@ -64,11 +72,20 @@ func (e *Entity) AddEvent(event *metric.Event) error {
 		return errors.New("summary of the event cannot be empty")
 	}
 
+	e.Lock.Lock()
+	defer e.Lock.Unlock()
 	e.Events = append(e.Events, event)
 	return nil
 }
 
 // AddInventory method adds a inventory item.
 func (e *Entity) AddInventory(key string, field string, value interface{}) {
+	e.Lock.Lock()
+	defer e.Lock.Unlock()
 	e.Inventory.SetItem(key, field, value)
+}
+
+// ID provides the entity id in string format
+func (e *Entity) ID() EntityID {
+	return EntityID(fmt.Sprintf("%s:%s", e.Metadata.Type, e.Metadata.Name))
 }

@@ -3,8 +3,8 @@ package integration
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/newrelic/infra-integrations-sdk/metric"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewEntity(t *testing.T) {
@@ -14,7 +14,6 @@ func TestNewEntity(t *testing.T) {
 	assert.Equal(t, "name", e.Metadata.Name)
 	assert.Equal(t, "type", e.Metadata.Type)
 }
-
 
 func TestAddNotificationEvent(t *testing.T) {
 	en, err := NewEntity("Entity1", "Type1")
@@ -50,7 +49,7 @@ func TestAddEvent_Entity(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = en.AddEvent(metric.NewEvent("TestSummary", "TestCategory" ))
+	err = en.AddEvent(metric.NewEvent("TestSummary", "TestCategory"))
 	if err != nil {
 		t.Errorf("error not expected, got: %s", err)
 	}
@@ -68,10 +67,10 @@ func TestAddEvent(t *testing.T) {
 	en, err := NewEntity("Entity1", "Type1")
 	assert.NoError(t, err)
 
-	err = en.AddEvent(metric.NewEvent("TestSummary", "" ))
+	err = en.AddEvent(metric.NewEvent("TestSummary", ""))
 	assert.NoError(t, err)
 
-	err = en.AddEvent(metric.NewEvent("TestSummary", "" ))
+	err = en.AddEvent(metric.NewEvent("TestSummary", ""))
 	assert.NoError(t, err)
 
 	assert.Len(t, en.Events, 2)
@@ -81,7 +80,7 @@ func TestAddEvent_Entity_EmptySummary_Error(t *testing.T) {
 	en, err := NewEntity("Entity1", "Type1")
 	assert.NoError(t, err)
 
-	err = en.AddEvent(metric.NewEvent("", "TestCategory" ))
+	err = en.AddEvent(metric.NewEvent("", "TestCategory"))
 	assert.Error(t, err)
 
 	assert.Len(t, en.Events, 0)

@@ -142,8 +142,8 @@ func TestIntegration_Publish(t *testing.T) {
 	ms.SetMetric("metricTwo", 88, metric.GAUGE)
 	ms.SetMetric("metricThree", "test", metric.ATTRIBUTE)
 
-	e.AddEvent(metric.NewEvent("evnt1sum", "evnt1cat" ))
-	e.AddEvent(metric.NewEvent("evnt2sum", "evnt2cat" ))
+	e.AddEvent(metric.NewEvent("evnt1sum", "evnt1cat"))
+	e.AddEvent(metric.NewEvent("evnt2sum", "evnt2cat"))
 
 	e, err = i.Entity("EntityTwo", "test")
 	if err != nil {
@@ -167,7 +167,7 @@ func TestIntegration_Publish(t *testing.T) {
 	ms.SetMetric("metricTwo", 88, metric.GAUGE)
 	ms.SetMetric("metricThree", "test", metric.ATTRIBUTE)
 
-	e.AddEvent(metric.NewEvent("evnt3sum", "evnt3cat" ))
+	e.AddEvent(metric.NewEvent("evnt3sum", "evnt3cat"))
 
 	i.Publish()
 }
@@ -198,9 +198,7 @@ func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
 // NOTE: This test does nothing as test but when running with -race flag we can detect data races.
 // See Lock and Unlock on Entity method.
 func TestIntegration_EntityHasNoDataRace(t *testing.T) {
-	t.Skip("TODO concurrency support")
-
-	in, err := NewBuilder("TestIntegration", "1.0").Writer(ioutil.Discard).Build()
+	in, err := NewBuilder("TestIntegration", "1.0").Writer(ioutil.Discard).Synchronized().Build()
 	if err != nil {
 		t.Fatal(err)
 	}
