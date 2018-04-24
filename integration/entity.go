@@ -1,8 +1,6 @@
 package integration
 
 import (
-	"encoding/json"
-
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/pkg/errors"
@@ -73,9 +71,4 @@ func (e *Entity) AddEvent(event metric.Event) error {
 // AddInventory method adds a inventory item.
 func (e *Entity) AddInventory(key string, field string, value interface{}) {
 	e.Inventory.SetItem(key, field, value)
-}
-
-// MarshalJSON implements json.Marshaler
-func (e *Entity) MarshalJSON() ([]byte, error) {
-	return json.Marshal(*e)
 }
