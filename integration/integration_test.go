@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewIntegrationData(t *testing.T) {
+func TestBuilder_Build(t *testing.T) {
 	i, err := NewBuilder("TestIntegration", "1.0").Build()
 	if err != nil {
 		t.Fatal()
@@ -35,7 +35,7 @@ func TestNewIntegrationData(t *testing.T) {
 	}
 }
 
-func TestNewIntegrationWithDefaultArguments(t *testing.T) {
+func TestBuilder_BuildWithDefaultArguments(t *testing.T) {
 	type argumentList struct {
 		sdk_args.DefaultArgumentList
 	}
@@ -72,7 +72,7 @@ func TestNewIntegrationWithDefaultArguments(t *testing.T) {
 	}
 }
 
-func TestNewIntegrationWithOverridenAndDefaultArguments(t *testing.T) {
+func TestBuilder_BuildWithCustomArguments(t *testing.T) {
 	type argumentList struct {
 		sdk_args.DefaultArgumentList
 	}
@@ -142,8 +142,8 @@ func TestIntegration_Publish(t *testing.T) {
 	ms.SetMetric("metricTwo", 88, metric.GAUGE)
 	ms.SetMetric("metricThree", "test", metric.ATTRIBUTE)
 
-	e.AddEvent(metric.Event{Summary: "evnt1sum", Category: "evnt1cat"})
-	e.AddEvent(metric.Event{Summary: "evnt2sum", Category: "evnt2cat"})
+	e.AddEvent(metric.NewEvent("evnt1sum", "evnt1cat" ))
+	e.AddEvent(metric.NewEvent("evnt2sum", "evnt2cat" ))
 
 	e, err = i.Entity("EntityTwo", "test")
 	if err != nil {
@@ -167,7 +167,7 @@ func TestIntegration_Publish(t *testing.T) {
 	ms.SetMetric("metricTwo", 88, metric.GAUGE)
 	ms.SetMetric("metricThree", "test", metric.ATTRIBUTE)
 
-	e.AddEvent(metric.Event{Summary: "evnt3sum", Category: "evnt3cat"})
+	e.AddEvent(metric.NewEvent("evnt3sum", "evnt3cat" ))
 
 	i.Publish()
 }
@@ -198,6 +198,8 @@ func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
 // NOTE: This test does nothing as test but when running with -race flag we can detect data races.
 // See Lock and Unlock on Entity method.
 func TestIntegration_EntityHasNoDataRace(t *testing.T) {
+	t.Skip("TODO concurrency support")
+
 	in, err := NewBuilder("TestIntegration", "1.0").Writer(ioutil.Discard).Build()
 	if err != nil {
 		t.Fatal(err)
@@ -207,96 +209,6 @@ func TestIntegration_EntityHasNoDataRace(t *testing.T) {
 		go func(i int) {
 			in.Entity(fmt.Sprintf("entity%v", i), "test")
 		}(i)
-	}
-}
-
-func TestAddNotificationEvent(t *testing.T) {
-	en, err := NewEntity("Entity1", "Type1")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = en.AddEvent(*metric.NewNotification("TestSummary"))
-	assert.NoError(t, err)
-
-	assert.Len(t, en.Events, 1)
-
-	if en.Events[0].Summary != "TestSummary" || en.Events[0].Category != "notifications" {
-		t.Error("malformed event")
-	}
-}
-
-func TestAddNotificationWithEmptySummaryFails(t *testing.T) {
-	en, err := NewEntity("Entity1", "Type1")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = en.AddEvent(*metric.NewNotification(""))
-	assert.Error(t, err)
-
-	assert.Len(t, en.Events, 0)
-}
-
-func TestAddEvent_Entity(t *testing.T) {
-	en, err := NewEntity("Entity1", "Type1")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = en.AddEvent(metric.Event{Summary: "TestSummary", Category: "TestCategory"})
-	if err != nil {
-		t.Errorf("error not expected, got: %s", err)
-	}
-
-	if en.Events[0].Summary != "TestSummary" || en.Events[0].Category != "TestCategory" {
-		t.Error("event malformed")
-	}
-
-	if len(en.Events) != 1 {
-		t.Error("not expected length of events")
-	}
-}
-
-func TestAddEvent_Entity_TheSameEvents_And_NoCategory(t *testing.T) {
-	en, err := NewEntity("Entity1", "Type1")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = en.AddEvent(metric.Event{Summary: "TestSummary"})
-	if err != nil {
-		t.Errorf("error not expected, got: %s", err)
-	}
-	err = en.AddEvent(metric.Event{Summary: "TestSummary"})
-	if err != nil {
-		t.Errorf("error not expected, got: %s", err)
-	}
-
-	if en.Events[0].Summary != "TestSummary" || en.Events[0].Category != "" {
-		t.Error("event malformed")
-	}
-	if en.Events[1].Summary != "TestSummary" || en.Events[1].Category != "" {
-		t.Error("event malformed")
-	}
-	if len(en.Events) != 2 {
-		t.Error("not expected length of events")
-	}
-}
-
-func TestAddEvent_Entity_EmptySummary_Error(t *testing.T) {
-	en, err := NewEntity("Entity1", "Type1")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = en.AddEvent(metric.Event{Category: "TestCategory"})
-	if err == nil {
-		t.Error("error was expected for empty summary")
-	}
-
-	if len(en.Events) != 0 {
-		t.Error("not expected length of events")
 	}
 }
 

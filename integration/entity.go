@@ -59,12 +59,12 @@ func (e *Entity) NewMetricSet(eventType string) (s *metric.Set, err error) {
 }
 
 // AddEvent method adds a new Event.
-func (e *Entity) AddEvent(event metric.Event) error {
+func (e *Entity) AddEvent(event *metric.Event) error {
 	if event.Summary == "" {
 		return errors.New("summary of the event cannot be empty")
 	}
 
-	e.Events = append(e.Events, &event)
+	e.Events = append(e.Events, event)
 	return nil
 }
 
