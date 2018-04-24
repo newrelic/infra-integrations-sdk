@@ -22,6 +22,16 @@ type Integration struct {
 	writer             io.Writer
 }
 
+// New creates new integration with sane default values.
+func New(name, version string) (*Integration, error) {
+	return NewBuilder(name, version).Build()
+}
+
+// NewWithArgs creates new integration with given arguments and sane default values.
+func NewWithArgs(name, version string, args interface{}) (*Integration, error) {
+	return NewBuilder(name, version).ParsedArguments(args).Build()
+}
+
 // Entity method creates or retrieves an already created EntityData.
 func (i *Integration) Entity(entityName, entityType string) (e *Entity, err error) {
 	i.locker.Lock()
