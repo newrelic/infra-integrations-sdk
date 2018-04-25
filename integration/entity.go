@@ -22,7 +22,7 @@ type Entity struct {
 // EntityMetadata stores entity Metadata
 type EntityMetadata struct {
 	Name string `json:"name"`
-	Type string `json:"type""`
+	Type string `json:"type"`
 }
 
 // EntityID entity identifier
@@ -32,7 +32,7 @@ type EntityID string
 func NewEntity(entityName, entityType string, storer persist.Storer) (*Entity, error) {
 	// If one of the attributes is defined, both Name and Type are needed.
 	if entityName == "" && entityType != "" || entityName != "" && entityType == "" {
-		return &Entity{}, errors.New("entity name and type are required when defining one")
+		return  nil, errors.New("entity name and type are required when defining one")
 	}
 
 	d := Entity{
@@ -64,7 +64,7 @@ func (e *Entity) NewMetricSet(eventType string) (s *metric.Set, err error) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 	e.Metrics = append(e.Metrics, s)
-	return metric.NewSet(eventType, e.storer)
+	return
 }
 
 // AddEvent method adds a new Event.
