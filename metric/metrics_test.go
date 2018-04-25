@@ -1,11 +1,8 @@
 package metric_test
 
 import (
-	"io/ioutil"
 	"testing"
 	"time"
-
-	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
@@ -24,20 +21,16 @@ func (fd *FakeData) Now() time.Time {
 	return fd.timestamp
 }
 
-var metricTests = []struct {
-	key        string
-	value      interface{}
-	metricType metric.SourceType
-	out        interface{}
-	storer     interface{}
+var rateAndDeltaTests = []struct {
+	testCase string
+	key      string
+	value    interface{}
+	out      interface{}
+	cache    interface{}
 }{
-	{"rateKey1", 10, metric.RATE, 0.0, 10.0},
-	{"rateKey1", 100, metric.RATE, 90.0, 100.0},
-	{"key1", .22323333, metric.RATE, 0.0, 0.22323333},
-	{"key2", 100, metric.RATE, 0.0, 100.0},
-	{"key2", 110, metric.RATE, 10.0, 110.0},
-	{"key3", 10, metric.DELTA, 0.0, 10.0},
-	{"key3", 110, metric.DELTA, 100.0, 110.0},
+	{"1st data in key", "key1", .22323333, 0.0, 0.22323333},
+	{"1st data in key", "key2", 100, 0.0, 100.0},
+	{"2nd data in key", "key2", 110, 10.0, 110.0},
 }
 
 func TestSet_SetMetricGauge(t *testing.T) {
@@ -68,30 +61,30 @@ func TestSet_SetMetricAttribute(t *testing.T) {
 	}
 }
 
-func TestSetMetricStorer(t *testing.T) {
-	storePath, err := ioutil.TempDir("", "test-metricset-storer")
-	assert.NoError(t, err)
-	storer, err := persist.NewFileStore(storePath, log.NewStdErr(false))
-	assert.NoError(t, err)
+func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
+	storer := persist.NewInMemoryStore()
 
-	fd := FakeData{}
-	persist.SetNow(fd.Now)
+	for _, sourceType := range []metric.SourceType{metric.DELTA, metric.RATE} {
+		fd := FakeData{}
+		persist.SetNow(fd.Now)
 
-	ms, err := metric.NewSet("eventType", storer)
-	assert.NoError(t, err)
+		ms, err := metric.NewSet("some-event-type", storer)
+		assert.NoError(t, err)
 
-	for _, tt := range metricTests {
-		ms.SetMetric(tt.key, tt.value, tt.metricType)
+		for _, tt := range rateAndDeltaTests {
+			ms.SetMetric(tt.key, tt.value, sourceType)
 
-		if ms.Metrics[tt.key] != tt.out {
-			t.Errorf("SetMetric(\"%s\", %s, %v) => %s, want %s", tt.key, tt.value, tt.metricType, ms.Metrics[tt.key], tt.out)
-		}
+			if ms.Metrics[tt.key] != tt.out {
+				t.Errorf("setting %s %s source-type %d and value %v returned: %v, expected: %v",
+					tt.testCase, tt.key, sourceType, tt.value, ms.Metrics[tt.key], tt.out)
+			}
 
-		v, _, ok := storer.Get(tt.key)
-		if !ok {
-			t.Errorf("persist.Get(\"%v\") ==> %v, want %v", true, v, ok)
-		} else if tt.storer != v {
-			t.Errorf("persist.Get(\"%v\") ==> %v, want %v", tt.key, v, tt.storer)
+			v, _, ok := storer.Get(tt.key)
+			if !ok {
+				t.Errorf("key %s not in cache for case %s", tt.key, tt.testCase)
+			} else if tt.cache != v {
+				t.Errorf("cache.Get(\"%v\") ==> %v, want %v", tt.key, v, tt.cache)
+			}
 		}
 	}
 }
