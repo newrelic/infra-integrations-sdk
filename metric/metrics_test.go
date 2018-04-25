@@ -3,6 +3,7 @@ package metric_test
 import (
 	"testing"
 	"time"
+
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
@@ -64,8 +65,8 @@ func TestSet_SetMetricAttribute(t *testing.T) {
 func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 	storer := persist.NewInMemoryStore()
 
+	fd := FakeData{}
 	for _, sourceType := range []metric.SourceType{metric.DELTA, metric.RATE} {
-		fd := FakeData{}
 		persist.SetNow(fd.Now)
 
 		ms, err := metric.NewSet("some-event-type", storer)
@@ -79,7 +80,7 @@ func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 					tt.testCase, tt.key, sourceType, tt.value, ms.Metrics[tt.key], tt.out)
 			}
 
-			v, _, ok := storer.Get(tt.key)
+			v, _, ok := storer.Get(metric.SampleKey(tt.key, sourceType))
 			if !ok {
 				t.Errorf("key %s not in cache for case %s", tt.key, tt.testCase)
 			} else if tt.cache != v {
