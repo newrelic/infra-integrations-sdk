@@ -26,20 +26,20 @@ const (
 
 // Set is the basic structure for storing metrics.
 type Set struct {
-	// TODO: global refactor, separate JSON structs from entities that manage it
 	storer  persist.Storer
 	Metrics map[string]interface{}
 }
 
-// NewSet returns a new Set instance.
-// TODO: this function should not be visible to the SDK user
-func NewSet(eventType string, storer persist.Storer) *Set {
+// NewSet creates new metrics set.
+func NewSet(eventType string, storer persist.Storer) (*Set, error) {
 	ms := Set{
 		Metrics: map[string]interface{}{},
 		storer:  storer,
 	}
-	ms.SetMetric("event_type", eventType, ATTRIBUTE) // nolint: errcheck
-	return &ms
+
+	err := ms.SetMetric("event_type", eventType, ATTRIBUTE)
+
+	return &ms, err
 }
 
 // SetMetric adds a metric to the Set object or updates the metric value

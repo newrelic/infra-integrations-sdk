@@ -44,7 +44,8 @@ func TestSet_SetMetricGauge(t *testing.T) {
 	fd := FakeData{}
 	persist.SetNow(fd.Now)
 
-	ms := metric.NewSet("some-event-type", nil)
+	ms, err := metric.NewSet("some-event-type", nil)
+	assert.NoError(t, err)
 
 	ms.SetMetric("key", 10, metric.GAUGE)
 
@@ -57,7 +58,8 @@ func TestSet_SetMetricAttribute(t *testing.T) {
 	fd := FakeData{}
 	persist.SetNow(fd.Now)
 
-	ms := metric.NewSet("some-event-type", nil)
+	ms, err := metric.NewSet("some-event-type", nil)
+	assert.NoError(t, err)
 
 	ms.SetMetric("key", "some-attribute", metric.ATTRIBUTE)
 
@@ -69,13 +71,14 @@ func TestSet_SetMetricAttribute(t *testing.T) {
 func TestSetMetricStorer(t *testing.T) {
 	storePath, err := ioutil.TempDir("", "test-metricset-storer")
 	assert.NoError(t, err)
-	storer, err := persist.NewStorer(storePath, log.NewStdErr(false))
+	storer, err := persist.NewFileStore(storePath, log.NewStdErr(false))
 	assert.NoError(t, err)
 
 	fd := FakeData{}
 	persist.SetNow(fd.Now)
 
-	ms := metric.NewSet("eventType", storer)
+	ms, err := metric.NewSet("eventType", storer)
+	assert.NoError(t, err)
 
 	for _, tt := range metricTests {
 		ms.SetMetric(tt.key, tt.value, tt.metricType)

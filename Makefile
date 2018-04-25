@@ -6,16 +6,17 @@ GOTOOLS = github.com/golang/lint/golint \
 # Temporary patch to avoid build failing because of the outdated documentation example
 # TODO: uncomment below commented lines and remove any line that uses $(NODOCS)
 NODOCS = $(shell go list ./... | grep -v /docs/)
+PKGS = $(shell go list ./... | egrep -v "\/docs\/|jmx")
 
-all: validate test
+all: lint test
 
 deps: tools
 #	@go get -v -d -t ./...
-	@go get -v -d -t $(NODOCS) #todo:remove
+	@go get -v -d -t $(NODOCS) #TODO: remove
 
 test: deps
-#	@gocov test ./... | gocov-xml > coverage.xml
-	@gocov test $(NODOCS) | gocov-xml > coverage.xml
+	@gocov test github.com/newrelic/infra-integrations-sdk/jmx > /dev/null # TODO: fix race for jmx package
+	@gocov test -race $(PKGS) | gocov-xml > coverage.xml
 
 clean:
 	rm -rf coverage.xml
@@ -27,10 +28,6 @@ tools:
 tools-update:
 	@go get -u $(GOTOOLS)
 	@gometalinter.v2 --install
-
-validate: lint
-
-validate-all: lint-all
 
 lint: deps
 	@gometalinter.v2 --config=.gometalinter.json ./...

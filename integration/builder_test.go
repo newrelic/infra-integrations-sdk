@@ -1,4 +1,4 @@
-package sdk_test
+package integration
 
 import (
 	"flag"
@@ -11,7 +11,6 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/persist"
-	"github.com/newrelic/infra-integrations-sdk/sdk"
 )
 
 func TestDefaultValues(t *testing.T) {
@@ -25,19 +24,19 @@ func TestDefaultValues(t *testing.T) {
 	os.Stdout = f
 
 	// Given an integration builder without parameters
-	integration, err := sdk.NewIntegration("integration", "4.0").Build()
+	i, err := NewBuilder("integration", "4.0").Build()
 
 	// The Build method does not return any error
 	assert.NoError(t, err)
 
 	// And the data is correctly set (including defaults)
-	assert.Equal(t, "integration", integration.Name)
-	assert.Equal(t, "4.0", integration.IntegrationVersion)
-	assert.Equal(t, "2", integration.ProtocolVersion)
-	assert.Equal(t, 0, len(integration.Data))
+	assert.Equal(t, "integration", i.Name)
+	assert.Equal(t, "4.0", i.IntegrationVersion)
+	assert.Equal(t, "2", i.ProtocolVersion)
+	assert.Equal(t, 0, len(i.Data))
 
 	// And when publishing the payload
-	assert.NoError(t, integration.Publish())
+	assert.NoError(t, i.Publish())
 	f.Close()
 
 	// It is redirected to standard output, and non-prettified
@@ -58,7 +57,7 @@ func TestIntegrationBuilder(t *testing.T) {
 
 	// Given an integration builder with all the parameters set
 	var arguments args.DefaultArgumentList
-	integration, err := sdk.NewIntegration("integration", "7.0").
+	i, err := NewBuilder("integration", "7.0").
 		ParsedArguments(&arguments).
 		Writer(output).
 		Build()
@@ -67,13 +66,13 @@ func TestIntegrationBuilder(t *testing.T) {
 	assert.NoError(t, err)
 
 	// And the data is correctly set
-	assert.Equal(t, "integration", integration.Name)
-	assert.Equal(t, "7.0", integration.IntegrationVersion)
-	assert.Equal(t, "2", integration.ProtocolVersion)
-	assert.Equal(t, 0, len(integration.Data))
+	assert.Equal(t, "integration", i.Name)
+	assert.Equal(t, "7.0", i.IntegrationVersion)
+	assert.Equal(t, "2", i.ProtocolVersion)
+	assert.Equal(t, 0, len(i.Data))
 
 	// And when publishing the payload
-	integration.Publish()
+	i.Publish()
 	output.Close()
 
 	// The output works as specified
@@ -99,28 +98,21 @@ func TestWrongArguments(t *testing.T) {
 		{d},
 	}
 	for _, arg := range arguments {
-		_, err := sdk.NewIntegration("integration", "7.0").ParsedArguments(arg).Build()
+		_, err := NewBuilder("integration", "7.0").ParsedArguments(arg).Build()
 		assert.Error(t, err)
 	}
 }
 
-func TestDefaultStorer(t *testing.T) {
-	// Redirecting standard output to a file
-	output, err := ioutil.TempFile("", "stdout")
+func TestItStoresOnDiskByDefault(t *testing.T) {
+	i, err := NewBuilder("cool-integration", "1.0").Writer(ioutil.Discard).Build()
 	assert.NoError(t, err)
 
-	// Given an integration with the default cache
-	integration, err := sdk.NewIntegration("cool-integration", "1.0").Writer(output).Build()
-	assert.NoError(t, err)
+	i.storer.Set("hello", 12.33)
 
-	// And some values
-	integration.Storer.Set("hello", 12.33)
+	assert.NoError(t, i.Publish())
 
-	// When publishing the data
-	assert.NoError(t, integration.Publish())
-
-	// The data has been cached
-	c, err := persist.NewStorer(persist.DefaultPath("cool-integration"), log.NewStdErr(false))
+	// assert data has been flushed to disk
+	c, err := persist.NewFileStore(persist.DefaultPath("cool-integration"), log.Discard)
 	assert.NoError(t, err)
 
 	v, ts, ok := c.Get("hello")
@@ -129,38 +121,30 @@ func TestDefaultStorer(t *testing.T) {
 	assert.InDelta(t, 12.33, v, 0.1)
 }
 
-func TestNoStorer(t *testing.T) {
-	// Redirecting standard output to a file
-	output, err := ioutil.TempFile("", "stdout")
+func TestInMemoryStoreDoesNotPersistOnDisk(t *testing.T) {
+	i, err := NewBuilder("cool-integration2", "1.0").Writer(ioutil.Discard).InMemoryStore().Build()
 	assert.NoError(t, err)
 
-	// Given an integration with the no cache
-	integration, err := sdk.NewIntegration("cool-integration", "1.0").Writer(output).NoStorer().Build()
+	i.storer.Set("hello", 12.33)
+
+	assert.NoError(t, i.Publish())
+
+	// assert data has not been flushed to disk
+	c, err := persist.NewFileStore(persist.DefaultPath("cool-integration2"), log.Discard)
 	assert.NoError(t, err)
 
-	// The built integration cache is nil
-	assert.Nil(t, integration.Storer)
-
-	// And the data can be published anyway
-	assert.NoError(t, integration.Publish())
+	_, _, ok := c.Get("hello")
+	assert.False(t, ok)
 }
 
 func TestCustomStorer(t *testing.T) {
-
-	// Redirecting standard output to a file
-	output, err := ioutil.TempFile("", "stdout")
-	assert.NoError(t, err)
-
-	// Given an integration with a custom cache
 	customStorer := fakeStorer{}
-	integration, err := sdk.NewIntegration("cool-integration", "1.0").Writer(output).Storer(&customStorer).Build()
+	i, err := NewBuilder("cool-integration", "1.0").Writer(ioutil.Discard).Storer(&customStorer).Build()
 	assert.NoError(t, err)
 
-	// When publishing the data
-	assert.NoError(t, integration.Publish())
+	assert.NoError(t, i.Publish())
 
-	// The data has been cached
-	assert.True(t, customStorer.saved)
+	assert.True(t, customStorer.saved, "data has not been saved")
 }
 
 type fakeStorer struct {
