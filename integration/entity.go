@@ -32,7 +32,7 @@ type EntityID string
 func NewEntity(entityName, entityType string, storer persist.Storer) (*Entity, error) {
 	// If one of the attributes is defined, both Name and Type are needed.
 	if entityName == "" && entityType != "" || entityName != "" && entityType == "" {
-		return  nil, errors.New("entity name and type are required when defining one")
+		return nil, errors.New("entity name and type are required when defining one")
 	}
 
 	d := Entity{
