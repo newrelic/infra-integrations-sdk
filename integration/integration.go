@@ -23,12 +23,7 @@ type Integration struct {
 }
 
 // New creates new integration with sane default values.
-func New(name, version string) (*Integration, error) {
-	return NewBuilder(name, version).Build()
-}
-
-// NewWithArgs creates new integration with given arguments and sane default values.
-func NewWithArgs(name, version string, args interface{}) (*Integration, error) {
+func New(name, version string, args interface{}) (*Integration, error) {
 	return NewBuilder(name, version).ParsedArguments(args).Build()
 }
 
