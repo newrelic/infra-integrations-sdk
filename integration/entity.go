@@ -28,8 +28,8 @@ type EntityMetadata struct {
 // EntityID entity identifier
 type EntityID string
 
-// NewEntity creates a new remote-entity.
-func NewEntity(entityName, entityType string, storer persist.Storer) (*Entity, error) {
+// newEntity creates a new remote-entity.
+func newEntity(entityName, entityType string, storer persist.Storer) (*Entity, error) {
 	// If one of the attributes is defined, both Name and Type are needed.
 	if entityName == "" && entityType != "" || entityName != "" && entityType == "" {
 		return nil, errors.New("entity name and type are required when defining one")
