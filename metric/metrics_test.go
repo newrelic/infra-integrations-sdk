@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"fmt"
+
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
@@ -73,14 +75,16 @@ func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 		assert.NoError(t, err)
 
 		for _, tt := range rateAndDeltaTests {
-			ms.SetMetric(tt.key, tt.value, sourceType)
+			// user should not store different types under the same key
+			key := fmt.Sprintf("%s:%d", tt.key, sourceType)
+			ms.SetMetric(key, tt.value, sourceType)
 
-			if ms.Metrics[tt.key] != tt.out {
+			if ms.Metrics[key] != tt.out {
 				t.Errorf("setting %s %s source-type %d and value %v returned: %v, expected: %v",
 					tt.testCase, tt.key, sourceType, tt.value, ms.Metrics[tt.key], tt.out)
 			}
 
-			v, _, ok := storer.Get(metric.SampleKey(tt.key, sourceType))
+			v, _, ok := storer.Get(key)
 			if !ok {
 				t.Errorf("key %s not in cache for case %s", tt.key, tt.testCase)
 			} else if tt.cache != v {

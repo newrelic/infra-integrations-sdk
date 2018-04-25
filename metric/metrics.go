@@ -93,11 +93,10 @@ func (ms *Set) sample(name string, value interface{}, sourceType SourceType) (fl
 		return sampledValue, fmt.Errorf("can't sample metric of unknown type %s", name)
 	}
 
-	storageKey := SampleKey(name, sourceType)
 	// Retrieve the last value and timestamp from Storer
-	oldval, oldTime, ok := ms.storer.Get(storageKey)
+	oldval, oldTime, ok := ms.storer.Get(name)
 	// And replace it with the new value which we want to keep
-	newTime := ms.storer.Set(storageKey, floatValue)
+	newTime := ms.storer.Set(name, floatValue)
 
 	if ok {
 		duration := (newTime - oldTime)
@@ -116,11 +115,6 @@ func (ms *Set) sample(name string, value interface{}, sourceType SourceType) (fl
 	}
 
 	return sampledValue, nil
-}
-
-// SampleKey generates the sample key for the storage.
-func SampleKey(name string, sourceType SourceType) string {
-	return fmt.Sprintf("%s:%d", name, sourceType)
 }
 
 // MarshalJSON adapts the internal structure of the metrics Set to the payload that is compliant with the protocol
