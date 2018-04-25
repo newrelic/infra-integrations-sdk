@@ -43,7 +43,7 @@ func (i *Integration) Entity(entityName, entityType string) (e *Entity, err erro
 		}
 	}
 
-	e, err = NewEntity(entityName, entityType, i.storer)
+	e, err = newEntity(entityName, entityType, i.storer)
 	if err != nil {
 		return nil, err
 	}

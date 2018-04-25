@@ -12,7 +12,7 @@ import (
 )
 
 func TestNewEntity(t *testing.T) {
-	e, err := NewEntity("name", "type", persist.NewInMemoryStore())
+	e, err := newEntity("name", "type", persist.NewInMemoryStore())
 
 	assert.NoError(t, err)
 	assert.Equal(t, "name", e.Metadata.Name)
@@ -20,7 +20,7 @@ func TestNewEntity(t *testing.T) {
 }
 
 func TestAddNotificationEvent(t *testing.T) {
-	en, err := NewEntity("Entity1", "Type1", persist.NewInMemoryStore())
+	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +36,7 @@ func TestAddNotificationEvent(t *testing.T) {
 }
 
 func TestAddNotificationWithEmptySummaryFails(t *testing.T) {
-	en, err := NewEntity("Entity1", "Type1", persist.NewInMemoryStore())
+	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,7 +48,7 @@ func TestAddNotificationWithEmptySummaryFails(t *testing.T) {
 }
 
 func TestAddEvent_Entity(t *testing.T) {
-	en, err := NewEntity("Entity1", "Type1", persist.NewInMemoryStore())
+	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestAddEvent_Entity(t *testing.T) {
 }
 
 func TestAddEvent(t *testing.T) {
-	en, err := NewEntity("Entity1", "Type1", persist.NewInMemoryStore())
+	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore())
 	assert.NoError(t, err)
 
 	err = en.AddEvent(metric.NewEvent("TestSummary", ""))
@@ -81,7 +81,7 @@ func TestAddEvent(t *testing.T) {
 }
 
 func TestAddEvent_Entity_EmptySummary_Error(t *testing.T) {
-	en, err := NewEntity("Entity1", "Type1", persist.NewInMemoryStore())
+	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore())
 	assert.NoError(t, err)
 
 	err = en.AddEvent(metric.NewEvent("", "TestCategory"))
@@ -91,7 +91,7 @@ func TestAddEvent_Entity_EmptySummary_Error(t *testing.T) {
 }
 
 func TestEntity_AddInventoryConcurrent(t *testing.T) {
-	en, err := NewEntity("Entity1", "Type1", persist.NewInMemoryStore())
+	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore())
 	assert.NoError(t, err)
 
 	itemsAmount := 100
