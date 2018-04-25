@@ -4,11 +4,12 @@ import (
 	"testing"
 
 	"github.com/newrelic/infra-integrations-sdk/metric"
+	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewEntity(t *testing.T) {
-	e, err := NewEntity("name", "type")
+	e, err := NewEntity("name", "type", persist.NewInMemoryStore())
 
 	assert.NoError(t, err)
 	assert.Equal(t, "name", e.Metadata.Name)
@@ -16,7 +17,7 @@ func TestNewEntity(t *testing.T) {
 }
 
 func TestAddNotificationEvent(t *testing.T) {
-	en, err := NewEntity("Entity1", "Type1")
+	en, err := NewEntity("Entity1", "Type1", persist.NewInMemoryStore())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,7 +33,7 @@ func TestAddNotificationEvent(t *testing.T) {
 }
 
 func TestAddNotificationWithEmptySummaryFails(t *testing.T) {
-	en, err := NewEntity("Entity1", "Type1")
+	en, err := NewEntity("Entity1", "Type1", persist.NewInMemoryStore())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +45,7 @@ func TestAddNotificationWithEmptySummaryFails(t *testing.T) {
 }
 
 func TestAddEvent_Entity(t *testing.T) {
-	en, err := NewEntity("Entity1", "Type1")
+	en, err := NewEntity("Entity1", "Type1", persist.NewInMemoryStore())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +65,7 @@ func TestAddEvent_Entity(t *testing.T) {
 }
 
 func TestAddEvent(t *testing.T) {
-	en, err := NewEntity("Entity1", "Type1")
+	en, err := NewEntity("Entity1", "Type1", persist.NewInMemoryStore())
 	assert.NoError(t, err)
 
 	err = en.AddEvent(metric.NewEvent("TestSummary", ""))
@@ -77,7 +78,7 @@ func TestAddEvent(t *testing.T) {
 }
 
 func TestAddEvent_Entity_EmptySummary_Error(t *testing.T) {
-	en, err := NewEntity("Entity1", "Type1")
+	en, err := NewEntity("Entity1", "Type1", persist.NewInMemoryStore())
 	assert.NoError(t, err)
 
 	err = en.AddEvent(metric.NewEvent("", "TestCategory"))

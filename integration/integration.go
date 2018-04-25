@@ -13,11 +13,11 @@ import (
 // Integration defines the format of the output JSON that integrations will return for protocol 2.
 type Integration struct {
 	locker             sync.Locker
-	Storer             persist.Storer `json:"-"`
-	Name               string         `json:"name"`
-	ProtocolVersion    string         `json:"protocol_version"`
-	IntegrationVersion string         `json:"integration_version"`
-	Data               []*Entity      `json:"data"`
+	storer             persist.Storer
+	Name               string    `json:"name"`
+	ProtocolVersion    string    `json:"protocol_version"`
+	IntegrationVersion string    `json:"integration_version"`
+	Data               []*Entity `json:"data"`
 	prettyOutput       bool
 	writer             io.Writer
 }
@@ -43,7 +43,7 @@ func (i *Integration) Entity(entityName, entityType string) (e *Entity, err erro
 		}
 	}
 
-	e, err = NewEntity(entityName, entityType)
+	e, err = NewEntity(entityName, entityType, i.storer)
 	if err != nil {
 		return nil, err
 	}
@@ -58,8 +58,8 @@ func (i *Integration) Entity(entityName, entityType string) (e *Entity, err erro
 // and re-initializes the integration object (allowing re-use it during the
 // execution of your code).
 func (i *Integration) Publish() error {
-	if i.Storer != nil {
-		if err := i.Storer.Save(); err != nil {
+	if i.storer != nil {
+		if err := i.storer.Save(); err != nil {
 			return err
 		}
 	}

@@ -60,13 +60,13 @@ func (b *Builder) ParsedArguments(dstPointer interface{}) *Builder {
 
 // Storer sets the persistence store.
 func (b *Builder) Storer(c persist.Storer) *Builder {
-	b.integration.Storer = c
+	b.integration.storer = c
 	return b
 }
 
 // InMemoryStore sets the persistence store to ephemeral in-memory.
 func (b *Builder) InMemoryStore() *Builder {
-	b.integration.Storer = persist.NewInMemoryStore()
+	b.integration.storer = persist.NewInMemoryStore()
 	return b
 }
 
@@ -99,13 +99,13 @@ func (b *Builder) Build() (*Integration, error) {
 	}
 	defaultArgs := args.GetDefaultArgs(b.arguments)
 
-	if b.integration.Storer == nil {
+	if b.integration.storer == nil {
 		l := b.logger
 		if b.logger == nil {
 			l = log.NewStdErr(false)
 		}
 
-		b.integration.Storer, err = persist.NewFileStore(persist.DefaultPath(b.integration.Name), l)
+		b.integration.storer, err = persist.NewFileStore(persist.DefaultPath(b.integration.Name), l)
 		if err != nil {
 			return nil, fmt.Errorf("can't create store: %s", err.Error())
 		}

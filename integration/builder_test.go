@@ -1,4 +1,4 @@
-package integration_test
+package integration
 
 import (
 	"flag"
@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 )
@@ -25,7 +24,7 @@ func TestDefaultValues(t *testing.T) {
 	os.Stdout = f
 
 	// Given an integration builder without parameters
-	i, err := integration.NewBuilder("integration", "4.0").Build()
+	i, err := NewBuilder("integration", "4.0").Build()
 
 	// The Build method does not return any error
 	assert.NoError(t, err)
@@ -58,7 +57,7 @@ func TestIntegrationBuilder(t *testing.T) {
 
 	// Given an integration builder with all the parameters set
 	var arguments args.DefaultArgumentList
-	i, err := integration.NewBuilder("integration", "7.0").
+	i, err := NewBuilder("integration", "7.0").
 		ParsedArguments(&arguments).
 		Writer(output).
 		Build()
@@ -99,16 +98,16 @@ func TestWrongArguments(t *testing.T) {
 		{d},
 	}
 	for _, arg := range arguments {
-		_, err := integration.NewBuilder("integration", "7.0").ParsedArguments(arg).Build()
+		_, err := NewBuilder("integration", "7.0").ParsedArguments(arg).Build()
 		assert.Error(t, err)
 	}
 }
 
 func TestItStoresOnDiskByDefault(t *testing.T) {
-	i, err := integration.NewBuilder("cool-integration", "1.0").Writer(ioutil.Discard).Build()
+	i, err := NewBuilder("cool-integration", "1.0").Writer(ioutil.Discard).Build()
 	assert.NoError(t, err)
 
-	i.Storer.Set("hello", 12.33)
+	i.storer.Set("hello", 12.33)
 
 	assert.NoError(t, i.Publish())
 
@@ -123,10 +122,10 @@ func TestItStoresOnDiskByDefault(t *testing.T) {
 }
 
 func TestInMemoryStoreDoesNotPersistOnDisk(t *testing.T) {
-	i, err := integration.NewBuilder("cool-integration2", "1.0").Writer(ioutil.Discard).InMemoryStore().Build()
+	i, err := NewBuilder("cool-integration2", "1.0").Writer(ioutil.Discard).InMemoryStore().Build()
 	assert.NoError(t, err)
 
-	i.Storer.Set("hello", 12.33)
+	i.storer.Set("hello", 12.33)
 
 	assert.NoError(t, i.Publish())
 
@@ -140,7 +139,7 @@ func TestInMemoryStoreDoesNotPersistOnDisk(t *testing.T) {
 
 func TestCustomStorer(t *testing.T) {
 	customStorer := fakeStorer{}
-	i, err := integration.NewBuilder("cool-integration", "1.0").Writer(ioutil.Discard).Storer(&customStorer).Build()
+	i, err := NewBuilder("cool-integration", "1.0").Writer(ioutil.Discard).Storer(&customStorer).Build()
 	assert.NoError(t, err)
 
 	assert.NoError(t, i.Publish())

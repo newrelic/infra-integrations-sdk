@@ -29,7 +29,7 @@ type EntityMetadata struct {
 type EntityID string
 
 // NewEntity creates a new remote-entity.
-func NewEntity(entityName, entityType string) (*Entity, error) {
+func NewEntity(entityName, entityType string, storer persist.Storer) (*Entity, error) {
 	// If one of the attributes is defined, both Name and Type are needed.
 	if entityName == "" && entityType != "" || entityName != "" && entityType == "" {
 		return &Entity{}, errors.New("entity name and type are required when defining one")
@@ -40,6 +40,7 @@ func NewEntity(entityName, entityType string) (*Entity, error) {
 		Metrics:   []*metric.Set{},
 		Inventory: metric.NewInventory(),
 		Events:    []*metric.Event{},
+		storer:    storer,
 	}
 
 	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
