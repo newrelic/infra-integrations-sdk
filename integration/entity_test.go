@@ -3,6 +3,9 @@ package integration
 import (
 	"testing"
 
+	"strconv"
+	"sync"
+
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
@@ -85,5 +88,22 @@ func TestAddEvent_Entity_EmptySummary_Error(t *testing.T) {
 	assert.Error(t, err)
 
 	assert.Len(t, en.Events, 0)
+}
 
+func TestEntity_AddInventoryConcurrent(t *testing.T) {
+	en, err := NewEntity("Entity1", "Type1", persist.NewInMemoryStore())
+	assert.NoError(t, err)
+
+	itemsAmount := 100
+	wg := sync.WaitGroup{}
+	wg.Add(itemsAmount)
+	for i := 0; i < itemsAmount; i++ {
+		go func(j int) {
+			en.AddInventory(strconv.Itoa(j), "foo", "bar")
+			wg.Done()
+		}(i)
+	}
+
+	wg.Wait()
+	assert.Len(t, en.Inventory.Items(), itemsAmount)
 }

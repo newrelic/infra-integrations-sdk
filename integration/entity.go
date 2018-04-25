@@ -12,10 +12,10 @@ import (
 // Entity is the producer of the data. Entity could be a host, a container, a pod, or whatever unit of meaning.
 type Entity struct {
 	lock      sync.Mutex
-	Metadata  EntityMetadata   `json:"entity"`
-	Metrics   []*metric.Set    `json:"metrics"`
-	Inventory metric.Inventory `json:"inventory"`
-	Events    []*metric.Event  `json:"events"`
+	Metadata  EntityMetadata    `json:"entity"`
+	Metrics   []*metric.Set     `json:"metrics"`
+	Inventory *metric.Inventory `json:"inventory"`
+	Events    []*metric.Event   `json:"events"`
 	storer    persist.Storer
 }
 
