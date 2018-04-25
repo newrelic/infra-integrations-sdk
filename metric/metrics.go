@@ -26,7 +26,6 @@ const (
 
 // Set is the basic structure for storing metrics.
 type Set struct {
-	// TODO: global refactor, separate JSON structs from entities that manage it
 	storer  persist.Storer
 	Metrics map[string]interface{}
 }

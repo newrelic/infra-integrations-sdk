@@ -101,8 +101,10 @@ func NewFileStore(storePath string, l log.Logger) (Storer, error) {
 		return store, nil
 	}
 
-	// Ignoring unmarshalling errors, returning a clean store
-	_ = json.Unmarshal(file, &store.inMemoryStore) // nolint: errcheck
+	err = json.Unmarshal(file, &store.inMemoryStore)
+	if err != nil {
+		l.Errorf("cannot json decode stored integration entities, starting from scratch")
+	}
 
 	return store, nil
 }

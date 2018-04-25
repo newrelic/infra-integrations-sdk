@@ -19,6 +19,7 @@ const protocolVersion = "2"
 type Builder struct {
 	integration *Integration
 	arguments   interface{}
+	logger      log.Logger
 }
 
 type disabledLocker struct{}
@@ -69,6 +70,12 @@ func (b *Builder) InMemoryStore() *Builder {
 	return b
 }
 
+// Logger replaces the default logger (stderr)
+func (b *Builder) Logger(l log.Logger) *Builder {
+	b.logger = l
+	return b
+}
+
 // Build builds a proper integration.
 func (b *Builder) Build() (*Integration, error) {
 	// Checking errors
@@ -93,8 +100,12 @@ func (b *Builder) Build() (*Integration, error) {
 	defaultArgs := args.GetDefaultArgs(b.arguments)
 
 	if b.integration.Storer == nil {
-		// TODO: remove this log and add Log(log) function to this Builder
-		b.integration.Storer, err = persist.NewFileStore(persist.DefaultPath(b.integration.Name), log.NewStdErr(false))
+		l := b.logger
+		if b.logger == nil {
+			l = log.NewStdErr(false)
+		}
+
+		b.integration.Storer, err = persist.NewFileStore(persist.DefaultPath(b.integration.Name), l)
 		if err != nil {
 			return nil, fmt.Errorf("can't create store: %s", err.Error())
 		}
