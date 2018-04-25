@@ -99,7 +99,7 @@ func TestEntity_AddInventoryConcurrent(t *testing.T) {
 	wg.Add(itemsAmount)
 	for i := 0; i < itemsAmount; i++ {
 		go func(j int) {
-			en.AddInventory(strconv.Itoa(j), "foo", "bar")
+			en.SetInventoryItem(strconv.Itoa(j), "foo", "bar")
 			wg.Done()
 		}(i)
 	}
