@@ -9,11 +9,13 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/pkg/errors"
-	"gopkg.in/newrelic/infra-integrations-sdk.v2/args"
 )
+
+const protocolVersion = "2"
 
 // Integration defines the format of the output JSON that integrations will return for protocol 2.
 type Integration struct {
@@ -29,34 +31,45 @@ type Integration struct {
 	args               interface{} // UGLY
 }
 
-// Option sets an option on integration level.
-type Option func(*Integration) error
-
 // New creates new integration with sane default values.
-func New(name, version string, opts ...Option) (*Integration, error) {
+func New(name, version string, opts ...Option) (i *Integration, err error) {
 
-	// TODO check for empty name and version
+	if name == "" {
+		err = errors.New("integration name cannot be empty")
+		return
+	}
 
-	i := &Integration{
+	if version == "" {
+		err = errors.New("integration version cannot be empty")
+		return
+	}
+
+	i = &Integration{
 		Name:               name,
 		ProtocolVersion:    protocolVersion,
 		IntegrationVersion: version,
 		Entities:           []*Entity{},
-		writer:             os.Stdout, // defaults to stdout
+		writer:             os.Stdout,
 		locker:             disabledLocker{},
 		logger:             log.NewStdErr(false),
 	}
 
-	for _, o := range opts {
-		err := o(i)
-		if err != nil {
-			return i, fmt.Errorf("error applying option to integration. %s", err)
+	for _, opt := range opts {
+		if err = opt(i); err != nil {
+			err = fmt.Errorf("error applying option to integration. %s", err)
+			return
 		}
 	}
 
-	if err := i.checkArguments(); err != nil {
-		return i, err
+	// arguments
+	if err = i.checkArguments(); err != nil {
+		return
 	}
+	if err = args.SetupArgs(i.args); err != nil {
+		return
+	}
+	defaultArgs := args.GetDefaultArgs(i.args)
+	i.prettyOutput = defaultArgs.Pretty
 
 	if i.storer == nil {
 		var err error
@@ -66,15 +79,7 @@ func New(name, version string, opts ...Option) (*Integration, error) {
 		}
 	}
 
-	err := args.SetupArgs(i.args)
-	if err != nil {
-		return nil, err
-	}
-
-	defaultArgs := args.GetDefaultArgs(i.args)
-	i.prettyOutput = defaultArgs.Pretty
-
-	return i, nil
+	return
 }
 
 // DefaultEntity retrieves default entity to monitorize.
@@ -186,48 +191,4 @@ func (i *Integration) checkArguments() error {
 	}
 
 	return errors.New("arguments must be a pointer to a struct (or nil)")
-}
-
-func Writer(w io.Writer) Option {
-	return func(i *Integration) error {
-		i.writer = w
-
-		return nil
-	}
-}
-
-func Logger(l log.Logger) Option {
-	return func(i *Integration) error {
-		i.logger = l
-
-		return nil
-	}
-}
-
-func Storer(s persist.Storer) Option {
-	return func(i *Integration) error {
-		i.storer = s
-
-		return nil
-	}
-}
-
-func InMemoryStore(i *Integration) error {
-	i.storer = persist.NewInMemoryStore()
-
-	return nil
-}
-
-func Synchronized(i *Integration) error {
-	i.locker = &sync.Mutex{}
-
-	return nil
-}
-
-func Args(a interface{}) Option {
-	return func(i *Integration) error {
-		i.args = a
-
-		return nil
-	}
 }

@@ -2,8 +2,6 @@ package integration
 
 import (
 	"encoding/json"
-	"flag"
-	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -16,18 +14,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIntegration_DefaultEntity(t *testing.T) {
-	i, err := newTestingIntegration()
-	assert.NoError(t, err)
+var (
+	integrationName    = "TestIntegration"
+	integrationVersion = "1.0"
+)
 
-	e1 := i.DefaultEntity()
-	e2 := i.DefaultEntity()
-	assert.Equal(t, e1, e2)
-}
-
-func TestBuilder_Build(t *testing.T) {
-	i, err := newTestingIntegration()
-	assert.NoError(t, err)
+func TestCreation(t *testing.T) {
+	i := newNoLoggerNoWriter(t)
 
 	if i.Name != "TestIntegration" {
 		t.Error()
@@ -43,20 +36,50 @@ func TestBuilder_Build(t *testing.T) {
 	}
 }
 
-func TestBuilder_BuildWithDefaultArguments(t *testing.T) {
+func TestDefaultIntegrationWritesToStdout(t *testing.T) {
+	// capture stdout to file
+	f, err := ioutil.TempFile("", "stdout")
+	assert.NoError(t, err)
+	back := os.Stdout
+	defer func() {
+		os.Stdout = back
+	}()
+	os.Stdout = f
+
+	i, err := New("integration", "4.0")
+
+	assert.NoError(t, err)
+	assert.Equal(t, "integration", i.Name)
+	assert.Equal(t, "4.0", i.IntegrationVersion)
+	assert.Equal(t, "2", i.ProtocolVersion)
+	assert.Equal(t, 0, len(i.Entities))
+
+	assert.NoError(t, i.Publish())
+
+	// integration published metadata to stdout
+	f.Close()
+	payload, err := ioutil.ReadFile(f.Name())
+	assert.NoError(t, err)
+	assert.Equal(t, `{"name":"integration","protocol_version":"2","integration_version":"4.0","data":[]}`, string(payload))
+}
+
+func TestIntegration_DefaultEntity(t *testing.T) {
+	i := newNoLoggerNoWriter(t)
+
+	e1 := i.DefaultEntity()
+	e2 := i.DefaultEntity()
+	assert.Equal(t, e1, e2)
+}
+
+func TestDefaultArguments(t *testing.T) {
 	type argumentList struct {
 		sdk_args.DefaultArgumentList
 	}
 
-	// Needed for initialising os.Args + flags (emulating).
-	os.Args = []string{"cmd"}
-	flag.CommandLine = flag.NewFlagSet("name", 0)
-
 	var al argumentList
-	i, err := NewBuilder("TestIntegration", "1.0").Logger(log.Discard).Writer(ioutil.Discard).ParsedArguments(&al).Build()
-	if err != nil {
-		t.Fatal(err)
-	}
+	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
+	assert.NoError(t, err)
+
 	if i.Name != "TestIntegration" {
 		t.Error()
 	}
@@ -80,20 +103,17 @@ func TestBuilder_BuildWithDefaultArguments(t *testing.T) {
 	}
 }
 
-func TestBuilder_BuildWithCustomArguments(t *testing.T) {
+func TestCustomArguments(t *testing.T) {
 	type argumentList struct {
 		sdk_args.DefaultArgumentList
 	}
 
-	// Needed for initialising os.Args + flags (emulating).
 	os.Args = []string{"cmd", "--pretty", "--verbose", "--all"}
-	flag.CommandLine = flag.NewFlagSet("name", 0)
 
 	var al argumentList
-	_, err := NewBuilder("TestIntegration", "1.0").Logger(log.Discard).Writer(ioutil.Discard).ParsedArguments(&al).Build()
-	if err != nil {
-		t.Fatal(err)
-	}
+	_, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
+	assert.NoError(t, err)
+
 	if !al.All {
 		t.Error()
 	}
@@ -134,7 +154,7 @@ func TestIntegration_Publish(t *testing.T) {
 		},
 	}
 
-	i, err := NewBuilder("TestIntegration", "1.0").Logger(log.Discard).Writer(w).Build()
+	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(w))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -181,8 +201,7 @@ func TestIntegration_Publish(t *testing.T) {
 }
 
 func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
-	i, err := newTestingIntegration()
-	assert.NoError(t, err)
+	i := newNoLoggerNoWriter(t)
 
 	e1, err := i.Entity("Entity1", "test")
 	if err != nil {
@@ -201,17 +220,11 @@ func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
 	}
 }
 
-// NOTE: This test does nothing as test but when running with -race flag we can detect data races.
-// See Lock and Unlock on Entity method.
-func TestIntegration_EntityHasNoDataRace(t *testing.T) {
-	in, err := NewBuilder("TestIntegration", "1.0").Logger(log.Discard).Writer(ioutil.Discard).Synchronized().Build()
+func newNoLoggerNoWriter(t *testing.T) *Integration {
+	i, err := New(integrationName, integrationVersion, Logger(log.Discard), Writer(ioutil.Discard))
 	assert.NoError(t, err)
 
-	for i := 0; i < 10; i++ {
-		go func(i int) {
-			in.Entity(fmt.Sprintf("entity%v", i), "test")
-		}(i)
-	}
+	return i
 }
 
 type testWritter struct {
@@ -222,8 +235,4 @@ func (w testWritter) Write(p []byte) (n int, err error) {
 	w.testFunc(p)
 
 	return len(p), err
-}
-
-func newTestingIntegration() (*Integration, error) {
-	return NewBuilder("TestIntegration", "1.0").Logger(log.Discard).Writer(ioutil.Discard).Build()
 }
