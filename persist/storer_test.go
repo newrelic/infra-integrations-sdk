@@ -6,10 +6,21 @@ import (
 	"path/filepath"
 	"testing"
 
+	"time"
+
 	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
 )
+
+type FakeData struct {
+	timestamp time.Time
+}
+
+func (fd *FakeData) DummyTime() time.Time {
+	fd.timestamp = time.Unix(1, 1)
+	return fd.timestamp
+}
 
 func TestDefaultPath(t *testing.T) {
 	assert.Equal(t, filepath.Join(os.TempDir(), "nr-integrations", "file.json"), persist.DefaultPath("file"))
@@ -113,4 +124,12 @@ func TestStorerSave(t *testing.T) {
 	assert.True(t, exists)
 	assert.InDelta(t, float64(200), value, 0.1)
 	assert.NotEqual(t, 0, ts)
+}
+
+func TestSetNow(t *testing.T) {
+	fd := FakeData{timestamp: time.Unix(1, 1)}
+	persist.SetNow(fd.DummyTime)
+
+	assert.Equal(t, fd.timestamp, time.Unix(1, 1))
+
 }

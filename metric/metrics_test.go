@@ -93,3 +93,56 @@ func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 		}
 	}
 }
+
+func TestSet_SetMetric_NilStorer(t *testing.T) {
+	ms, err := metric.NewSet("some-event-type", nil)
+	assert.NoError(t, err)
+
+	err = ms.SetMetric("foo", 1, metric.RATE)
+	assert.Error(t, err, "integrations built with no-store can't use DELTAs and RATEs")
+
+	err = ms.SetMetric("foo", 1, metric.DELTA)
+	assert.Error(t, err, "integrations built with no-store can't use DELTAs and RATEs")
+
+}
+
+func TestSet_SetMetric_IncorrectMetricType(t *testing.T) {
+	storer := persist.NewInMemoryStore()
+
+	ms, err := metric.NewSet("some-event-type", storer)
+	assert.NoError(t, err)
+
+	err = ms.SetMetric("foo", "bar", metric.RATE)
+	assert.Error(t, err, "non-numeric source type for rate/delta metric foo")
+
+	err = ms.SetMetric("foo", "bar", metric.DELTA)
+	assert.Error(t, err, "non-numeric source type for rate/delta metric foo")
+
+	err = ms.SetMetric("foo", "bar", metric.GAUGE)
+	assert.Error(t, err, "non-numeric source type for gauge metric foo")
+
+	err = ms.SetMetric("foo", 1, metric.ATTRIBUTE)
+	assert.Error(t, err, "non-string source type for attribute foo")
+
+	// TODO: test default scenario where the value has a unknown source type
+
+}
+
+func TestSet_MarshalJSON(t *testing.T) {
+	storer := persist.NewInMemoryStore()
+
+	ms, err := metric.NewSet("some-event-type", storer)
+	assert.NoError(t, err)
+	expectedOutputRaw := []byte(
+		`{"bar":0,"baz":1,"event_type":"some-event-type","foo":0,"quux":"bar"}`)
+
+	ms.SetMetric("foo", 1, metric.RATE)
+	ms.SetMetric("bar", 1, metric.DELTA)
+	ms.SetMetric("baz", 1, metric.GAUGE)
+	ms.SetMetric("quux", "bar", metric.ATTRIBUTE)
+
+	marshalled, err := ms.MarshalJSON()
+
+	assert.Equal(t, marshalled, expectedOutputRaw)
+
+}
