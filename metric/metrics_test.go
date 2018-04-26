@@ -124,7 +124,8 @@ func TestSet_SetMetric_IncorrectMetricType(t *testing.T) {
 	err = ms.SetMetric("foo", 1, metric.ATTRIBUTE)
 	assert.Error(t, err, "non-string source type for attribute foo")
 
-	// TODO: test default scenario where the value has a unknown source type
+	err = ms.SetMetric("foo", 1, 666)
+	assert.Error(t, err, "unknown source type for key foo")
 
 }
 

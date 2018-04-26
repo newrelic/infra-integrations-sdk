@@ -38,8 +38,20 @@ func TestDiskStorer(t *testing.T) {
 	// Create Storer with unexisting file in env
 	tmpDir, err := ioutil.TempDir("", "cache-test")
 	assert.NoError(t, err)
+	defer os.Remove(tmpDir)
+
 	_, err = persist.NewFileStore(filepath.Join(tmpDir, "newfile.json"), log.Discard)
 	assert.NoError(t, err)
+}
+
+func TestNewFileStoreReturnsErrorOnForbiddenDirectory(t *testing.T) {
+	_, err := persist.NewFileStore("/forbidden-directory", log.Discard)
+	assert.Error(t, err)
+}
+
+func TestNewFileStoreReturnsErrorOnForbiddenFilePath(t *testing.T) {
+	_, err := persist.NewFileStore("/forbidden-directory/file.json", log.Discard)
+	assert.Error(t, err)
 }
 
 func TestStorerSet(t *testing.T) {
@@ -95,7 +107,6 @@ func TestStorerGet(t *testing.T) {
 }
 
 func TestStorerSave(t *testing.T) {
-
 	file, err := ioutil.TempFile("", "cache.json")
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
@@ -126,10 +137,44 @@ func TestStorerSave(t *testing.T) {
 	assert.NotEqual(t, 0, ts)
 }
 
+func TestNewFileStoreIsNotPopulatedWhenModTimeGreaterThanTTL(t *testing.T) {
+	ft := time.Now()
+
+	x := func() time.Time {
+		if ft.IsZero() {
+			return time.Now()
+		}
+		return ft.Add(24 * time.Hour)
+	}
+
+	persist.SetNow(x)
+
+	file, err := ioutil.TempFile("", "cache.json")
+	assert.NoError(t, err)
+	defer os.Remove(file.Name())
+
+	dc, err := persist.NewFileStore(file.Name(), log.Discard)
+	assert.NoError(t, err)
+
+	dc.Set("key1", float64(100))
+
+	assert.NoError(t, dc.Save())
+
+	dc, err = persist.NewFileStore(file.Name(), log.Discard)
+	assert.NoError(t, err)
+
+	_, _, exists := dc.Get("key1")
+	assert.False(t, exists)
+}
+
 func TestSetNow(t *testing.T) {
 	fd := FakeData{timestamp: time.Unix(1, 1)}
 	persist.SetNow(fd.DummyTime)
 
 	assert.Equal(t, fd.timestamp, time.Unix(1, 1))
+}
 
+func TestInMemoryStore_SaveDoesNothing(t *testing.T) {
+	s := persist.NewInMemoryStore()
+	assert.NoError(t, s.Save())
 }

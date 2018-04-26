@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/newrelic/infra-integrations-sdk/log"
+	"github.com/pkg/errors"
+	"golang.org/x/sys/unix"
 )
 
 var now = time.Now
@@ -87,6 +89,9 @@ func NewFileStore(storePath string, l log.Logger) (Storer, error) {
 	stat, err := os.Stat(store.path)
 	// Store file doesn't exist yet
 	if err != nil {
+		if !writable(storeDir) {
+			return nil, errors.Errorf("store directory not writtable: %s", storeDir)
+		}
 		return store, nil
 	}
 
@@ -107,6 +112,10 @@ func NewFileStore(storePath string, l log.Logger) (Storer, error) {
 	}
 
 	return store, nil
+}
+
+func writable(path string) bool {
+	return unix.Access(path, unix.W_OK) == nil
 }
 
 // Save persists all the data in the Storer.
