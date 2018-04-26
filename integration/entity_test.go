@@ -107,3 +107,10 @@ func TestEntity_AddInventoryConcurrent(t *testing.T) {
 	wg.Wait()
 	assert.Len(t, en.Inventory.Items(), itemsAmount)
 }
+
+func TestEntity_IsDefaultEntity(t *testing.T) {
+	e := newDefaultEntity(persist.NewInMemoryStore())
+
+	assert.Empty(t, e.Metadata, "default entity should have no identifier")
+	assert.True(t, e.IsDefaultEntity())
+}
