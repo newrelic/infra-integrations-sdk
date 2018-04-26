@@ -12,7 +12,7 @@ import (
 // Entity is the producer of the data. Entity could be a host, a container, a pod, or whatever unit of meaning.
 type Entity struct {
 	lock      sync.Mutex
-	Metadata  EntityMetadata    `json:"entity,omitempty"`
+	Metadata  *EntityMetadata   `json:"entity,omitempty"`
 	Metrics   []*metric.Set     `json:"metrics"`
 	Inventory *metric.Inventory `json:"inventory"`
 	Events    []*metric.Event   `json:"events"`
@@ -56,7 +56,7 @@ func newEntity(entityName, entityType string, storer persist.Storer) (*Entity, e
 
 	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
 	if entityName != "" && entityType != "" {
-		d.Metadata = EntityMetadata{
+		d.Metadata = &EntityMetadata{
 			Name: entityName,
 			Type: entityType,
 		}
@@ -67,7 +67,7 @@ func newEntity(entityName, entityType string, storer persist.Storer) (*Entity, e
 
 // IsDefaultEntity returns true if entity is the default one (has no identifier: name & type)
 func (e *Entity) IsDefaultEntity() bool {
-	return e.Metadata.Name == "" && e.Metadata.Type == ""
+	return e.Metadata == nil || (e.Metadata.Name == "" && e.Metadata.Type == "")
 }
 
 // NewMetricSet returns a new instance of Set with its sample attached to the integration.

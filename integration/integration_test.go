@@ -114,7 +114,7 @@ func TestIntegration_Publish(t *testing.T) {
 					`"events":[{"summary":"evnt1sum","category":"evnt1cat"},{"summary":"evnt2sum","category":"evnt2cat"}]},` +
 					`{"entity":{"name":"EntityTwo","type":"test"},"metrics":[{"event_type":"EventTypeForEntityTwo","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},` +
 					`"events":[]},` +
-					`{"entity":{},"metrics":[{"event_type":"EventTypeForEntityThree","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},` +
+					`{"metrics":[{"event_type":"EventTypeForEntityThree","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},` +
 					`"events":[{"summary":"evnt3sum","category":"evnt3cat"}]}]}`)
 			expectedOutput := new(Integration)
 			err := json.Unmarshal(expectedOutputRaw, expectedOutput)

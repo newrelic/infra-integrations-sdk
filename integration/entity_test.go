@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"sync"
 
+	"encoding/json"
+
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
@@ -106,6 +108,14 @@ func TestEntity_AddInventoryConcurrent(t *testing.T) {
 
 	wg.Wait()
 	assert.Len(t, en.Inventory.Items(), itemsAmount)
+}
+
+func TestEntity_DefaultEntityIsNotSerialized(t *testing.T) {
+	e := newDefaultEntity(persist.NewInMemoryStore())
+	j, err := json.Marshal(e)
+
+	assert.NoError(t, err)
+	assert.Equal(t, `{"metrics":[],"inventory":{},"events":[]}`, string(j))
 }
 
 func TestEntity_IsDefaultEntity(t *testing.T) {
