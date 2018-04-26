@@ -34,7 +34,7 @@ func NewBuilder(name, version string) *Builder {
 			Name:               name,
 			ProtocolVersion:    protocolVersion,
 			IntegrationVersion: version,
-			Data:               []*Entity{},
+			Entities:           []*Entity{},
 			writer:             os.Stdout, // defaults to stdout
 		},
 	}

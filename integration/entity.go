@@ -12,7 +12,7 @@ import (
 // Entity is the producer of the data. Entity could be a host, a container, a pod, or whatever unit of meaning.
 type Entity struct {
 	lock      sync.Mutex
-	Metadata  EntityMetadata    `json:"entity"`
+	Metadata  EntityMetadata    `json:"entity,omitempty"`
 	Metrics   []*metric.Set     `json:"metrics"`
 	Inventory *metric.Inventory `json:"inventory"`
 	Events    []*metric.Event   `json:"events"`
@@ -27,6 +27,17 @@ type EntityMetadata struct {
 
 // EntityID entity identifier
 type EntityID string
+
+// newDefaultEntity creates unique default entity without identifier (name & type)
+func newDefaultEntity(storer persist.Storer) *Entity {
+	return &Entity{
+		// empty array or object preferred instead of null on marshaling.
+		Metrics:   []*metric.Set{},
+		Inventory: metric.NewInventory(),
+		Events:    []*metric.Event{},
+		storer:    storer,
+	}
+}
 
 // newEntity creates a new remote-entity.
 func newEntity(entityName, entityType string, storer persist.Storer) (*Entity, error) {
@@ -52,6 +63,11 @@ func newEntity(entityName, entityType string, storer persist.Storer) (*Entity, e
 	}
 
 	return &d, nil
+}
+
+// IsDefaultEntity returns true if entity is the default one (has no identifier: name & type)
+func (e *Entity) IsDefaultEntity() bool {
+	return e.Metadata.Name == "" && e.Metadata.Type == ""
 }
 
 // NewMetricSet returns a new instance of Set with its sample attached to the integration.

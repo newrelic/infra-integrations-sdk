@@ -33,7 +33,7 @@ func TestDefaultValues(t *testing.T) {
 	assert.Equal(t, "integration", i.Name)
 	assert.Equal(t, "4.0", i.IntegrationVersion)
 	assert.Equal(t, "2", i.ProtocolVersion)
-	assert.Equal(t, 0, len(i.Data))
+	assert.Equal(t, 0, len(i.Entities))
 
 	// And when publishing the payload
 	assert.NoError(t, i.Publish())
@@ -69,7 +69,7 @@ func TestIntegrationBuilder(t *testing.T) {
 	assert.Equal(t, "integration", i.Name)
 	assert.Equal(t, "7.0", i.IntegrationVersion)
 	assert.Equal(t, "2", i.ProtocolVersion)
-	assert.Equal(t, 0, len(i.Data))
+	assert.Equal(t, 0, len(i.Entities))
 
 	// And when publishing the payload
 	i.Publish()

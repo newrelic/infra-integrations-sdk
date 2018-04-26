@@ -15,6 +15,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestIntegration_DefaultEntity(t *testing.T) {
+	i, err := NewBuilder("TestIntegration", "1.0").Writer(ioutil.Discard).Build()
+	if err != nil {
+		t.Fatal()
+	}
+
+	e1 := i.DefaultEntity()
+	e2 := i.DefaultEntity()
+	assert.Equal(t, e1, e2)
+}
+
 func TestBuilder_Build(t *testing.T) {
 	i, err := NewBuilder("TestIntegration", "1.0").Build()
 	if err != nil {
@@ -30,7 +41,7 @@ func TestBuilder_Build(t *testing.T) {
 	if i.ProtocolVersion != "2" {
 		t.Error()
 	}
-	if len(i.Data) != 0 {
+	if len(i.Entities) != 0 {
 		t.Error()
 	}
 }
@@ -58,7 +69,7 @@ func TestBuilder_BuildWithDefaultArguments(t *testing.T) {
 	if i.ProtocolVersion != "2" {
 		t.Error()
 	}
-	if len(i.Data) != 0 {
+	if len(i.Entities) != 0 {
 		t.Error()
 	}
 	if !al.All {
@@ -190,7 +201,7 @@ func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
 
 	assert.Equal(t, e1, e2)
 
-	if len(i.Data) > 1 {
+	if len(i.Entities) > 1 {
 		t.Error()
 	}
 }

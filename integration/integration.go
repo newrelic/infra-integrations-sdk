@@ -17,7 +17,7 @@ type Integration struct {
 	Name               string    `json:"name"`
 	ProtocolVersion    string    `json:"protocol_version"`
 	IntegrationVersion string    `json:"integration_version"`
-	Data               []*Entity `json:"data"`
+	Entities           []*Entity `json:"data"`
 	prettyOutput       bool
 	writer             io.Writer
 }
@@ -27,12 +27,31 @@ func New(name, version string, args interface{}) (*Integration, error) {
 	return NewBuilder(name, version).ParsedArguments(args).Build()
 }
 
-// Entity method creates or retrieves an already created EntityData.
+// DefaultEntity retrieves default entity to monitorize.
+func (i *Integration) DefaultEntity() *Entity {
+	i.locker.Lock()
+	defer i.locker.Unlock()
+
+	for _, e := range i.Entities {
+		if e.IsDefaultEntity() {
+			return e
+		}
+	}
+
+	e := newDefaultEntity(i.storer)
+
+	i.Entities = append(i.Entities, e)
+
+	return e
+}
+
+// Entity method creates or retrieves an already created entity.
 func (i *Integration) Entity(entityName, entityType string) (e *Entity, err error) {
 	i.locker.Lock()
 	defer i.locker.Unlock()
 
-	for _, e = range i.Data {
+	// we should change this to map for performance
+	for _, e = range i.Entities {
 		if e.Metadata.Name == entityName && e.Metadata.Type == entityType {
 			return e, nil
 		}
@@ -43,7 +62,7 @@ func (i *Integration) Entity(entityName, entityType string) (e *Entity, err erro
 		return nil, err
 	}
 
-	i.Data = append(i.Data, e)
+	i.Entities = append(i.Entities, e)
 
 	return e, nil
 }
@@ -75,7 +94,7 @@ func (i *Integration) Publish() error {
 func (i *Integration) Clear() {
 	i.locker.Lock()
 	defer i.locker.Unlock()
-	i.Data = []*Entity{} // empty array preferred instead of null on marshaling.
+	i.Entities = []*Entity{} // empty array preferred instead of null on marshaling.
 }
 
 // MarshalJSON serializes integration to JSON, fulfilling Marshaler interface.
