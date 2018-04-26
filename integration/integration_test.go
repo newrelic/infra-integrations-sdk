@@ -11,15 +11,14 @@ import (
 	"io/ioutil"
 
 	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
+	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestIntegration_DefaultEntity(t *testing.T) {
-	i, err := NewBuilder("TestIntegration", "1.0").Writer(ioutil.Discard).Build()
-	if err != nil {
-		t.Fatal()
-	}
+	i, err := newTestingIntegration()
+	assert.NoError(t, err)
 
 	e1 := i.DefaultEntity()
 	e2 := i.DefaultEntity()
@@ -27,10 +26,8 @@ func TestIntegration_DefaultEntity(t *testing.T) {
 }
 
 func TestBuilder_Build(t *testing.T) {
-	i, err := NewBuilder("TestIntegration", "1.0").Build()
-	if err != nil {
-		t.Fatal()
-	}
+	i, err := newTestingIntegration()
+	assert.NoError(t, err)
 
 	if i.Name != "TestIntegration" {
 		t.Error()
@@ -56,7 +53,7 @@ func TestBuilder_BuildWithDefaultArguments(t *testing.T) {
 	flag.CommandLine = flag.NewFlagSet("name", 0)
 
 	var al argumentList
-	i, err := NewBuilder("TestIntegration", "1.0").ParsedArguments(&al).Build()
+	i, err := NewBuilder("TestIntegration", "1.0").Logger(log.Discard).Writer(ioutil.Discard).ParsedArguments(&al).Build()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +90,7 @@ func TestBuilder_BuildWithCustomArguments(t *testing.T) {
 	flag.CommandLine = flag.NewFlagSet("name", 0)
 
 	var al argumentList
-	_, err := NewBuilder("TestIntegration", "1.0").ParsedArguments(&al).Build()
+	_, err := NewBuilder("TestIntegration", "1.0").Logger(log.Discard).Writer(ioutil.Discard).ParsedArguments(&al).Build()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,7 +134,7 @@ func TestIntegration_Publish(t *testing.T) {
 		},
 	}
 
-	i, err := NewBuilder("TestIntegration", "1.0").Writer(w).Build()
+	i, err := NewBuilder("TestIntegration", "1.0").Logger(log.Discard).Writer(w).Build()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,10 +181,8 @@ func TestIntegration_Publish(t *testing.T) {
 }
 
 func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
-	i, err := NewBuilder("TestIntegration", "1.0").Writer(ioutil.Discard).Build()
-	if err != nil {
-		t.Fatal(err)
-	}
+	i, err := newTestingIntegration()
+	assert.NoError(t, err)
 
 	e1, err := i.Entity("Entity1", "test")
 	if err != nil {
@@ -209,10 +204,8 @@ func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
 // NOTE: This test does nothing as test but when running with -race flag we can detect data races.
 // See Lock and Unlock on Entity method.
 func TestIntegration_EntityHasNoDataRace(t *testing.T) {
-	in, err := NewBuilder("TestIntegration", "1.0").Writer(ioutil.Discard).Synchronized().Build()
-	if err != nil {
-		t.Fatal(err)
-	}
+	in, err := NewBuilder("TestIntegration", "1.0").Logger(log.Discard).Writer(ioutil.Discard).Synchronized().Build()
+	assert.NoError(t, err)
 
 	for i := 0; i < 10; i++ {
 		go func(i int) {
@@ -229,4 +222,8 @@ func (w testWritter) Write(p []byte) (n int, err error) {
 	w.testFunc(p)
 
 	return len(p), err
+}
+
+func newTestingIntegration() (*Integration, error) {
+	return NewBuilder("TestIntegration", "1.0").Logger(log.Discard).Writer(ioutil.Discard).Build()
 }
