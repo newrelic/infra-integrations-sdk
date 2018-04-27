@@ -9,33 +9,19 @@ import (
 	"time"
 
 	"github.com/newrelic/infra-integrations-sdk/log"
+	"github.com/pkg/errors"
 )
 
-var now = time.Now
-
-// SetNow forces a different "current time" for the Storer.
-// This function is useful only for unit testing.
-func SetNow(newNow func() time.Time) {
-	now = newNow
-}
-
-const ttl = 1 * time.Minute
-
 const (
+	ttl             = 1 * time.Minute
+	filePerm        = 0644
 	dirFilePerm     = 0755
 	integrationsDir = "nr-integrations"
 )
 
-// DefaultPath returns a default folder/filename path to a Storer for an integration from the given name. The name of
-// the file will be the name of the integration with the .json extension.
-func DefaultPath(integrationName string) string {
-	baseDir := filepath.Join(os.TempDir(), integrationsDir)
-	// Create integrations Storer directory
-	if os.MkdirAll(baseDir, dirFilePerm) != nil {
-		baseDir = os.TempDir()
-	}
-	return filepath.Join(baseDir, fmt.Sprint(integrationName, ".json"))
-}
+var (
+	now = time.Now
+)
 
 // Storer is a key-value structure that is initialized and stored in a persistent device.
 // It also saves the timestamp when a key was stored.
@@ -61,6 +47,23 @@ type fileStore struct {
 	path string
 }
 
+// SetNow forces a different "current time" for the Storer.
+// This function is useful only for unit testing.
+func SetNow(newNow func() time.Time) {
+	now = newNow
+}
+
+// DefaultPath returns a default folder/filename path to a Storer for an integration from the given name. The name of
+// the file will be the name of the integration with the .json extension.
+func DefaultPath(integrationName string) string {
+	baseDir := filepath.Join(os.TempDir(), integrationsDir)
+	// Create integrations Storer directory
+	if os.MkdirAll(baseDir, dirFilePerm) != nil {
+		baseDir = os.TempDir()
+	}
+	return filepath.Join(baseDir, fmt.Sprint(integrationName, ".json"))
+}
+
 // NewInMemoryStore will create and initialize an in-memory Storer.
 func NewInMemoryStore() Storer {
 	return &inMemoryStore{
@@ -79,7 +82,7 @@ func NewFileStore(storePath string, l log.Logger) (Storer, error) {
 	// Create the external directory for user-generated json
 	storeDir := filepath.Dir(store.path)
 	if _, err := os.Stat(storeDir); err != nil {
-		if err = os.MkdirAll(storeDir, 0755); err != nil {
+		if err = os.MkdirAll(storeDir, dirFilePerm); err != nil {
 			return nil, fmt.Errorf("store directory in %s could not be created", storeDir)
 		}
 	}
@@ -87,6 +90,9 @@ func NewFileStore(storePath string, l log.Logger) (Storer, error) {
 	stat, err := os.Stat(store.path)
 	// Store file doesn't exist yet
 	if err != nil {
+		if _, err = os.OpenFile(store.path, os.O_CREATE|os.O_WRONLY, filePerm); err != nil {
+			return nil, errors.Errorf("store directory not writable: %s", storeDir)
+		}
 		return store, nil
 	}
 
@@ -120,7 +126,7 @@ func (c *fileStore) Save() error {
 		return err
 	}
 
-	return ioutil.WriteFile(c.path, data, 0644)
+	return ioutil.WriteFile(c.path, data, filePerm)
 }
 
 // Save won't persist on disk.

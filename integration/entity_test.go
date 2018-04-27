@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"sync"
 
+	"encoding/json"
+
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
@@ -99,11 +101,33 @@ func TestEntity_AddInventoryConcurrent(t *testing.T) {
 	wg.Add(itemsAmount)
 	for i := 0; i < itemsAmount; i++ {
 		go func(j int) {
-			en.AddInventory(strconv.Itoa(j), "foo", "bar")
+			en.SetInventoryItem(strconv.Itoa(j), "foo", "bar")
 			wg.Done()
 		}(i)
 	}
 
 	wg.Wait()
 	assert.Len(t, en.Inventory.Items(), itemsAmount)
+}
+
+func TestEntity_DefaultEntityIsNotSerialized(t *testing.T) {
+	e := newDefaultEntity(persist.NewInMemoryStore())
+	j, err := json.Marshal(e)
+
+	assert.NoError(t, err)
+	assert.Equal(t, `{"metrics":[],"inventory":{},"events":[]}`, string(j))
+}
+
+func TestEntity_IsDefaultEntity(t *testing.T) {
+	e := newDefaultEntity(persist.NewInMemoryStore())
+
+	assert.Empty(t, e.Metadata, "default entity should have no identifier")
+	assert.True(t, e.isDefaultEntity())
+}
+
+func TestEntity_ID(t *testing.T) {
+	e, err := newEntity("foo", "bar", persist.NewInMemoryStore())
+	assert.NoError(t, err)
+
+	assert.Equal(t, EntityID("bar:foo"), e.ID())
 }
