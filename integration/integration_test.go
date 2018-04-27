@@ -2,6 +2,7 @@ package integration
 
 import (
 	"encoding/json"
+	"flag"
 	"os"
 	"reflect"
 	"testing"
@@ -109,6 +110,7 @@ func TestCustomArguments(t *testing.T) {
 	}
 
 	os.Args = []string{"cmd", "--pretty", "--verbose", "--all"}
+	flag.CommandLine = flag.NewFlagSet("name", 0)
 
 	var al argumentList
 	_, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))

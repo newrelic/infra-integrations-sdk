@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"flag"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -29,6 +30,7 @@ func TestWriter(t *testing.T) {
 func TestArgs(t *testing.T) {
 	// arguments are read from os
 	os.Args = []string{"cmd", "--pretty"}
+	flag.CommandLine = flag.NewFlagSet("name", 0)
 	var arguments args.DefaultArgumentList
 
 	// capture output
