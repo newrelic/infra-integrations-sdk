@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/newrelic/infra-integrations-sdk/data/event"
+	"github.com/newrelic/infra-integrations-sdk/data/inventory"
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/pkg/errors"
@@ -12,10 +14,10 @@ import (
 // Entity is the producer of the data. Entity could be a host, a container, a pod, or whatever unit of meaning.
 type Entity struct {
 	lock      sync.Mutex
-	Metadata  *EntityMetadata   `json:"entity,omitempty"`
-	Metrics   []*metric.Set     `json:"metrics"`
-	Inventory *metric.Inventory `json:"inventory"`
-	Events    []*metric.Event   `json:"events"`
+	Metadata  *EntityMetadata      `json:"entity,omitempty"`
+	Metrics   []*metric.Set        `json:"metrics"`
+	Inventory *inventory.Inventory `json:"inventory"`
+	Events    []*event.Event       `json:"events"`
 	storer    persist.Storer
 }
 
@@ -33,8 +35,8 @@ func newDefaultEntity(storer persist.Storer) *Entity {
 	return &Entity{
 		// empty array or object preferred instead of null on marshaling.
 		Metrics:   []*metric.Set{},
-		Inventory: metric.NewInventory(),
-		Events:    []*metric.Event{},
+		Inventory: inventory.NewInventory(),
+		Events:    []*event.Event{},
 		storer:    storer,
 	}
 }
@@ -49,8 +51,8 @@ func newEntity(entityName, entityType string, storer persist.Storer) (*Entity, e
 	d := Entity{
 		// empty array or object preferred instead of null on marshaling.
 		Metrics:   []*metric.Set{},
-		Inventory: metric.NewInventory(),
-		Events:    []*metric.Event{},
+		Inventory: inventory.NewInventory(),
+		Events:    []*event.Event{},
 		storer:    storer,
 	}
 
@@ -84,7 +86,7 @@ func (e *Entity) NewMetricSet(eventType string) (s *metric.Set, err error) {
 }
 
 // AddEvent method adds a new Event.
-func (e *Entity) AddEvent(event *metric.Event) error {
+func (e *Entity) AddEvent(event *event.Event) error {
 	if event.Summary == "" {
 		return errors.New("summary of the event cannot be empty")
 	}

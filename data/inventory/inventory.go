@@ -2,16 +2,16 @@ package inventory
 
 import "sync"
 
-// InventoryItems ...
-type InventoryItems map[string]InventoryItem
+// Items ...
+type Items map[string]Item
 
-// InventoryItem ...
-type InventoryItem map[string]interface{}
+// Item ...
+type Item map[string]interface{}
 
 // Inventory is the data type for inventory data produced by an integration data
 // source and emitted to the agent's inventory data store.
 type Inventory struct {
-	items InventoryItems
+	items Items
 	lock  sync.Mutex
 }
 
@@ -23,24 +23,24 @@ func (i Inventory) SetItem(key string, field string, value interface{}) {
 	if _, ok := i.items[key]; ok {
 		i.items[key][field] = value
 	} else {
-		i.items[key] = InventoryItem{field: value}
+		i.items[key] = Item{field: value}
 	}
 }
 
 // Item returns stored item
-func (i Inventory) Item(key string) (item InventoryItem, exists bool) {
+func (i Inventory) Item(key string) (item Item, exists bool) {
 	item, exists = i.items[key]
 	return
 }
 
 // Items returns all stored items
-func (i Inventory) Items() InventoryItems {
+func (i Inventory) Items() Items {
 	return i.items
 }
 
 // NewInventory creates new inventory.
 func NewInventory() *Inventory {
 	return &Inventory{
-		items: make(InventoryItems),
+		items: make(Items),
 	}
 }

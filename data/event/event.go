@@ -12,8 +12,8 @@ type Event struct {
 	Category string `json:"category,omitempty"`
 }
 
-// NewEvent creates a new event.
-func NewEvent(summary, category string) *Event {
+// New creates a new event.
+func New(summary, category string) *Event {
 	return &Event{
 		Summary:  summary,
 		Category: category,
@@ -22,5 +22,5 @@ func NewEvent(summary, category string) *Event {
 
 // NewNotification creates a new notification event.
 func NewNotification(summary string) *Event {
-	return NewEvent(summary, NotificationEventCategory)
+	return New(summary, NotificationEventCategory)
 }
