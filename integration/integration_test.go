@@ -68,8 +68,8 @@ func TestDefaultIntegrationWritesToStdout(t *testing.T) {
 func TestIntegration_DefaultEntity(t *testing.T) {
 	i := newTestIntegration(t)
 
-	e1 := i.DefaultEntity()
-	e2 := i.DefaultEntity()
+	e1 := i.LocalEntity()
+	e2 := i.LocalEntity()
 	assert.Equal(t, e1, e2)
 }
 
