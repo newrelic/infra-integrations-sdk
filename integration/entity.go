@@ -65,8 +65,8 @@ func newEntity(entityName, entityType string, storer persist.Storer) (*Entity, e
 	return &d, nil
 }
 
-// IsDefaultEntity returns true if entity is the default one (has no identifier: name & type)
-func (e *Entity) IsDefaultEntity() bool {
+// isDefaultEntity returns true if entity is the default one (has no identifier: name & type)
+func (e *Entity) isDefaultEntity() bool {
 	return e.Metadata == nil || (e.Metadata.Name == "" && e.Metadata.Type == "")
 }
 
