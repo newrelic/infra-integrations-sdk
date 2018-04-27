@@ -88,12 +88,12 @@ func (i *Integration) DefaultEntity() *Entity {
 	defer i.locker.Unlock()
 
 	for _, e := range i.Entities {
-		if e.isDefaultEntity() {
+		if e.isLocalEntity() {
 			return e
 		}
 	}
 
-	e := newDefaultEntity(i.storer)
+	e := newLocalEntity(i.storer)
 
 	i.Entities = append(i.Entities, e)
 

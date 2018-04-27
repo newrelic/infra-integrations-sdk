@@ -30,8 +30,8 @@ type EntityMetadata struct {
 // EntityID entity identifier
 type EntityID string
 
-// newDefaultEntity creates unique default entity without identifier (name & type)
-func newDefaultEntity(storer persist.Storer) *Entity {
+// newLocalEntity creates unique default entity without identifier (name & type)
+func newLocalEntity(storer persist.Storer) *Entity {
 	return &Entity{
 		// empty array or object preferred instead of null on marshaling.
 		Metrics:   []*metric.Set{},
@@ -67,9 +67,9 @@ func newEntity(entityName, entityType string, storer persist.Storer) (*Entity, e
 	return &d, nil
 }
 
-// isDefaultEntity returns true if entity is the default one (has no identifier: name & type)
-func (e *Entity) isDefaultEntity() bool {
-	return e.Metadata == nil || (e.Metadata.Name == "" && e.Metadata.Type == "")
+// isLocalEntity returns true if entity is the default one (has no identifier: name & type)
+func (e *Entity) isLocalEntity() bool {
+	return e.Metadata == nil || e.Metadata.Name == ""
 }
 
 // NewMetricSet returns a new instance of Set with its sample attached to the integration.

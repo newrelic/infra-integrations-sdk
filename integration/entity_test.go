@@ -111,7 +111,7 @@ func TestEntity_AddInventoryConcurrent(t *testing.T) {
 }
 
 func TestEntity_DefaultEntityIsNotSerialized(t *testing.T) {
-	e := newDefaultEntity(persist.NewInMemoryStore())
+	e := newLocalEntity(persist.NewInMemoryStore())
 	j, err := json.Marshal(e)
 
 	assert.NoError(t, err)
@@ -119,10 +119,10 @@ func TestEntity_DefaultEntityIsNotSerialized(t *testing.T) {
 }
 
 func TestEntity_IsDefaultEntity(t *testing.T) {
-	e := newDefaultEntity(persist.NewInMemoryStore())
+	e := newLocalEntity(persist.NewInMemoryStore())
 
 	assert.Empty(t, e.Metadata, "default entity should have no identifier")
-	assert.True(t, e.isDefaultEntity())
+	assert.True(t, e.isLocalEntity())
 }
 
 func TestEntity_ID(t *testing.T) {
