@@ -122,7 +122,7 @@ func TestEntity_IsDefaultEntity(t *testing.T) {
 	e := newDefaultEntity(persist.NewInMemoryStore())
 
 	assert.Empty(t, e.Metadata, "default entity should have no identifier")
-	assert.True(t, e.IsDefaultEntity())
+	assert.True(t, e.isDefaultEntity())
 }
 
 func TestEntity_ID(t *testing.T) {

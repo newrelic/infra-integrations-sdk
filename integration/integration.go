@@ -88,7 +88,7 @@ func (i *Integration) DefaultEntity() *Entity {
 	defer i.locker.Unlock()
 
 	for _, e := range i.Entities {
-		if e.IsDefaultEntity() {
+		if e.isDefaultEntity() {
 			return e
 		}
 	}
