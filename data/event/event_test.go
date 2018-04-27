@@ -1,4 +1,4 @@
-package metric
+package event
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 )
 
 func TestNewEvent(t *testing.T) {
-	e := NewEvent("summary", "category")
+	e := New("summary", "category")
 
 	assert.Equal(t, e.Summary, "summary")
 	assert.Equal(t, e.Category, "category")

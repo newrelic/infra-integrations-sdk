@@ -8,7 +8,7 @@ import (
 
 	"encoding/json"
 
-	"github.com/newrelic/infra-integrations-sdk/metric"
+	"github.com/newrelic/infra-integrations-sdk/data/event"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
 )
@@ -27,7 +27,7 @@ func TestAddNotificationEvent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = en.AddEvent(metric.NewNotification("TestSummary"))
+	err = en.AddEvent(event.NewNotification("TestSummary"))
 	assert.NoError(t, err)
 
 	assert.Len(t, en.Events, 1)
@@ -43,7 +43,7 @@ func TestAddNotificationWithEmptySummaryFails(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = en.AddEvent(metric.NewNotification(""))
+	err = en.AddEvent(event.NewNotification(""))
 	assert.Error(t, err)
 
 	assert.Len(t, en.Events, 0)
@@ -55,7 +55,7 @@ func TestAddEvent_Entity(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = en.AddEvent(metric.NewEvent("TestSummary", "TestCategory"))
+	err = en.AddEvent(event.New("TestSummary", "TestCategory"))
 	if err != nil {
 		t.Errorf("error not expected, got: %s", err)
 	}
@@ -73,10 +73,10 @@ func TestAddEvent(t *testing.T) {
 	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore())
 	assert.NoError(t, err)
 
-	err = en.AddEvent(metric.NewEvent("TestSummary", ""))
+	err = en.AddEvent(event.New("TestSummary", ""))
 	assert.NoError(t, err)
 
-	err = en.AddEvent(metric.NewEvent("TestSummary", ""))
+	err = en.AddEvent(event.New("TestSummary", ""))
 	assert.NoError(t, err)
 
 	assert.Len(t, en.Events, 2)
@@ -86,7 +86,7 @@ func TestAddEvent_Entity_EmptySummary_Error(t *testing.T) {
 	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore())
 	assert.NoError(t, err)
 
-	err = en.AddEvent(metric.NewEvent("", "TestCategory"))
+	err = en.AddEvent(event.New("", "TestCategory"))
 	assert.Error(t, err)
 
 	assert.Len(t, en.Events, 0)
@@ -111,7 +111,7 @@ func TestEntity_AddInventoryConcurrent(t *testing.T) {
 }
 
 func TestEntity_DefaultEntityIsNotSerialized(t *testing.T) {
-	e := newDefaultEntity(persist.NewInMemoryStore())
+	e := newLocalEntity(persist.NewInMemoryStore())
 	j, err := json.Marshal(e)
 
 	assert.NoError(t, err)
@@ -119,10 +119,10 @@ func TestEntity_DefaultEntityIsNotSerialized(t *testing.T) {
 }
 
 func TestEntity_IsDefaultEntity(t *testing.T) {
-	e := newDefaultEntity(persist.NewInMemoryStore())
+	e := newLocalEntity(persist.NewInMemoryStore())
 
 	assert.Empty(t, e.Metadata, "default entity should have no identifier")
-	assert.True(t, e.isDefaultEntity())
+	assert.True(t, e.isLocalEntity())
 }
 
 func TestEntity_ID(t *testing.T) {

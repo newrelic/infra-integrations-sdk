@@ -1,4 +1,4 @@
-package metric
+package inventory
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 )
 
 func TestInventory_SetItem(t *testing.T) {
-	i := NewInventory()
+	i := New()
 	i.SetItem("foo", "bar", "baz")
 
 	assert.Equal(t, i.items["foo"]["bar"], "baz")
@@ -18,7 +18,7 @@ func TestInventory_SetItem(t *testing.T) {
 }
 
 func TestInventory_Item(t *testing.T) {
-	i := NewInventory()
+	i := New()
 	i.SetItem("foo", "bar", "baz")
 	element, exists := i.Item("foo")
 	assert.Equal(t, exists, true)
@@ -26,7 +26,7 @@ func TestInventory_Item(t *testing.T) {
 }
 
 func TestInventory_Items(t *testing.T) {
-	i := NewInventory()
+	i := New()
 	// Add 4 elements
 	i.SetItem("foo", "bar", "baz")
 	i.SetItem("qux", "bar", "baz")

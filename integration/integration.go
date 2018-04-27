@@ -82,18 +82,18 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 	return
 }
 
-// DefaultEntity retrieves default entity to monitorize.
-func (i *Integration) DefaultEntity() *Entity {
+// LocalEntity retrieves default (local) entity to monitorize.
+func (i *Integration) LocalEntity() *Entity {
 	i.locker.Lock()
 	defer i.locker.Unlock()
 
 	for _, e := range i.Entities {
-		if e.isDefaultEntity() {
+		if e.isLocalEntity() {
 			return e
 		}
 	}
 
-	e := newDefaultEntity(i.storer)
+	e := newLocalEntity(i.storer)
 
 	i.Entities = append(i.Entities, e)
 

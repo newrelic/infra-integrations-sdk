@@ -10,8 +10,9 @@ import (
 	"io/ioutil"
 
 	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
+	"github.com/newrelic/infra-integrations-sdk/data/event"
+	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/log"
-	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -67,8 +68,8 @@ func TestDefaultIntegrationWritesToStdout(t *testing.T) {
 func TestIntegration_DefaultEntity(t *testing.T) {
 	i := newTestIntegration(t)
 
-	e1 := i.DefaultEntity()
-	e2 := i.DefaultEntity()
+	e1 := i.LocalEntity()
+	e2 := i.LocalEntity()
 	assert.Equal(t, e1, e2)
 }
 
@@ -172,8 +173,8 @@ func TestIntegration_Publish(t *testing.T) {
 	ms.SetMetric("metricTwo", 88, metric.GAUGE)
 	ms.SetMetric("metricThree", "test", metric.ATTRIBUTE)
 
-	e.AddEvent(metric.NewEvent("evnt1sum", "evnt1cat"))
-	e.AddEvent(metric.NewEvent("evnt2sum", "evnt2cat"))
+	e.AddEvent(event.New("evnt1sum", "evnt1cat"))
+	e.AddEvent(event.New("evnt2sum", "evnt2cat"))
 
 	e, err = i.Entity("EntityTwo", "test")
 	if err != nil {
@@ -197,7 +198,7 @@ func TestIntegration_Publish(t *testing.T) {
 	ms.SetMetric("metricTwo", 88, metric.GAUGE)
 	ms.SetMetric("metricThree", "test", metric.ATTRIBUTE)
 
-	e.AddEvent(metric.NewEvent("evnt3sum", "evnt3cat"))
+	e.AddEvent(event.New("evnt3sum", "evnt3cat"))
 
 	i.Publish()
 }

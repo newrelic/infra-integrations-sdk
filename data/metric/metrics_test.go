@@ -1,12 +1,10 @@
-package metric_test
+package metric
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
-	"fmt"
-
-	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
 )
@@ -40,10 +38,10 @@ func TestSet_SetMetricGauge(t *testing.T) {
 	fd := FakeData{}
 	persist.SetNow(fd.Now)
 
-	ms, err := metric.NewSet("some-event-type", nil)
+	ms, err := NewSet("some-event-type", nil)
 	assert.NoError(t, err)
 
-	ms.SetMetric("key", 10, metric.GAUGE)
+	ms.SetMetric("key", 10, GAUGE)
 
 	if ms.Metrics["key"] != 10 {
 		t.Errorf("metric stored not valid: %v", ms.Metrics["key"])
@@ -54,10 +52,10 @@ func TestSet_SetMetricAttribute(t *testing.T) {
 	fd := FakeData{}
 	persist.SetNow(fd.Now)
 
-	ms, err := metric.NewSet("some-event-type", nil)
+	ms, err := NewSet("some-event-type", nil)
 	assert.NoError(t, err)
 
-	ms.SetMetric("key", "some-attribute", metric.ATTRIBUTE)
+	ms.SetMetric("key", "some-attribute", ATTRIBUTE)
 
 	if ms.Metrics["key"] != "some-attribute" {
 		t.Errorf("metric stored not valid: %v", ms.Metrics["key"])
@@ -68,10 +66,10 @@ func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 	storer := persist.NewInMemoryStore()
 
 	fd := FakeData{}
-	for _, sourceType := range []metric.SourceType{metric.DELTA, metric.RATE} {
+	for _, sourceType := range []SourceType{DELTA, RATE} {
 		persist.SetNow(fd.Now)
 
-		ms, err := metric.NewSet("some-event-type", storer)
+		ms, err := NewSet("some-event-type", storer)
 		assert.NoError(t, err)
 
 		for _, tt := range rateAndDeltaTests {
@@ -95,13 +93,13 @@ func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 }
 
 func TestSet_SetMetric_NilStorer(t *testing.T) {
-	ms, err := metric.NewSet("some-event-type", nil)
+	ms, err := NewSet("some-event-type", nil)
 	assert.NoError(t, err)
 
-	err = ms.SetMetric("foo", 1, metric.RATE)
+	err = ms.SetMetric("foo", 1, RATE)
 	assert.Error(t, err, "integrations built with no-store can't use DELTAs and RATEs")
 
-	err = ms.SetMetric("foo", 1, metric.DELTA)
+	err = ms.SetMetric("foo", 1, DELTA)
 	assert.Error(t, err, "integrations built with no-store can't use DELTAs and RATEs")
 
 }
@@ -109,19 +107,19 @@ func TestSet_SetMetric_NilStorer(t *testing.T) {
 func TestSet_SetMetric_IncorrectMetricType(t *testing.T) {
 	storer := persist.NewInMemoryStore()
 
-	ms, err := metric.NewSet("some-event-type", storer)
+	ms, err := NewSet("some-event-type", storer)
 	assert.NoError(t, err)
 
-	err = ms.SetMetric("foo", "bar", metric.RATE)
+	err = ms.SetMetric("foo", "bar", RATE)
 	assert.Error(t, err, "non-numeric source type for rate/delta metric foo")
 
-	err = ms.SetMetric("foo", "bar", metric.DELTA)
+	err = ms.SetMetric("foo", "bar", DELTA)
 	assert.Error(t, err, "non-numeric source type for rate/delta metric foo")
 
-	err = ms.SetMetric("foo", "bar", metric.GAUGE)
+	err = ms.SetMetric("foo", "bar", GAUGE)
 	assert.Error(t, err, "non-numeric source type for gauge metric foo")
 
-	err = ms.SetMetric("foo", 1, metric.ATTRIBUTE)
+	err = ms.SetMetric("foo", 1, ATTRIBUTE)
 	assert.Error(t, err, "non-string source type for attribute foo")
 
 	err = ms.SetMetric("foo", 1, 666)
@@ -132,15 +130,15 @@ func TestSet_SetMetric_IncorrectMetricType(t *testing.T) {
 func TestSet_MarshalJSON(t *testing.T) {
 	storer := persist.NewInMemoryStore()
 
-	ms, err := metric.NewSet("some-event-type", storer)
+	ms, err := NewSet("some-event-type", storer)
 	assert.NoError(t, err)
 	expectedOutputRaw := []byte(
 		`{"bar":0,"baz":1,"event_type":"some-event-type","foo":0,"quux":"bar"}`)
 
-	ms.SetMetric("foo", 1, metric.RATE)
-	ms.SetMetric("bar", 1, metric.DELTA)
-	ms.SetMetric("baz", 1, metric.GAUGE)
-	ms.SetMetric("quux", "bar", metric.ATTRIBUTE)
+	ms.SetMetric("foo", 1, RATE)
+	ms.SetMetric("bar", 1, DELTA)
+	ms.SetMetric("baz", 1, GAUGE)
+	ms.SetMetric("quux", "bar", ATTRIBUTE)
 
 	marshalled, err := ms.MarshalJSON()
 
