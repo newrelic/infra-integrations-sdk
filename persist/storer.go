@@ -90,7 +90,7 @@ func NewFileStore(storePath string, l log.Logger) (Storer, error) {
 	// Store file doesn't exist yet
 	if err != nil {
 		if !writable(storeDir) {
-			return nil, errors.Errorf("store directory not writtable: %s", storeDir)
+			return nil, errors.Errorf("store directory not writable: %s", storeDir)
 		}
 		return store, nil
 	}
