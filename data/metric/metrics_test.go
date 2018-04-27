@@ -1,4 +1,4 @@
-package metric_test
+package metric
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 
 	"fmt"
 
-	"github.com/newrelic/infra-integrations-sdk/metric"
+	"github.com/newrelic/infra-integrations-sdk/data/metricetric"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
 )

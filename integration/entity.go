@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/newrelic/infra-integrations-sdk/metric"
+	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/pkg/errors"
 )

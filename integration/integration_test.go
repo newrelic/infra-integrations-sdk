@@ -11,7 +11,7 @@ import (
 
 	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/log"
-	"github.com/newrelic/infra-integrations-sdk/metric"
+	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/stretchr/testify/assert"
 )
 

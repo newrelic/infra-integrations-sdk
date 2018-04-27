@@ -1,4 +1,4 @@
-package metric
+package event
 
 const (
 	// NotificationEventCategory category for notification events.
