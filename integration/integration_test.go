@@ -21,7 +21,7 @@ var (
 )
 
 func TestCreation(t *testing.T) {
-	i := newNoLoggerNoWriter(t)
+	i := newTestIntegration(t)
 
 	if i.Name != "TestIntegration" {
 		t.Error()
@@ -47,7 +47,7 @@ func TestDefaultIntegrationWritesToStdout(t *testing.T) {
 	}()
 	os.Stdout = f
 
-	i, err := New("integration", "4.0")
+	i, err := New("integration", "4.0", InMemoryStore())
 
 	assert.NoError(t, err)
 	assert.Equal(t, "integration", i.Name)
@@ -65,7 +65,7 @@ func TestDefaultIntegrationWritesToStdout(t *testing.T) {
 }
 
 func TestIntegration_DefaultEntity(t *testing.T) {
-	i := newNoLoggerNoWriter(t)
+	i := newTestIntegration(t)
 
 	e1 := i.DefaultEntity()
 	e2 := i.DefaultEntity()
@@ -203,7 +203,7 @@ func TestIntegration_Publish(t *testing.T) {
 }
 
 func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
-	i := newNoLoggerNoWriter(t)
+	i := newTestIntegration(t)
 
 	e1, err := i.Entity("Entity1", "test")
 	if err != nil {
@@ -238,8 +238,8 @@ func TestIntegration_LoggerReturnsInjectedInstance(t *testing.T) {
 	assert.Equal(t, l, i.Logger())
 }
 
-func newNoLoggerNoWriter(t *testing.T) *Integration {
-	i, err := New(integrationName, integrationVersion, Logger(log.Discard), Writer(ioutil.Discard))
+func newTestIntegration(t *testing.T) *Integration {
+	i, err := New(integrationName, integrationVersion, Logger(log.Discard), Writer(ioutil.Discard), InMemoryStore())
 	assert.NoError(t, err)
 
 	return i

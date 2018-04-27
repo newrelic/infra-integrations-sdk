@@ -1,15 +1,16 @@
 package integration
 
 import (
+	"bytes"
 	"flag"
+	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"bytes"
-	"fmt"
 
 	"github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/log"
@@ -19,7 +20,7 @@ import (
 func TestWriter(t *testing.T) {
 	var w bytes.Buffer
 
-	i, err := New("integration", "7.0", Writer(&w))
+	i, err := New("integration", "7.0", Writer(&w), InMemoryStore())
 	assert.NoError(t, err)
 
 	assert.NoError(t, i.Publish())
@@ -36,7 +37,7 @@ func TestArgs(t *testing.T) {
 	// capture output
 	var writer bytes.Buffer
 
-	i, err := New("integration", "7.0", Args(&arguments), Writer(&writer))
+	i, err := New("integration", "7.0", Args(&arguments), Writer(&writer), InMemoryStore())
 	assert.NoError(t, err)
 
 	assert.NoError(t, i.Publish())
@@ -66,7 +67,8 @@ func TestWrongArgumentsCausesError(t *testing.T) {
 }
 
 func TestItStoresOnDiskByDefault(t *testing.T) {
-	i := newNoLoggerNoWriter(t)
+	i, err := New(integrationName, integrationVersion)
+	assert.NoError(t, err)
 
 	i.storer.Set("hello", 12.33)
 
@@ -83,7 +85,9 @@ func TestItStoresOnDiskByDefault(t *testing.T) {
 }
 
 func TestInMemoryStoreDoesNotPersistOnDisk(t *testing.T) {
-	i, err := New("cool-integration2", "1.0", Writer(ioutil.Discard), InMemoryStore())
+	randomName := strconv.Itoa(rand.Int())
+
+	i, err := New(randomName, integrationVersion, InMemoryStore())
 	assert.NoError(t, err)
 
 	i.storer.Set("hello", 12.33)
@@ -91,10 +95,15 @@ func TestInMemoryStoreDoesNotPersistOnDisk(t *testing.T) {
 	assert.NoError(t, i.Publish())
 
 	// assert data has not been flushed to disk
-	c, err := persist.NewFileStore(persist.DefaultPath("cool-integration2"), log.Discard)
+
+	// create folder in case it does not exists to enable store creation
+	path := persist.DefaultPath(randomName)
+	assert.NoError(t, os.MkdirAll(path, 0755))
+
+	s, err := persist.NewFileStore(path, log.Discard)
 	assert.NoError(t, err)
 
-	_, _, ok := c.Get("hello")
+	_, _, ok := s.Get("hello")
 	assert.False(t, ok)
 }
 
