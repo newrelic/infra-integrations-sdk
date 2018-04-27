@@ -28,7 +28,7 @@ type Integration struct {
 	prettyOutput       bool
 	writer             io.Writer
 	logger             log.Logger
-	args               interface{} // UGLY
+	args               interface{}
 }
 
 // New creates new integration with sane default values.
