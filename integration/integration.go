@@ -162,6 +162,11 @@ func (i *Integration) MarshalJSON() (output []byte, err error) {
 	return
 }
 
+// Logger returns the integration logger instance.
+func (i *Integration) Logger() log.Logger {
+	return i.logger
+}
+
 // toJSON serializes integration as JSON. If the pretty attribute is
 // set to true, the JSON will be indented for easy reading.
 func (i *Integration) toJSON(pretty bool) (output []byte, err error) {

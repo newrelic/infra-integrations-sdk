@@ -222,6 +222,22 @@ func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
 	}
 }
 
+func TestIntegration_LoggerReturnsDefaultLogger(t *testing.T) {
+	i, err := New(integrationName, integrationVersion)
+	assert.NoError(t, err)
+
+	assert.Equal(t, i.logger, i.Logger())
+}
+
+func TestIntegration_LoggerReturnsInjectedInstance(t *testing.T) {
+	l := log.NewStdErr(false)
+
+	i, err := New(integrationName, integrationVersion, Logger(l))
+	assert.NoError(t, err)
+
+	assert.Equal(t, l, i.Logger())
+}
+
 func newNoLoggerNoWriter(t *testing.T) *Integration {
 	i, err := New(integrationName, integrationVersion, Logger(log.Discard), Writer(ioutil.Discard))
 	assert.NoError(t, err)
