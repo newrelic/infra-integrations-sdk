@@ -38,8 +38,8 @@ func (i Inventory) Items() Items {
 	return i.items
 }
 
-// NewInventory creates new inventory.
-func NewInventory() *Inventory {
+// New creates new inventory.
+func New() *Inventory {
 	return &Inventory{
 		items: make(Items),
 	}

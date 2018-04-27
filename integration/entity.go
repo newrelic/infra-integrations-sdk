@@ -35,7 +35,7 @@ func newDefaultEntity(storer persist.Storer) *Entity {
 	return &Entity{
 		// empty array or object preferred instead of null on marshaling.
 		Metrics:   []*metric.Set{},
-		Inventory: inventory.NewInventory(),
+		Inventory: inventory.New(),
 		Events:    []*event.Event{},
 		storer:    storer,
 	}
@@ -51,7 +51,7 @@ func newEntity(entityName, entityType string, storer persist.Storer) (*Entity, e
 	d := Entity{
 		// empty array or object preferred instead of null on marshaling.
 		Metrics:   []*metric.Set{},
-		Inventory: inventory.NewInventory(),
+		Inventory: inventory.New(),
 		Events:    []*event.Event{},
 		storer:    storer,
 	}
