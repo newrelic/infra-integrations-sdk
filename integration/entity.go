@@ -27,9 +27,6 @@ type EntityMetadata struct {
 	Namespace string `json:"type"` // For compatibility reasons we keep the type.
 }
 
-// EntityID entity identifier
-type EntityID string
-
 // newLocalEntity creates unique default entity without identifier (name & type)
 func newLocalEntity(storer persist.Storer) *Entity {
 	return &Entity{
@@ -102,9 +99,4 @@ func (e *Entity) SetInventoryItem(key string, field string, value interface{}) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 	e.Inventory.SetItem(key, field, value)
-}
-
-// ID provides the entity id in string format
-func (e *Entity) ID() EntityID {
-	return EntityID(fmt.Sprintf("%s:%s", e.Metadata.Namespace, e.Metadata.Name))
 }
