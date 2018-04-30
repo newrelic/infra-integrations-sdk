@@ -23,8 +23,8 @@ type Entity struct {
 
 // EntityMetadata stores entity Metadata
 type EntityMetadata struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
+	Name      string `json:"name"`
+	Namespace string `json:"type"`
 }
 
 // EntityID entity identifier
@@ -42,9 +42,9 @@ func newLocalEntity(storer persist.Storer) *Entity {
 }
 
 // newEntity creates a new remote-entity.
-func newEntity(entityName, entityType string, storer persist.Storer) (*Entity, error) {
-	// If one of the attributes is defined, both Name and Type are needed.
-	if entityName == "" && entityType != "" || entityName != "" && entityType == "" {
+func newEntity(name, namespace string, storer persist.Storer) (*Entity, error) {
+	// If one of the attributes is defined, both Name and Namespace are needed.
+	if name == "" && namespace != "" || name != "" && namespace == "" {
 		return nil, errors.New("entity name and type are required when defining one")
 	}
 
@@ -57,10 +57,10 @@ func newEntity(entityName, entityType string, storer persist.Storer) (*Entity, e
 	}
 
 	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
-	if entityName != "" && entityType != "" {
+	if name != "" && namespace != "" {
 		d.Metadata = &EntityMetadata{
-			Name: entityName,
-			Type: entityType,
+			Name:      name,
+			Namespace: namespace,
 		}
 	}
 
@@ -106,5 +106,5 @@ func (e *Entity) SetInventoryItem(key string, field string, value interface{}) {
 
 // ID provides the entity id in string format
 func (e *Entity) ID() EntityID {
-	return EntityID(fmt.Sprintf("%s:%s", e.Metadata.Type, e.Metadata.Name))
+	return EntityID(fmt.Sprintf("%s:%s", e.Metadata.Namespace, e.Metadata.Name))
 }

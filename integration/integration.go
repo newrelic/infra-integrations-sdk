@@ -101,18 +101,18 @@ func (i *Integration) LocalEntity() *Entity {
 }
 
 // Entity method creates or retrieves an already created entity.
-func (i *Integration) Entity(entityName, entityType string) (e *Entity, err error) {
+func (i *Integration) Entity(name, namespace string) (e *Entity, err error) {
 	i.locker.Lock()
 	defer i.locker.Unlock()
 
 	// we should change this to map for performance
 	for _, e = range i.Entities {
-		if e.Metadata.Name == entityName && e.Metadata.Type == entityType {
+		if e.Metadata.Name == name && e.Metadata.Namespace == namespace {
 			return e, nil
 		}
 	}
 
-	e, err = newEntity(entityName, entityType, i.storer)
+	e, err = newEntity(name, namespace, i.storer)
 	if err != nil {
 		return nil, err
 	}
