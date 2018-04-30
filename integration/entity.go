@@ -24,8 +24,7 @@ type Entity struct {
 // EntityMetadata stores entity Metadata
 type EntityMetadata struct {
 	Name      string `json:"name"`
-	// For compatibility reasons we keep the type.
-	Namespace string `json:"type"`
+	Namespace string `json:"type"` // For compatibility reasons we keep the type.
 }
 
 // EntityID entity identifier
