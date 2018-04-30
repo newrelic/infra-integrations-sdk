@@ -21,7 +21,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Replace `github.com/sirupsen/logrus` with builtin `log` package
 - Update `Event` type
 - Update `Integration` type
-
+### Removed
+- Protocol v1 support
 
 ## 2.1.0
 
