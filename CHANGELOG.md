@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Removed
 - Protocol v1 support
+- Global `log` and `cache` instances
 
 ## 2.1.0
 
