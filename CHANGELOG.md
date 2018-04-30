@@ -4,20 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+## 3.0.0-beta
 
 ### Added
-- Protocol v2 support
-- Loggers can now be created from the log package.
-- Already created loggers can be configured from the log package.
-- Updated github.com/sirupsen/logrus dependency to v1.*
-- Add methods for creating events
-### Changed
-- **Breaking change**: Update `Event` type
-- **Breaking change**: Update `Integration` struct type
-- **Breaking change**: package `sdk` now divided into `v1` and `v2`
-### Fixed
-- github.com/Sirupsen/logrus is now github.com/sirupsen/logrus since v1.0.0.
+- Protocol v2 (remote entities) support
+- Concurrency support (via `Synchronized` *option*)
+- Configurable `Logger`
+- Configurable output `Writer`
+- Configurable `Storer`
+- New packages `inventory`, `event` with proper constructors 
+- Integration parametrized creation via optional `Option`s
+### Changes *(breaking changes)*
+- Package `sdk` renamed to `integration`
+- Package `cache` renamed to `persist` 
+- Packages `metric`, `inventory`, `event` moved into `data` folder
+- Replace `github.com/sirupsen/logrus` with builtin `log` package
+- Update `Event` type
+- Update `Integration` type
+
 
 ## 2.1.0
 
@@ -34,10 +38,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - **Breaking change**: Update `jmx.Query` function adding timeout argument
 - Improve documentation
 
+
 ## 1.0.0 (2017-07-20)
 
 This is the same version as 0.4.1, we consider this package "stable" and we can
 release v1.0.0
+
 
 ## 0.4.1 (2017-07-19)
 ### Fixed
