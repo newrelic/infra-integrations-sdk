@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Configurable `Storer`
 - New packages `inventory`, `event` with proper constructors 
 - Integration parametrized creation via optional `Option`s
+
 ### Changes *(breaking changes)*
 - Package `sdk` renamed to `integration`
 - Package `cache` renamed to `persist` 
@@ -21,6 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Replace `github.com/sirupsen/logrus` with builtin `log` package
 - Update `Event` type
 - Update `Integration` type
+
 ### Removed
 - Protocol v1 support
 
@@ -35,16 +37,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## 2.0.0 (2017-10-11)
 ### Fixed
 - Allow executing JMX queries to a server without authentication required
+
 ### Changed
 - **Breaking change**: Update `jmx.Query` function adding timeout argument
 - Improve documentation
-
 
 ## 1.0.0 (2017-07-20)
 
 This is the same version as 0.4.1, we consider this package "stable" and we can
 release v1.0.0
-
 
 ## 0.4.1 (2017-07-19)
 ### Fixed
