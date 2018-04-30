@@ -22,9 +22,9 @@ type Entity struct {
 }
 
 // EntityMetadata stores entity Metadata
-// For compatibility reasons we keep the type.
 type EntityMetadata struct {
 	Name      string `json:"name"`
+	// For compatibility reasons we keep the type.
 	Namespace string `json:"type"`
 }
 
