@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - New packages `inventory`, `event` with proper constructors 
 - Integration parametrized creation via optional `Option`s
 
-### Changes *(breaking changes)*
+### Changed
 - Package `sdk` renamed to `integration`
 - Package `cache` renamed to `persist` 
 - Packages `metric`, `inventory`, `event` moved into `data` folder
