@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/newrelic/infra-integrations-sdk/data/event"
