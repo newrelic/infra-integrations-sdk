@@ -18,7 +18,7 @@ func TestNewEntity(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "name", e.Metadata.Name)
-	assert.Equal(t, "type", e.Metadata.Type)
+	assert.Equal(t, "type", e.Metadata.Namespace)
 }
 
 func TestAddNotificationEvent(t *testing.T) {
