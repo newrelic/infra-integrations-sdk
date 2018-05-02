@@ -1,0 +1,83 @@
+digraph
+{   
+    rankdir=LR;
+    subgraph cluster_v1payload
+    {
+        style=filled;
+        color=black;
+        fillcolor=azure2;        
+        label = "name: ...\lprotocol_version:\"1\"\lintegration_version: ...\l";    
+        subgraph cluster_metrics {
+            fillcolor=cornflowerblue;            
+            label = "metrics\l";
+            g[label="event_type: ...\lmetric1: ...\lmetric2: ...\l|..." shape=record width=1.6];
+        }
+        subgraph cluster_inventory {
+            label = "inventory\l";
+            fillcolor=gold;            
+            subgraph cluster_i1 {
+                label="key\l";
+                "value: ...\l"[shape="box" width=1.4];
+            }
+            a[label="..." shape=none width=1.6];
+        }
+        subgraph cluster_events {
+            label = "events";
+            fillcolor=deepskyblue1;            
+            v1Inventory[label="summary: ...\lcategory: ...\l|..." width=1.6 shape=record];
+        }
+    }
+
+    subgraph cluster_connector {
+        style=invis;
+        arrow2[label="" shape=rarrow style=filled width=1 height = 0.6];
+        arrow[style=invis height=3.2];
+    }
+
+    subgraph cluster_v2payload
+    {
+        label = "name: ...\lprotocol_version:\"2\"\lintegration_version: ...\l";    
+        style=filled;
+        color=black;
+        fillcolor=azure2;
+        subgraph cluster_entities {
+            label="data";
+            fillcolor=tomato;
+            subgraph cluster_entitypayload {
+                label="";
+                fillcolor=khaki;
+                subgraph cluster_entity1 {
+                    label = "entity";
+                    fillcolor=blueviolet;
+                    v2Inventory[label="name: ...\ltype: ...\l" shape=box width="1.5"]
+                }
+                subgraph cluster_metrics {
+                    label="metrics";
+                    node[shape=record];
+                    fillcolor=cornflowerblue;
+                    m1[label="...|..." width="1.5"];
+                }
+                subgraph cluster_inventory {
+                    label="inventory";
+                    node[shape=record];
+                    fillcolor=gold;
+                    m3[label="...|..." width="1.5"];
+                }
+                subgraph cluster_events {
+                    label="events";
+                    node[shape=record];
+                    fillcolor=deepskyblue1;
+                    ggg[label="...|..." width="1.5"];
+                }
+            }
+            subgraph cluster_entitypayload2 {
+                label="";
+                fillcolor=khaki;                
+                c[label="..." shape=none width=1.7];
+            }
+        }
+    }
+    ranksep=0.5;
+    v1Inventory -> arrow [style=invis];
+    arrow -> v2Inventory [style=invis];
+}
