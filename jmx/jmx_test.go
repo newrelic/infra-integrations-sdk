@@ -65,8 +65,8 @@ func TestJmxOpen(t *testing.T) {
 func TestJmxQuery(t *testing.T) {
 	defer jmx.Close()
 
-	if jmx.Open("", "", "", "") != nil {
-		t.Error()
+	if err := jmx.Open("", "", "", ""); err != nil {
+		t.Error(err)
 	}
 
 	if _, err := jmx.Query("empty", timeout); err != nil {
