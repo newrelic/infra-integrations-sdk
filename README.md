@@ -46,7 +46,50 @@ $ go get github.com/newrelic/infra-integrations-sdk
 Then you can import any of the packages provided with the SDK from your code and
 start writing your integration. If you need ideas or inspiration, you can follow [the tutorial](docs/tutorial.md).
 
-## JMX support
+## API specification
+
+You can find the latest API documentation generated from the source code in
+[godoc](https://godoc.org/github.com/newrelic/infra-integrations-sdk).
+
+### Agent API
+
+Integrations are executed periodically by the *agent*. The integration `stdout` is consumed by the *agent*.
+This `stdout` data is formatted as JSON.
+
+Agent supports 2 different data-structures called *protocols*:
+
+* v1: Legacy data structure to monitorize current host.
+* v2: Latest data structure to monitorize also remote entities.
+
+#### SDK & agent-protocol compatibility 
+
+SDK v1 and v2 use *protocol-v1*.
+
+SDK v3 use *protocol-v2*.
+
+## Upgrading from SDK v2 to v3
+ 
+https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/v2tov3.md
+
+## Tools
+
+### Integration scaffold builder
+
+Command-line tool to scaffold new New Relic custom integrations
+
+https://github.com/newrelic/nr-integrations-builder
+
+#### Legacy protocol v1 builder
+
+In case you want to use the previous builder, you still can do it via `gopkg.in/newrelic/nr-integrations-builder.v1`.
+
+You can easily fetch it using:
+ 
+`go get gopkg.in/newrelic/nr-integrations-builder.v1`
+
+## Libraries
+
+### JMX support
 
 The Integrations Go lang SDK supports getting metrics through JMX by calling the
 `jmx.Open()`, `jmx.Query()` and `jmx.Close()` functions. This JMX support relies
@@ -55,11 +98,6 @@ the [nrjmx](https://github.com/newrelic/nrjmx) repository to build it and set
 the `NR_JMX_TOOL` environment variable to point to the location of the nrjmx
 executable. If the `NR_JMX_TOOL` variable is not set, the SDK will use
 `/usr/bin/nrjmx` by default.
-
-## API specification
-
-You can find the latest API documentation generated from the source code in
-[godoc](https://godoc.org/github.com/newrelic/infra-integrations-sdk).
 
 ## Contributing Code
 
