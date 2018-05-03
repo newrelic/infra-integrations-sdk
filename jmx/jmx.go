@@ -70,8 +70,6 @@ func Open(hostname, port, username, password string) error {
 	cliCommand := getCommand(hostname, port, username, password)
 
 	ctx, cancel = context.WithCancel(context.Background())
-	// Avoid stupid errors/warnings b/c cancel is not used in this method
-	_ = cancel
 
 	cmd = exec.CommandContext(ctx, cliCommand[0], cliCommand[1:]...)
 
@@ -109,9 +107,8 @@ func Close() {
 		return
 	}
 
-	cmdIn.Close()
-	// nolint: errcheck
 	cancel()
+	_ = cmdIn.Close()
 	done.Wait()
 }
 
