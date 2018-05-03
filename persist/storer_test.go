@@ -178,3 +178,17 @@ func TestInMemoryStore_SaveDoesNothing(t *testing.T) {
 	s := persist.NewInMemoryStore()
 	assert.NoError(t, s.Save())
 }
+
+func TestInMemoryStore_Delete(t *testing.T) {
+	s := persist.NewInMemoryStore()
+
+	_ = s.Set("key", 1)
+
+	_, _, found := s.Get("key")
+	assert.True(t, found)
+
+	s.Delete("key")
+
+	_, _, found = s.Get("key")
+	assert.False(t, found)
+}

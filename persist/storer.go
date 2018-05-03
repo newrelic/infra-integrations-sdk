@@ -26,15 +26,17 @@ var (
 // Storer is a key-value structure that is initialized and stored in a persistent device.
 // It also saves the timestamp when a key was stored.
 type Storer interface {
-	// Save persists all the data in the Storer.
-	Save() error
 	// Get looks for a key in the Storer and returns its value together with the
 	// timestamp of when it was last set. The third returned value indicates whether
 	// the key has been found or not.
-	Get(name string) (float64, int64, bool)
-	// Set adds a value into the Storer and with the current timestamp. The data is not persisted until the Save()
-	// function is invoked.
-	Set(name string, value float64) int64
+	Get(key string) (float64, int64, bool)
+	// Set sets the value under the given key, storing the current timestamp that is also returned.
+	// Data is not persisted until Save is invoked.
+	Set(key string, value float64) int64
+	// Delete removes the cached data for the given key
+	Delete(key string)
+	// Save persists all in-memory stored data.
+	Save() error
 }
 
 type inMemoryStore struct {
@@ -146,6 +148,12 @@ func (c *inMemoryStore) Get(name string) (float64, int64, bool) {
 		}
 	}
 	return 0, 0, false
+}
+
+// Delete removes the key entry
+func (c *inMemoryStore) Delete(name string) {
+	delete(c.Data, name)
+	delete(c.Timestamps, name)
 }
 
 // Set adds a value into the store and it also stores the current timestamp.
