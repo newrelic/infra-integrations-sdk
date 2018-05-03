@@ -15,6 +15,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 var lock sync.Mutex
@@ -25,7 +27,11 @@ var cmdIn io.WriteCloser
 var cmdErr = make(chan error, 1)
 var done sync.WaitGroup
 
-var jmxCommand = "/usr/bin/nrjmx"
+var (
+	jmxCommand = "/usr/bin/nrjmx"
+	// ErrJmxCmdRunning error returned when trying to Open and nrjmx command is still running
+	ErrJmxCmdRunning = errors.New("JMX tool is already running")
+)
 
 const (
 	jmxLineBuffer = 4 * 1024 * 1024 // Max 4MB per line. If single lines are outputting more JSON than that, we likely need smaller-scoped JMX queries
@@ -54,7 +60,7 @@ func Open(hostname, port, username, password string) error {
 	defer lock.Unlock()
 
 	if cmd != nil {
-		return fmt.Errorf("JMX tool is already running with PID: %d", cmd.Process.Pid)
+		return ErrJmxCmdRunning
 	}
 
 	// Drain error channel to prevent showing past errors
