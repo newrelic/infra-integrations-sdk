@@ -146,8 +146,4 @@ For a complete view of the GoSDK `v3`, please refer to [TODO: link API and tutor
 
 ## References
 
-* Integrations supporting Remote Entities + Local Metadata https://newrelic.jiveon.com/thread/3000
-* Monitoring Remote Entities with Infrastructure https://newrelic.jiveon.com/thread/3073
-* How Infrastructure integrations could model entity relationships https://newrelic.jiveon.com/thread/3084
-* Integration executable file specifications https://docs.newrelic.com/docs/integrations/integrations-sdk/file-specifications/integration-executable-file-specifications
 * Official public `Entity` definition https://docs.newrelic.com/docs/using-new-relic/welcome-new-relic/getting-started/glossary#alert-entity
