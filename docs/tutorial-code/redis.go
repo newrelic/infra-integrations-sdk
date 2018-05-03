@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
+	"github.com/newrelic/infra-integrations-sdk/data/event"
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
-	"github.com/newrelic/infra-integrations-sdk/integration/v1"
-	"github.com/newrelic/infra-integrations-sdk/persist"
+	"github.com/newrelic/infra-integrations-sdk/integration"
 )
 
 type argumentList struct {
@@ -25,7 +25,7 @@ const (
 
 var args argumentList
 
-func populateInventory(inventory v1.Inventory) error {
+func populateInventory(e *integration.Entity) error {
 	cmd := exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET dbfilename")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -34,7 +34,7 @@ func populateInventory(inventory v1.Inventory) error {
 
 	splittedLine := strings.Split(string(output), "\n")
 	if splittedLine[0] == "dbfilename" {
-		inventory.SetItem(splittedLine[0], "value", splittedLine[1])
+		e.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
 	}
 
 	cmd = exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET bind")
@@ -44,7 +44,7 @@ func populateInventory(inventory v1.Inventory) error {
 	}
 	splittedLine = strings.Split(string(output), "\n")
 	if splittedLine[0] == "bind" {
-		inventory.SetItem(splittedLine[0], "value", splittedLine[1])
+		e.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
 	}
 	return nil
 }
@@ -83,7 +83,7 @@ func populateMetrics(ms *metric.Set) error {
 	return nil
 }
 
-func populateEvents(integration *v1.Integration) error {
+func populateEvents(e *integration.Entity) error {
 	cmd := exec.Command("/bin/sh", "-c", "redis-cli info | grep uptime_in_seconds:")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -98,38 +98,41 @@ func populateEvents(integration *v1.Integration) error {
 		return err
 	}
 	if uptime < 60 {
-		err = integration.AddNotificationEvent("Redis Server recently started")
+		err = e.AddEvent(event.NewNotification("Redis Server recently started"))
 		if err != nil {
 			return err
 		}
 	}
 	if uptime < 60 {
-		err = integration.AddEvent(v1.Event{Summary: "Redis Server recently started", Category: "redis-server"})
+		err = e.AddEvent(event.New("Redis Server recently started", "redis-server"))
 	}
 
 	return err
 }
 
 func main() {
-	integration, err := v1.NewIntegration(integrationName, integrationVersion, &args)
+	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
 	panicOnErr(err)
 
+	e := i.LocalEntity()
+
 	if args.All || args.Inventory {
-		panicOnErr(populateInventory(integration.Inventory))
+		panicOnErr(populateInventory(e))
 	}
 
 	if args.All || args.Metrics {
-		ms := integration.NewMetricSet("RedisSample")
-		panicOnErr(populateMetrics(&ms))
+		ms, err := e.NewMetricSet("RedisSample")
+		panicOnErr(err)
+		panicOnErr(populateMetrics(ms))
 	}
 
 	if args.All || args.Events {
-		err := populateEvents(integration)
+		err := populateEvents(e)
 		if err != nil {
-			persist.GlobalLog.Debugf("adding event failed, got: %s", err)
+			i.Logger().Debugf("adding event failed, got: %s", err)
 		}
 	}
-	panicOnErr(integration.Publish())
+	panicOnErr(i.Publish())
 }
 
 func panicOnErr(err error) {
