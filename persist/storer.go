@@ -23,15 +23,19 @@ var (
 	now = time.Now
 )
 
+// Errors
+var (
+	ErrNotFound = errors.New("key not found")
+)
+
 // Storer is a key-value structure that is initialized and stored in a persistent device.
 // It also saves the timestamp when a key was stored.
 type Storer interface {
-	// Get looks for a key in the Storer and returns its value together with the
-	// timestamp of when it was last set. The third returned value indicates whether
-	// the key has been found or not.
-	Get(key string) (float64, int64, bool)
+	// Get looks for a key in the Storer and writes its value on the given pointer.
+	// Last set-call timestamp is returned. If key is not found ErrNotFound error is returned.
+	Get(key string) (value float64, timestamp int64, err error)
 	// Set sets the value under the given key, storing the current timestamp that is also returned.
-	// Data is not persisted until Save is invoked.
+	// This method does not persist until Save is called.
 	Set(key string, value float64) int64
 	// Delete removes the cached data for the given key
 	Delete(key string)
@@ -139,15 +143,17 @@ func (c *inMemoryStore) Save() error {
 // Get looks for a key in the store and returns its value together with the
 // timestamp of when it was last set. The third returned value indicates whether
 // the key has been found or not.
-func (c *inMemoryStore) Get(name string) (float64, int64, bool) {
-	val, ok := c.Data[name]
-	if ok {
-		ts, ok := c.Timestamps[name]
-		if ok {
-			return val.(float64), int64(ts), ok
+func (c *inMemoryStore) Get(key string) (value float64, timestamp int64, err error) {
+	if val, ok := c.Data[key]; ok {
+		if timestamp, ok = c.Timestamps[key]; ok {
+			value = val.(float64)
+			return
 		}
 	}
-	return 0, 0, false
+
+	err = ErrNotFound
+
+	return
 }
 
 // Delete removes the key entry

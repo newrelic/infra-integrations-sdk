@@ -94,12 +94,12 @@ func (ms *Set) sample(name string, value interface{}, sourceType SourceType) (fl
 	}
 
 	// Retrieve the last value and timestamp from Storer
-	oldval, oldTime, ok := ms.storer.Get(name)
+	oldval, oldTime, err := ms.storer.Get(name)
 	// And replace it with the new value which we want to keep
 	newTime := ms.storer.Set(name, floatValue)
 
-	if ok {
-		duration := (newTime - oldTime)
+	if err == nil {
+		duration := newTime - oldTime
 		if duration == 0 {
 			return sampledValue, fmt.Errorf("samples for %s are too close in time, skipping sampling", name)
 		}

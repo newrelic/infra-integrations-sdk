@@ -60,12 +60,11 @@ func TestStorerSet(t *testing.T) {
 	defer os.Remove(file.Name())
 
 	dc, err := persist.NewFileStore(file.Name(), log.Discard)
-
 	assert.NoError(t, err)
 
 	dc.Set("key", float64(100))
-	v, ts, ok := dc.Get("key")
-	assert.True(t, ok)
+	v, ts, err := dc.Get("key")
+	assert.NoError(t, err)
 	assert.InDelta(t, float64(100), v, 0.1)
 	assert.NotEqual(t, 0, ts)
 }
@@ -76,12 +75,12 @@ func TestStorerGet(t *testing.T) {
 	defer os.Remove(file.Name())
 
 	dc, err := persist.NewFileStore(file.Name(), log.Discard)
-
 	assert.NoError(t, err)
 
 	dc.Set("key1", float64(100))
 
-	value, ts, exists := dc.Get("key1")
+	value, ts, err := dc.Get("key1")
+	assert.NoError(t, err)
 
 	if value != float64(100) {
 		t.Error()
@@ -89,19 +88,14 @@ func TestStorerGet(t *testing.T) {
 	if ts == int64(0) {
 		t.Error()
 	}
-	if !exists {
-		t.Error()
-	}
 
-	value, ts, exists = dc.Get("key2")
+	value, ts, err = dc.Get("key2")
+	assert.Equal(t, persist.ErrNotFound, err)
 
 	if value != float64(0) {
 		t.Error()
 	}
 	if ts != int64(0) {
-		t.Error()
-	}
-	if exists {
 		t.Error()
 	}
 }
@@ -124,15 +118,13 @@ func TestStorerSave(t *testing.T) {
 	dc, err = persist.NewFileStore(file.Name(), log.Discard)
 	assert.NoError(t, err)
 
-	value, ts, exists := dc.Get("key1")
-
-	assert.True(t, exists)
+	value, ts, err := dc.Get("key1")
+	assert.NoError(t, err)
 	assert.InDelta(t, float64(100), value, 0.1)
 	assert.NotEqual(t, 0, ts)
 
-	value, ts, exists = dc.Get("key2")
-
-	assert.True(t, exists)
+	value, ts, err = dc.Get("key2")
+	assert.NoError(t, err)
 	assert.InDelta(t, float64(200), value, 0.1)
 	assert.NotEqual(t, 0, ts)
 }
@@ -163,8 +155,8 @@ func TestNewFileStoreIsNotPopulatedWhenModTimeGreaterThanTTL(t *testing.T) {
 	dc, err = persist.NewFileStore(file.Name(), log.Discard)
 	assert.NoError(t, err)
 
-	_, _, exists := dc.Get("key1")
-	assert.False(t, exists)
+	_, _, err = dc.Get("key1")
+	assert.Equal(t, persist.ErrNotFound, err)
 }
 
 func TestSetNow(t *testing.T) {
@@ -184,11 +176,11 @@ func TestInMemoryStore_Delete(t *testing.T) {
 
 	_ = s.Set("key", 1)
 
-	_, _, found := s.Get("key")
-	assert.True(t, found)
+	_, _, err := s.Get("key")
+	assert.NoError(t, err)
 
 	s.Delete("key")
 
-	_, _, found = s.Get("key")
-	assert.False(t, found)
+	_, _, err = s.Get("key")
+	assert.Equal(t, persist.ErrNotFound, err)
 }

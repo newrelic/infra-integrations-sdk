@@ -42,10 +42,7 @@ func TestArgs(t *testing.T) {
 
 	assert.NoError(t, i.Publish())
 
-	payload := writer.String()
-
-	// output is prettified
-	assert.Contains(t, payload, "\n")
+	assert.Contains(t, writer.String(), "\n", "output should be prettified")
 }
 
 func TestWrongArgumentsCausesError(t *testing.T) {
@@ -78,8 +75,8 @@ func TestItStoresOnDiskByDefault(t *testing.T) {
 	c, err := persist.NewFileStore(persist.DefaultPath(integrationName), log.Discard)
 	assert.NoError(t, err)
 
-	v, ts, ok := c.Get("hello")
-	assert.True(t, ok)
+	v, ts, err := c.Get("hello")
+	assert.NoError(t, err)
 	assert.NotEqual(t, 0, ts)
 	assert.InDelta(t, 12.33, v, 0.1)
 }
@@ -103,8 +100,8 @@ func TestInMemoryStoreDoesNotPersistOnDisk(t *testing.T) {
 	s, err := persist.NewFileStore(path, log.Discard)
 	assert.NoError(t, err)
 
-	_, _, ok := s.Get("hello")
-	assert.False(t, ok)
+	_, _, err = s.Get("hello")
+	assert.Equal(t, persist.ErrNotFound, err)
 }
 
 func TestConcurrentModeHasNoDataRace(t *testing.T) {
@@ -137,10 +134,13 @@ func (m *fakeStorer) Save() error {
 	return nil
 }
 
-func (fakeStorer) Get(name string) (float64, int64, bool) {
-	return 0, 0, false
+func (fakeStorer) Get(name string) (float64, int64, error) {
+	return 0, 0, nil
 }
 
 func (fakeStorer) Set(name string, value float64) int64 {
 	return 0
+}
+
+func (fakeStorer) Delete(name string) {
 }

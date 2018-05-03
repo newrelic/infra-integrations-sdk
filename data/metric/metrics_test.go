@@ -82,8 +82,8 @@ func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 					tt.testCase, tt.key, sourceType, tt.value, ms.Metrics[tt.key], tt.out)
 			}
 
-			v, _, ok := storer.Get(key)
-			if !ok {
+			v, _, err := storer.Get(key)
+			if err == persist.ErrNotFound {
 				t.Errorf("key %s not in cache for case %s", tt.key, tt.testCase)
 			} else if tt.cache != v {
 				t.Errorf("cache.Get(\"%v\") ==> %v, want %v", tt.key, v, tt.cache)
