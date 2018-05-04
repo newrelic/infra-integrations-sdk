@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
 	"time"
 
 	"github.com/newrelic/infra-integrations-sdk/log"
@@ -26,7 +25,7 @@ func TestDefaultPath(t *testing.T) {
 	assert.Equal(t, filepath.Join(os.TempDir(), "nr-integrations", "file.json"), persist.DefaultPath("file"))
 }
 
-func TestDiskStorer(t *testing.T) {
+func TestNewFileStore(t *testing.T) {
 	file, err := ioutil.TempFile("", "cache")
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
@@ -54,50 +53,33 @@ func TestNewFileStoreReturnsErrorOnForbiddenFilePath(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestStorerSet(t *testing.T) {
-	file, err := ioutil.TempFile("", "cache.json")
-	assert.NoError(t, err)
-	defer os.Remove(file.Name())
+func TestInMemoryStore_Set(t *testing.T) {
+	s := persist.NewInMemoryStore()
 
-	dc, err := persist.NewFileStore(file.Name(), log.Discard)
-	assert.NoError(t, err)
+	s.Set("key", float64(100))
 
-	dc.Set("key", float64(100))
-	v, ts, err := dc.Get("key")
+	v, _, err := s.Get("key")
+
 	assert.NoError(t, err)
-	assert.InDelta(t, float64(100), v, 0.1)
-	assert.NotEqual(t, 0, ts)
+	assert.Equal(t, float64(100), v)
 }
 
-func TestStorerGet(t *testing.T) {
-	file, err := ioutil.TempFile("", "cache.json")
+func TestInMemoryStore_Get(t *testing.T) {
+	dc := persist.NewInMemoryStore()
+
+	setValue := float64(100)
+	dc.Set("key1", setValue)
+
+	v, ts, err := dc.Get("key1")
+
 	assert.NoError(t, err)
-	defer os.Remove(file.Name())
+	assert.Equal(t, setValue, v)
+	assert.NotEqual(t, 0, ts)
 
-	dc, err := persist.NewFileStore(file.Name(), log.Discard)
-	assert.NoError(t, err)
+	v, _, err = dc.Get("key2")
 
-	dc.Set("key1", float64(100))
-
-	value, ts, err := dc.Get("key1")
-	assert.NoError(t, err)
-
-	if value != float64(100) {
-		t.Error()
-	}
-	if ts == int64(0) {
-		t.Error()
-	}
-
-	value, ts, err = dc.Get("key2")
 	assert.Equal(t, persist.ErrNotFound, err)
-
-	if value != float64(0) {
-		t.Error()
-	}
-	if ts != int64(0) {
-		t.Error()
-	}
+	assert.Equal(t, nil, v)
 }
 
 func TestStorerSave(t *testing.T) {

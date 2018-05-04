@@ -134,11 +134,11 @@ func (m *fakeStorer) Save() error {
 	return nil
 }
 
-func (fakeStorer) Get(name string) (float64, int64, error) {
+func (fakeStorer) Get(name string) (interface{}, int64, error) {
 	return 0, 0, nil
 }
 
-func (fakeStorer) Set(name string, value float64) int64 {
+func (fakeStorer) Set(name string, value interface{}) int64 {
 	return 0
 }
 

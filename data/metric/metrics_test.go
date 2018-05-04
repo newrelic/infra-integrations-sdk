@@ -128,20 +128,19 @@ func TestSet_SetMetric_IncorrectMetricType(t *testing.T) {
 }
 
 func TestSet_MarshalJSON(t *testing.T) {
-	storer := persist.NewInMemoryStore()
-
-	ms, err := NewSet("some-event-type", storer)
+	ms, err := NewSet("some-event-type", persist.NewInMemoryStore())
 	assert.NoError(t, err)
-	expectedOutputRaw := []byte(
-		`{"bar":0,"baz":1,"event_type":"some-event-type","foo":0,"quux":"bar"}`)
 
 	ms.SetMetric("foo", 1, RATE)
 	ms.SetMetric("bar", 1, DELTA)
 	ms.SetMetric("baz", 1, GAUGE)
 	ms.SetMetric("quux", "bar", ATTRIBUTE)
 
-	marshalled, err := ms.MarshalJSON()
+	marshaled, err := ms.MarshalJSON()
 
-	assert.Equal(t, marshalled, expectedOutputRaw)
-
+	assert.NoError(t, err)
+	assert.Equal(t,
+		`{"bar":0,"baz":1,"event_type":"some-event-type","foo":0,"quux":"bar"}`,
+		string(marshaled),
+	)
 }
