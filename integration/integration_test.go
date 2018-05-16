@@ -129,26 +129,26 @@ func TestCustomArguments(t *testing.T) {
 }
 
 func TestIntegration_Publish(t *testing.T) {
-	w := testWritter{
+	w := testWriter{
 		func(p []byte) {
 			expectedOutputRaw := []byte(
 				`{"name":"TestIntegration","protocol_version":"2","integration_version":"1.0","data":[` +
-					`{"entity":{"name":"EntityOne","type":"test"},"metrics":[{"event_type":"EventTypeForEntityOne","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},` +
+					`{"entity":{"name":"EntityOne","type":"test"},"metrics":[{"event_type":"EventTypeForEntityOne","metricOne":99,"metricThree":"test","metricTwo":88}],
+					     "inventory":{"key1":{"field1":123,"field2":"hello"},"key2":{"field3":"world"}},` +
 					`"events":[{"summary":"evnt1sum","category":"evnt1cat"},{"summary":"evnt2sum","category":"evnt2cat"}]},` +
 					`{"entity":{"name":"EntityTwo","type":"test"},"metrics":[{"event_type":"EventTypeForEntityTwo","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},` +
 					`"events":[]},` +
-					`{"metrics":[{"event_type":"EventTypeForEntityThree","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},` +
+					`{"metrics":[{"event_type":"EventTypeForEntityThree","metricOne":99,"metricThree":"test","metricTwo":88}],
+						"inventory":{"inv":{"key":"val"}},` +
 					`"events":[{"summary":"evnt3sum","category":"evnt3cat"}]}]}`)
 			expectedOutput := new(Integration)
 			err := json.Unmarshal(expectedOutputRaw, expectedOutput)
-			if err != nil {
-				t.Fatal("error unmarshaling expected output raw test data sample")
-			}
+			assert.NoError(t, err, "error unmarshaling expected output raw test data sample")
 
 			integration := new(Integration)
 			err = json.Unmarshal(p, integration)
 			if err != nil {
-				t.Error("error unmarshaling integration output", err)
+				assert.NoError(t, err, "error unmarshaling integration output")
 			}
 
 			if !reflect.DeepEqual(expectedOutput, integration) {
@@ -176,6 +176,10 @@ func TestIntegration_Publish(t *testing.T) {
 	e.AddEvent(event.New("evnt1sum", "evnt1cat"))
 	e.AddEvent(event.New("evnt2sum", "evnt2cat"))
 
+	e.SetInventoryItem("key1", "field1", 123)
+	e.SetInventoryItem("key1", "field2", "hello")
+	e.SetInventoryItem("key2", "field3", "world")
+
 	e, err = i.Entity("EntityTwo", "test")
 	if err != nil {
 		t.Fatal(err)
@@ -191,6 +195,8 @@ func TestIntegration_Publish(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	e.SetInventoryItem("inv", "key", "value")
 
 	ms, err = e.NewMetricSet("EventTypeForEntityThree")
 	assert.NoError(t, err)
@@ -246,11 +252,11 @@ func newTestIntegration(t *testing.T) *Integration {
 	return i
 }
 
-type testWritter struct {
+type testWriter struct {
 	testFunc func([]byte)
 }
 
-func (w testWritter) Write(p []byte) (n int, err error) {
+func (w testWriter) Write(p []byte) (n int, err error) {
 	w.testFunc(p)
 
 	return len(p), err
