@@ -18,7 +18,6 @@ import (
 type Client struct {
 	CABundleFile string
 	CABundleDir  string
-	args         interface{}
 }
 
 // NewWithCert creates a new http.Client with a custom certificate

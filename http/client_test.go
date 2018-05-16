@@ -8,18 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestClient_NewWithCert(t *testing.T) {
-	c := Client{
-		"",
-		"",
-		"",
-	}
-	c.NewWithCert()
-	assert.Equal(t, c.CABundleFile, "")
-	assert.Equal(t, c.CABundleDir, "")
-}
 
-func TestClient_NewWithCertNoEmpty(t *testing.T) {
+func TestClient_NewWithCert(t *testing.T) {
 	file, err := ioutil.TempFile("/tmp/", "ca.pem")
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
