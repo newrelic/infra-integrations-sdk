@@ -658,6 +658,23 @@ type argumentList struct {
 }
 ```
 
+Arguments must have the first letter capitalised when defined in the code(ex: **H**ostname), but they cannot use any capital letter when used in the config file.
+Any multi-word argument should be used in CamelCase in the code(ex: **LabelName**) and must be used as snake_case in config files(ex: **label_name**).
+In code:
+```go
+type argumentList struct {
+	sdkArgs.DefaultArgumentList
+	LabelName string `default:"localhost" help:"Hostname or IP where Redis server is running."`
+}
+```
+In config file:
+```yaml
+  - name: example
+    command: example-command
+    arguments:
+      label_name: "example-name"
+```
+
 To finish the inventory configuration place the executable and the definition file in `/var/db/newrelic-infra/custom-integrations/`
 
 ```bash
