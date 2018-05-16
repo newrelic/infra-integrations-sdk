@@ -376,8 +376,11 @@ The calculations for a given metric source type are handled by `SetMetric`; the 
 
 This method of fetching data, shown above is not very efficient. You will want to fetch a set of data all at once, but this example just shows how to use the `SetMetric` function and the source types.
 
-### Configuration of the integration (for metrics)
-Let's look now at the definition file of the redis integration. In the file _myorg-redis-definition.yml_ under _command_ you can specify common arguments for all instances (that you will define in the config file) that you want to monitor. In this case we have just one common argument: `--metrics`.  
+### Definition file
+Let's look now at the definition file of the redis integration. In the file _myorg-redis-definition.yml_ under _command_ you can specify common arguments for all instances (that you will define in the config file) that you want to monitor.  
+
+The schema that will contain the different data types is:
+
 ```yml
 name: com.myorganization.redis
 description: Reports status and metrics for redis service
@@ -386,12 +389,24 @@ os: linux
 
 commands:
   metrics:
+    # ...
+  inventory:
+    # ...
+  events:
+    # ...
+```
+
+### Configuration of the integration (for metrics)
+In this case we have just one common argument: `--metrics`.
+
+[Definition file](#Definition-file) will contain the `metrics` section:
+
+```yml
+  metrics:
     command:
       - ./bin/myorg-redis
       - --metrics
     interval: 15
-
-  # configuration for the inventory omitted
 ```
 
 
@@ -581,19 +596,8 @@ $ ./bin/myorg-redis -pretty
 ### Configuration of the integration (for inventory)
 In the [definition file](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/file-specifications/integration-definition-file-specifications), `myorg-redis-definition.yml`, we want to increase the `interval` value for the inventory. This is because the changes in the inventory data are not as frequent as in metrics data.
 
+[Definition file](#Definition-file) will contain the `inventory` section:
 ```yml
-name: com.myorganization.redis
-description: Reports status and metrics for redis service
-protocol_version: 1
-os: linux
-
-commands:
-  metrics:
-    command:
-      - ./bin/myorg-redis
-      - --metrics
-    interval: 15
-
   inventory:
     command:
       - ./bin/myorg-redis
@@ -856,26 +860,8 @@ As you can see in the output above, there was a second event created, with a new
 ### Configuration of the integration (for events)
 To test the integration with the Infrastucture Agent, it's required to update [the config file](tutorial-code/myorg-redis-config.yml) and [the definition file](tutorial-code/myorg-redis-definition.yml). Let's start with the definition file by adding the `events` command. 
 
+[Definition file](#Definition-file) will contain the `events` section:
 ```bash
-name: com.myorganization.redis
-description: Reports status and metrics for redis service
-protocol_version: 1
-os: linux
-
-commands:
-  metrics:
-    command:
-      - ./bin/myorg-redis
-      - --metrics
-    interval: 15
-
-  inventory:
-    command:
-      - ./bin/myorg-redis
-      - --inventory
-    prefix: config/myorg-redis
-    interval: 60
-
   events:
     command:
       - ./bin/myorg-redis
