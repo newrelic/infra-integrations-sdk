@@ -42,7 +42,7 @@ $ $GOPATH/bin/nr-integrations-builder --help
 
 This tutorial assumes that your `$GOBIN` or `$GOPATH/bin` has been added to your `$PATH` environment variable.
 
-**Step 3: Check govendor tool**
+**Step 2: Check govendor tool**
 
 Before initializing the integration with `nr-integrations-builder` you have to check that the `govendor` tool (used for managing dependencies) is successfully installed. Run the following command:
 ```bash
@@ -50,7 +50,7 @@ $ govendor
 ```
 You should receive the description about the `govendor` tool with the list of accepted commands. More information about the usage can be found in the [README.md](https://github.com/kardianos/govendor/blob/master/README.md).
 
-**Step 4: Initialize the integration**
+**Step 3: Initialize the integration**
 
 To see the list of the parameters that you can specify for `nr-integrations-builder`, type
 ```bash
