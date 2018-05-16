@@ -1,6 +1,9 @@
 package inventory
 
-import "sync"
+import (
+	"encoding/json"
+	"sync"
+)
 
 // Items ...
 type Items map[string]Item
@@ -13,6 +16,11 @@ type Item map[string]interface{}
 type Inventory struct {
 	items Items
 	lock  sync.Mutex
+}
+
+// MarshalJSON Marshals the items map into a JSON
+func (i Inventory) MarshalJSON() ([]byte, error) {
+	return json.Marshal(i.items)
 }
 
 // SetItem stores a value into the inventory data structure.
