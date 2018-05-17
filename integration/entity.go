@@ -1,13 +1,13 @@
 package integration
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/newrelic/infra-integrations-sdk/data/event"
 	"github.com/newrelic/infra-integrations-sdk/data/inventory"
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/persist"
-	"github.com/pkg/errors"
 )
 
 // Entity is the producer of the data. Entity could be a host, a container, a pod, or whatever unit of meaning.
@@ -94,6 +94,7 @@ func (e *Entity) AddEvent(event *event.Event) error {
 }
 
 // SetInventoryItem method adds a inventory item.
+// key should be at most 512 character length.
 func (e *Entity) SetInventoryItem(key string, field string, value interface{}) {
 	e.lock.Lock()
 	defer e.lock.Unlock()

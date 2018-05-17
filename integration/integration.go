@@ -3,6 +3,7 @@ package integration
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -12,7 +13,6 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/persist"
-	"github.com/pkg/errors"
 )
 
 const protocolVersion = "2"
@@ -156,7 +156,7 @@ func (i *Integration) Clear() {
 func (i *Integration) MarshalJSON() (output []byte, err error) {
 	output, err = json.Marshal(*i)
 	if err != nil {
-		err = errors.Wrap(err, "error marshalling to JSON")
+		err = fmt.Errorf("error marshalling to JSON: %s", err)
 	}
 
 	return

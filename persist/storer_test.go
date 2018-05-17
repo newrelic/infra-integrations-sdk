@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
 	"time"
 
 	"github.com/newrelic/infra-integrations-sdk/log"
@@ -26,7 +25,7 @@ func TestDefaultPath(t *testing.T) {
 	assert.Equal(t, filepath.Join(os.TempDir(), "nr-integrations", "file.json"), persist.DefaultPath("file"))
 }
 
-func TestDiskStorer(t *testing.T) {
+func TestNewFileStore(t *testing.T) {
 	file, err := ioutil.TempFile("", "cache")
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
@@ -54,56 +53,33 @@ func TestNewFileStoreReturnsErrorOnForbiddenFilePath(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestStorerSet(t *testing.T) {
-	file, err := ioutil.TempFile("", "cache.json")
+func TestInMemoryStore_Set(t *testing.T) {
+	s := persist.NewInMemoryStore()
+
+	s.Set("key", float64(100))
+
+	v, _, err := s.Get("key")
+
 	assert.NoError(t, err)
-	defer os.Remove(file.Name())
-
-	dc, err := persist.NewFileStore(file.Name(), log.Discard)
-
-	assert.NoError(t, err)
-
-	dc.Set("key", float64(100))
-	v, ts, ok := dc.Get("key")
-	assert.True(t, ok)
-	assert.InDelta(t, float64(100), v, 0.1)
-	assert.NotEqual(t, 0, ts)
+	assert.Equal(t, float64(100), v)
 }
 
-func TestStorerGet(t *testing.T) {
-	file, err := ioutil.TempFile("", "cache.json")
+func TestInMemoryStore_Get(t *testing.T) {
+	dc := persist.NewInMemoryStore()
+
+	setValue := float64(100)
+	dc.Set("key1", setValue)
+
+	v, ts, err := dc.Get("key1")
+
 	assert.NoError(t, err)
-	defer os.Remove(file.Name())
+	assert.Equal(t, setValue, v)
+	assert.NotEqual(t, 0, ts)
 
-	dc, err := persist.NewFileStore(file.Name(), log.Discard)
+	v, _, err = dc.Get("key2")
 
-	assert.NoError(t, err)
-
-	dc.Set("key1", float64(100))
-
-	value, ts, exists := dc.Get("key1")
-
-	if value != float64(100) {
-		t.Error()
-	}
-	if ts == int64(0) {
-		t.Error()
-	}
-	if !exists {
-		t.Error()
-	}
-
-	value, ts, exists = dc.Get("key2")
-
-	if value != float64(0) {
-		t.Error()
-	}
-	if ts != int64(0) {
-		t.Error()
-	}
-	if exists {
-		t.Error()
-	}
+	assert.Equal(t, persist.ErrNotFound, err)
+	assert.Equal(t, nil, v)
 }
 
 func TestStorerSave(t *testing.T) {
@@ -124,15 +100,13 @@ func TestStorerSave(t *testing.T) {
 	dc, err = persist.NewFileStore(file.Name(), log.Discard)
 	assert.NoError(t, err)
 
-	value, ts, exists := dc.Get("key1")
-
-	assert.True(t, exists)
+	value, ts, err := dc.Get("key1")
+	assert.NoError(t, err)
 	assert.InDelta(t, float64(100), value, 0.1)
 	assert.NotEqual(t, 0, ts)
 
-	value, ts, exists = dc.Get("key2")
-
-	assert.True(t, exists)
+	value, ts, err = dc.Get("key2")
+	assert.NoError(t, err)
 	assert.InDelta(t, float64(200), value, 0.1)
 	assert.NotEqual(t, 0, ts)
 }
@@ -163,8 +137,8 @@ func TestNewFileStoreIsNotPopulatedWhenModTimeGreaterThanTTL(t *testing.T) {
 	dc, err = persist.NewFileStore(file.Name(), log.Discard)
 	assert.NoError(t, err)
 
-	_, _, exists := dc.Get("key1")
-	assert.False(t, exists)
+	_, _, err = dc.Get("key1")
+	assert.Equal(t, persist.ErrNotFound, err)
 }
 
 func TestSetNow(t *testing.T) {
@@ -177,4 +151,18 @@ func TestSetNow(t *testing.T) {
 func TestInMemoryStore_SaveDoesNothing(t *testing.T) {
 	s := persist.NewInMemoryStore()
 	assert.NoError(t, s.Save())
+}
+
+func TestInMemoryStore_Delete(t *testing.T) {
+	s := persist.NewInMemoryStore()
+
+	_ = s.Set("key", 1)
+
+	_, _, err := s.Get("key")
+	assert.NoError(t, err)
+
+	s.Delete("key")
+
+	_, _, err = s.Get("key")
+	assert.Equal(t, persist.ErrNotFound, err)
 }

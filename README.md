@@ -58,8 +58,23 @@ This `stdout` data is formatted as JSON.
 
 Agent supports 2 different data-structures called *protocols*:
 
-* v1: Legacy data structure to monitorize current host.
+* v1: Legacy data structure to monitorize local entity.
 * v2: Latest data structure to monitorize also remote entities.
+
+
+#### Local Entity vs Remote Entities
+
+`Entity` is a specific thing we collect data about.
+
+We used this vague term because we want to support hosts, pods, load balancers, DBs, etc. in a generic way.
+
+In the previous SDK versions (v1 & v2) the entity was local and just one, the host.
+
+In later versions the host reporting is called **local entity**, and it's optional to add metrics to it. You could just use **remote entities** to attach metrics.
+
+An entity can have its own `inventory` (configuration/state) and report any kind of `metrics` about itself.
+
+Although we may define a new `entity` for each monitored thing, we may want to relate/group some of them within a **parent (local) entity** (ie: *host it's running on*).
 
 #### SDK & agent-protocol compatibility 
 

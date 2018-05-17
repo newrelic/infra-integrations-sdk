@@ -2,6 +2,7 @@ package persist
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	"github.com/newrelic/infra-integrations-sdk/log"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -23,18 +23,25 @@ var (
 	now = time.Now
 )
 
+// Errors
+var (
+	ErrNotFound   = errors.New("key not found")
+	ErrTsNotFound = errors.New("timestamp for key not found")
+)
+
 // Storer is a key-value structure that is initialized and stored in a persistent device.
 // It also saves the timestamp when a key was stored.
 type Storer interface {
-	// Save persists all the data in the Storer.
+	// Set sets the value under the given key, storing the current timestamp that is also returned.
+	// This method does not persist until Save is called.
+	Set(key string, value interface{}) int64
+	// Get returns the value for a given key. Last Set call timestamp is returned.
+	// If key is not found ErrNotFound error is returned.
+	Get(key string) (value interface{}, timestamp int64, err error)
+	// Delete removes the cached data for the given key
+	Delete(key string)
+	// Save persists all in-memory stored data.
 	Save() error
-	// Get looks for a key in the Storer and returns its value together with the
-	// timestamp of when it was last set. The third returned value indicates whether
-	// the key has been found or not.
-	Get(name string) (float64, int64, bool)
-	// Set adds a value into the Storer and with the current timestamp. The data is not persisted until the Save()
-	// function is invoked.
-	Set(name string, value float64) int64
 }
 
 type inMemoryStore struct {
@@ -91,7 +98,7 @@ func NewFileStore(storePath string, l log.Logger) (Storer, error) {
 	// Store file doesn't exist yet
 	if err != nil {
 		if _, err = os.OpenFile(store.path, os.O_CREATE|os.O_WRONLY, filePerm); err != nil {
-			return nil, errors.Errorf("store directory not writable: %s", storeDir)
+			return nil, fmt.Errorf("store directory not writable: %s", storeDir)
 		}
 		return store, nil
 	}
@@ -134,22 +141,29 @@ func (c *inMemoryStore) Save() error {
 	return nil
 }
 
-// Get looks for a key in the store and returns its value together with the
-// timestamp of when it was last set. The third returned value indicates whether
-// the key has been found or not.
-func (c *inMemoryStore) Get(name string) (float64, int64, bool) {
-	val, ok := c.Data[name]
-	if ok {
-		ts, ok := c.Timestamps[name]
-		if ok {
-			return val.(float64), int64(ts), ok
+// Get returns the value for a given key. Last Set call timestamp is returned.
+// If key is not found ErrNotFound error is returned.
+func (c *inMemoryStore) Get(key string) (value interface{}, timestamp int64, err error) {
+	var ok bool
+	if value, ok = c.Data[key]; ok {
+		if timestamp, ok = c.Timestamps[key]; !ok {
+			err = ErrTsNotFound
 		}
+		return
 	}
-	return 0, 0, false
+
+	err = ErrNotFound
+	return
+}
+
+// Delete removes the key entry
+func (c *inMemoryStore) Delete(name string) {
+	delete(c.Data, name)
+	delete(c.Timestamps, name)
 }
 
 // Set adds a value into the store and it also stores the current timestamp.
-func (c *inMemoryStore) Set(name string, value float64) int64 {
+func (c *inMemoryStore) Set(name string, value interface{}) int64 {
 	c.Data[name] = value
 	c.Timestamps[name] = now().Unix()
 	return c.Timestamps[name]

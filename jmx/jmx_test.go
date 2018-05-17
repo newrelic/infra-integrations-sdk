@@ -12,6 +12,11 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/jmx"
 )
 
+const (
+	timeout      = 1000
+	openAttempts = 5
+)
+
 func TestMain(m *testing.M) {
 	var testType string
 	flag.StringVar(&testType, "test.type", "", "")
@@ -48,13 +53,11 @@ func TestMain(m *testing.M) {
 	}
 }
 
-const timeout = 1000
-
 func TestJmxOpen(t *testing.T) {
 	defer jmx.Close()
 
-	if jmx.Open("", "", "", "") != nil {
-		t.Error()
+	if err := jmx.Open("", "", "", ""); err != nil {
+		t.Error(err)
 	}
 
 	if jmx.Open("", "", "", "") == nil {
@@ -65,8 +68,8 @@ func TestJmxOpen(t *testing.T) {
 func TestJmxQuery(t *testing.T) {
 	defer jmx.Close()
 
-	if jmx.Open("", "", "", "") != nil {
-		t.Error()
+	if err := openWait("", "", "", "", openAttempts); err != nil {
+		t.Error(err)
 	}
 
 	if _, err := jmx.Query("empty", timeout); err != nil {
@@ -77,8 +80,8 @@ func TestJmxQuery(t *testing.T) {
 func TestJmxCrashQuery(t *testing.T) {
 	defer jmx.Close()
 
-	if jmx.Open("", "", "", "") != nil {
-		t.Error()
+	if err := openWait("", "", "", "", openAttempts); err != nil {
+		t.Error(err)
 	}
 
 	if _, err := jmx.Query("crash", timeout); err == nil {
@@ -89,8 +92,8 @@ func TestJmxCrashQuery(t *testing.T) {
 func TestJmxInvalidQuery(t *testing.T) {
 	defer jmx.Close()
 
-	if jmx.Open("", "", "", "") != nil {
-		t.Error()
+	if err := openWait("", "", "", "", openAttempts); err != nil {
+		t.Error(err)
 	}
 
 	if _, err := jmx.Query("invalid", timeout); err == nil {
@@ -101,8 +104,8 @@ func TestJmxInvalidQuery(t *testing.T) {
 func TestJmxTimeoutQuery(t *testing.T) {
 	defer jmx.Close()
 
-	if jmx.Open("", "", "", "") != nil {
-		t.Error()
+	if err := openWait("", "", "", "", openAttempts); err != nil {
+		t.Error(err)
 	}
 
 	if _, err := jmx.Query("timeout", timeout); err == nil {
@@ -117,8 +120,8 @@ func TestJmxTimeoutQuery(t *testing.T) {
 func TestJmxNoTimeoutQuery(t *testing.T) {
 	defer jmx.Close()
 
-	if jmx.Open("", "", "", "") != nil {
-		t.Error()
+	if err := openWait("", "", "", "", openAttempts); err != nil {
+		t.Error(err)
 	}
 
 	if _, err := jmx.Query("timeout", 1500); err != nil {
@@ -129,8 +132,8 @@ func TestJmxNoTimeoutQuery(t *testing.T) {
 func TestJmxTimeoutBigQuery(t *testing.T) {
 	defer jmx.Close()
 
-	if jmx.Open("", "", "", "") != nil {
-		t.Error()
+	if err := openWait("", "", "", "", openAttempts); err != nil {
+		t.Error(err)
 	}
 
 	if _, err := jmx.Query("bigPayload", timeout); err != nil {
@@ -140,4 +143,17 @@ func TestJmxTimeoutBigQuery(t *testing.T) {
 	if _, err := jmx.Query("bigPayloadError", timeout); err == nil {
 		t.Error()
 	}
+}
+
+// tests can overlap, and as jmx-cmd is a singleton, waiting for it to be closed is mandatory
+func openWait(hostname, port, username, password string, attempts int) error {
+	err := jmx.Open(hostname, port, username, password)
+	if err == jmx.ErrJmxCmdRunning && attempts > 0 {
+		attempts--
+		time.Sleep(10 * time.Millisecond)
+
+		return openWait(hostname, port, username, password, attempts)
+	}
+
+	return err
 }
