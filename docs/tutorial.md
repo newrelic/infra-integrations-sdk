@@ -9,6 +9,29 @@ For a simple overview of what Infrastructure integrations are and how they work,
 
 This tutorial is compatible with `nr-integration-builder` v1.0.x and `Integration Golang SDK` v1.0.x.
 
+## Best Practices
+
+New Relic infrastructure integrations provide several ways of monitoring entities:
+
+- **Metrics**: Data that with high change ratio, usually with numeric values.
+- **Events**: Event is a record of something happened an at a particular moment in time.
+- **Inventory**: Detailed information on key-value format about an entity context, usually it does not change a frequently.
+ 
+
+Use cases for **metric** entries:
+* Resource consumption: IE memory/cpu usage, are already current infrastructure agent metrics.
+* Clicks on a site/link: Counters are another great use of a metric.
+
+Use cases for **events** entries:
+* Errors: error reporting could be sent as events.
+* Deployment start/end: deployments on start and end could be seen as 2 events.
+
+Use cases for **inventory** entries:
+* OS context: version, packages, services... So you can quickly identify which hosts require an update to fix a security vulnerability.
+* App version: Ensure a version update was applied successfully across all your hosts.
+* API version: Audit version discrepancies across your hosts.
+
+
 ## Prerequisites
 To successfully complete this tutorial you must:
 * Be familiar with Golang
