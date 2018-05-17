@@ -9,6 +9,29 @@ For a simple overview of what Infrastructure integrations are and how they work,
 
 This tutorial is compatible with `nr-integration-builder` v1.0.x and `Integration Golang SDK` v1.0.x.
 
+## Best Practices
+
+New Relic infrastructure integrations provide several ways of monitoring entities:
+
+- **Metrics**: Data that with high change ratio, usually with numeric values.
+- **Events**: Event is a record of something happened an at a particular moment in time.
+- **Inventory**: Detailed information on key-value format about an entity context, usually it does not change a frequently.
+ 
+
+Use cases for **metric** entries:
+* Resource consumption: IE memory/cpu usage, are already current infrastructure agent metrics.
+* Clicks on a site/link: Counters are another great use of a metric.
+
+Use cases for **events** entries:
+* Errors: error reporting could be sent as events.
+* Deployment start/end: deployments on start and end could be seen as 2 events.
+
+Use cases for **inventory** entries:
+* OS context: version, packages, services... So you can quickly identify which hosts require an update to fix a security vulnerability.
+* App version: Ensure a version update was applied successfully across all your hosts.
+* API version: Audit version discrepancies across your hosts.
+
+
 ## Prerequisites
 To successfully complete this tutorial you must:
 * Be familiar with Golang
@@ -42,7 +65,7 @@ $ $GOPATH/bin/nr-integrations-builder --help
 
 This tutorial assumes that your `$GOBIN` or `$GOPATH/bin` has been added to your `$PATH` environment variable.
 
-**Step 3: Check govendor tool**
+**Step 2: Check govendor tool**
 
 Before initializing the integration with `nr-integrations-builder` you have to check that the `govendor` tool (used for managing dependencies) is successfully installed. Run the following command:
 ```bash
@@ -50,7 +73,7 @@ $ govendor
 ```
 You should receive the description about the `govendor` tool with the list of accepted commands. More information about the usage can be found in the [README.md](https://github.com/kardianos/govendor/blob/master/README.md).
 
-**Step 4: Initialize the integration**
+**Step 3: Initialize the integration**
 
 To see the list of the parameters that you can specify for `nr-integrations-builder`, type
 ```bash
@@ -119,7 +142,7 @@ $ make
 $ ./bin/myorg-redis -pretty
 ```
 The following JSON payload will be printed to stdout:
-```bash
+```json
 {
 	"name": "com.myorganization.redis",
 	"protocol_version": "1",
@@ -154,7 +177,7 @@ func main() {
 }
 ```
 you will receive the following output:
-```bash
+```json
 {
 	"name": "com.myorganization.redis",
 	"protocol_version": "1",
@@ -191,7 +214,7 @@ func main() {
 ```
 
 After building, formatting the source code and executing the integration the following output is returned:
-```bash
+```json
 {
 	"name": "com.myorganization.redis",
 	"protocol_version": "1",
@@ -224,7 +247,7 @@ func populateMetrics(ms *metric.MetricSet) error {
 }
 ```
 and build, format Go source code (using `gofmt` tool) and execute the integration. You will receive the following output:
-```bash
+```json
 {
 	"name": "com.myorganization.redis",
 	"protocol_version": "1",
@@ -296,7 +319,7 @@ import (
 
 After building, formatting the source code, and executing the integration, you should receive:
 
-```bash
+```json
 {
 	"name": "com.myorganization.redis",
 	"protocol_version": "1",
@@ -354,7 +377,7 @@ func populateMetrics(ms *metric.MetricSet) error {
 
 Build, format the source code, and execute the integration, and then check the output (note: your metric values may vary.)
 
-```bash
+```json
 {
 	"name": "com.myorganization.redis",
 	"protocol_version": "1",
@@ -376,8 +399,11 @@ The calculations for a given metric source type are handled by `SetMetric`; the 
 
 This method of fetching data, shown above is not very efficient. You will want to fetch a set of data all at once, but this example just shows how to use the `SetMetric` function and the source types.
 
-### Configuration of the integration (for metrics)
-Let's look now at the definition file of the redis integration. In the file _myorg-redis-definition.yml_ under _command_ you can specify common arguments for all instances (that you will define in the config file) that you want to monitor. In this case we have just one common argument: `--metrics`.  
+### Definition file
+Let's look now at the definition file of the redis integration. In the file _myorg-redis-definition.yml_ under _command_ you can specify common arguments for all instances (that you will define in the config file) that you want to monitor.  
+
+The schema that will contain the different data types is:
+
 ```yml
 name: com.myorganization.redis
 description: Reports status and metrics for redis service
@@ -386,12 +412,24 @@ os: linux
 
 commands:
   metrics:
+    # ...
+  inventory:
+    # ...
+  events:
+    # ...
+```
+
+### Configuration of the integration (for metrics)
+In this case we have just one common argument: `--metrics`.
+
+[Definition file](#Definition-file) will contain the `metrics` section:
+
+```yml
+  metrics:
     command:
       - ./bin/myorg-redis
       - --metrics
     interval: 15
-
-  # configuration for the inventory omitted
 ```
 
 
@@ -470,7 +508,7 @@ Let's assume that we want to collect configuration information for Redis. For ex
 redis-cli CONFIG GET dbfilename
 ```
 gives the following result
-```bash
+```
 1) "dbfilename"
 2) "dump.rdb"
 ```
@@ -498,7 +536,7 @@ After building, formatting the source code and executing the integration (with j
 $ ./bin/myorg-redis -pretty -inventory
 ```
 we receive
-```bash
+```json
 {
 	"name": "com.myorganization.redis",
 	"protocol_version": "1",
@@ -518,7 +556,7 @@ Let's extend our `populateInventory` function in order to collect the bind confi
 redis-cli CONFIG GET bind
 ```
 we get
-```bash
+```
 1) "bind"
 2) "127.0.0.1"
 ```
@@ -554,7 +592,7 @@ Finally, build, format the source code and execute the integration to fetch all 
 $ go fmt src/redis.go
 $ ./bin/myorg-redis -pretty
 ```
-```bash
+```json
 {
 	"name": "com.myorganization.redis",
 	"protocol_version": "1",
@@ -581,19 +619,8 @@ $ ./bin/myorg-redis -pretty
 ### Configuration of the integration (for inventory)
 In the [definition file](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/file-specifications/integration-definition-file-specifications), `myorg-redis-definition.yml`, we want to increase the `interval` value for the inventory. This is because the changes in the inventory data are not as frequent as in metrics data.
 
+[Definition file](#Definition-file) will contain the `inventory` section:
 ```yml
-name: com.myorganization.redis
-description: Reports status and metrics for redis service
-protocol_version: 1
-os: linux
-
-commands:
-  metrics:
-    command:
-      - ./bin/myorg-redis
-      - --metrics
-    interval: 15
-
   inventory:
     command:
       - ./bin/myorg-redis
@@ -674,6 +701,15 @@ In config file:
     arguments:
       label_name: "example-name"
 ```
+
+DefaultArgumentList can't be used directly. 
+It must be used embedded into another structure even if there are no extra arguments. As shown below:
+
+```go
+type argumentList struct {
+		sdk_args.DefaultArgumentList
+	}
+``` 
 
 To finish the inventory configuration place the executable and the definition file in `/var/db/newrelic-infra/custom-integrations/`
 
@@ -770,7 +806,7 @@ $ ./bin/myorg-redis -pretty -events
 
 If Redis server was recently started, you will receive the following output:
 
-```bash
+```json
 {
 	"name": "com.myorg.redis",
 	"protocol_version": "1",
@@ -786,7 +822,7 @@ If Redis server was recently started, you will receive the following output:
 }
 ``` 
 Otherwise, `events` list will be empty:
-```bash
+```json
 {
 	"name": "com.myorg.redis",
 	"protocol_version": "1",
@@ -835,7 +871,7 @@ $ ./bin/myorg-redis -pretty
 ```
 check that the integration was created properly (this output assume that your Redis server was started in the latest 60 seconds.).
 
-```bash
+```json
 {
 	"name": "com.myorg.redis",
 	"protocol_version": "1",
@@ -873,36 +909,18 @@ As you can see in the output above, there was a second event created, with a new
 ### Configuration of the integration (for events)
 To test the integration with the Infrastucture Agent, it's required to update [the config file](tutorial-code/myorg-redis-config.yml) and [the definition file](tutorial-code/myorg-redis-definition.yml). Let's start with the definition file by adding the `events` command. 
 
-```bash
-name: com.myorganization.redis
-description: Reports status and metrics for redis service
-protocol_version: 1
-os: linux
-
-commands:
-  metrics:
-    command:
-      - ./bin/myorg-redis
-      - --metrics
-    interval: 15
-
-  inventory:
-    command:
-      - ./bin/myorg-redis
-      - --inventory
-    prefix: config/myorg-redis
-    interval: 60
-
+[Definition file](#Definition-file) will contain the `events` section:
+```yaml
   events:
     command:
       - ./bin/myorg-redis
       - --events
-    interval: 60    
+    interval: 60
 ```
 
 Then we will use the `events` command in the `myorg-redis-config.yml` file specifying a new `redis-events` instance. 
 
-```bash
+```yaml
 integration_name: com.myorganization.redis
 
 instances:
@@ -925,7 +943,7 @@ instances:
     command: events
     labels:
       env: production
-      role: cache      
+      role: cache
 ```
 
 In order to finish the events configuration, place the executable and the updated definition file in `/var/db/newrelic-infra/custom-integrations/`
