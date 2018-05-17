@@ -679,6 +679,15 @@ In config file:
       label_name: "example-name"
 ```
 
+DefaultArgumentList can't be used directly. 
+It must be used embedded into another structure even if there are no extra arguments. As shown below:
+
+```go
+type argumentList struct {
+		sdk_args.DefaultArgumentList
+	}
+``` 
+
 To finish the inventory configuration place the executable and the definition file in `/var/db/newrelic-infra/custom-integrations/`
 
 ```bash
