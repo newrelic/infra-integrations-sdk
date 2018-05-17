@@ -12,12 +12,12 @@ import (
 
 // Entity is the producer of the data. Entity could be a host, a container, a pod, or whatever unit of meaning.
 type Entity struct {
-	lock      sync.Mutex
 	Metadata  *EntityMetadata      `json:"entity,omitempty"`
 	Metrics   []*metric.Set        `json:"metrics"`
 	Inventory *inventory.Inventory `json:"inventory"`
 	Events    []*event.Event       `json:"events"`
 	storer    persist.Storer
+	lock      sync.Locker
 }
 
 // EntityMetadata stores entity Metadata
@@ -27,18 +27,27 @@ type EntityMetadata struct {
 }
 
 // newLocalEntity creates unique default entity without identifier (name & type)
-func newLocalEntity(storer persist.Storer) *Entity {
+func newLocalEntity(storer persist.Storer, synchronized bool) *Entity {
 	return &Entity{
 		// empty array or object preferred instead of null on marshaling.
 		Metrics:   []*metric.Set{},
 		Inventory: inventory.New(),
 		Events:    []*event.Event{},
 		storer:    storer,
+		lock:      newLocker(synchronized),
 	}
 }
 
+func newLocker(synchronized bool) sync.Locker {
+	if synchronized {
+		return &sync.Mutex{}
+	}
+
+	return DisabledLocker
+}
+
 // newEntity creates a new remote-entity.
-func newEntity(name, namespace string, storer persist.Storer) (*Entity, error) {
+func newEntity(name, namespace string, storer persist.Storer, synchronized bool) (*Entity, error) {
 	// If one of the attributes is defined, both Name and Namespace are needed.
 	if name == "" && namespace != "" || name != "" && namespace == "" {
 		return nil, errors.New("entity name and type are required when defining one")
@@ -50,6 +59,7 @@ func newEntity(name, namespace string, storer persist.Storer) (*Entity, error) {
 		Inventory: inventory.New(),
 		Events:    []*event.Event{},
 		storer:    storer,
+		lock:      newLocker(synchronized),
 	}
 
 	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.

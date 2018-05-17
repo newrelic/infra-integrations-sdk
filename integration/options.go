@@ -11,6 +11,11 @@ import (
 // Option sets an option on integration level.
 type Option func(*Integration) error
 
+var (
+	// DisabledLocker just a NOOP locker.
+	DisabledLocker = disabledLocker{}
+)
+
 type disabledLocker struct{}
 
 func (disabledLocker) Lock()   {}
