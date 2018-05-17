@@ -1,6 +1,7 @@
 package http
 
 import (
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -10,48 +11,86 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-
-var rootPem = `-----BEGIN CERTIFICATE-----
-MIIEBDCCAuygAwIBAgIDAjppMA0GCSqGSIb3DQEBBQUAMEIxCzAJBgNVBAYTAlVT
-MRYwFAYDVQQKEw1HZW9UcnVzdCBJbmMuMRswGQYDVQQDExJHZW9UcnVzdCBHbG9i
-YWwgQ0EwHhcNMTMwNDA1MTUxNTU1WhcNMTUwNDA0MTUxNTU1WjBJMQswCQYDVQQG
-EwJVUzETMBEGA1UEChMKR29vZ2xlIEluYzElMCMGA1UEAxMcR29vZ2xlIEludGVy
-bmV0IEF1dGhvcml0eSBHMjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
-AJwqBHdc2FCROgajguDYUEi8iT/xGXAaiEZ+4I/F8YnOIe5a/mENtzJEiaB0C1NP
-VaTOgmKV7utZX8bhBYASxF6UP7xbSDj0U/ck5vuR6RXEz/RTDfRK/J9U3n2+oGtv
-h8DQUB8oMANA2ghzUWx//zo8pzcGjr1LEQTrfSTe5vn8MXH7lNVg8y5Kr0LSy+rE
-ahqyzFPdFUuLH8gZYR/Nnag+YyuENWllhMgZxUYi+FOVvuOAShDGKuy6lyARxzmZ
-EASg8GF6lSWMTlJ14rbtCMoU/M4iarNOz0YDl5cDfsCx3nuvRTPPuj5xt970JSXC
-DTWJnZ37DhF5iR43xa+OcmkCAwEAAaOB+zCB+DAfBgNVHSMEGDAWgBTAephojYn7
-qwVkDBF9qn1luMrMTjAdBgNVHQ4EFgQUSt0GFhu89mi1dvWBtrtiGrpagS8wEgYD
-VR0TAQH/BAgwBgEB/wIBADAOBgNVHQ8BAf8EBAMCAQYwOgYDVR0fBDMwMTAvoC2g
-K4YpaHR0cDovL2NybC5nZW90cnVzdC5jb20vY3Jscy9ndGdsb2JhbC5jcmwwPQYI
-KwYBBQUHAQEEMTAvMC0GCCsGAQUFBzABhiFodHRwOi8vZ3RnbG9iYWwtb2NzcC5n
-ZW90cnVzdC5jb20wFwYDVR0gBBAwDjAMBgorBgEEAdZ5AgUBMA0GCSqGSIb3DQEB
-BQUAA4IBAQA21waAESetKhSbOHezI6B1WLuxfoNCunLaHtiONgaX4PCVOzf9G0JY
-/iLIa704XtE7JW4S615ndkZAkNoUyHgN7ZVm2o6Gb4ChulYylYbc3GrKBIxbf/a/
-zG+FA1jDaFETzf3I93k9mTXwVqO94FntT0QJo544evZG0R0SnU++0ED8Vf4GXjza
-HFa9llF7b1cq26KqltyMdMKVvvBulRP/F/A8rLIQjcxz++iPAsbw+zOzlTvjwsto
-WHPbqCRiOwY1nQ2pM714A5AuTHhdUDqB1O6gyHA43LL5Z/qHQF1hwFGPa4NrzQU6
-yuGnBXj8ytqU0CwIPX4WecigUCAkVDNx
+var caCert = `-----BEGIN CERTIFICATE-----
+MIIDgjCCAmoCCQDtqmB4gHIHFTANBgkqhkiG9w0BAQsFADCBgjELMAkGA1UEBhMC
+RVMxDDAKBgNVBAgMA0NBVDEMMAoGA1UEBwwDYmNuMRIwEAYDVQQKDAlOZXcgcmVs
+aWMxDTALBgNVBAsMBG9oYWkxEjAQBgNVBAMMCWxvY2FsaG9zdDEgMB4GCSqGSIb3
+DQEJARYRb2hhaUBuZXdyZWxpYy5jb20wHhcNMTgwNTE3MTAxMjUwWhcNMjgwNTE0
+MTAxMjUwWjCBgjELMAkGA1UEBhMCRVMxDDAKBgNVBAgMA0NBVDEMMAoGA1UEBwwD
+YmNuMRIwEAYDVQQKDAlOZXcgcmVsaWMxDTALBgNVBAsMBG9oYWkxEjAQBgNVBAMM
+CWxvY2FsaG9zdDEgMB4GCSqGSIb3DQEJARYRb2hhaUBuZXdyZWxpYy5jb20wggEi
+MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC8xxoKmMJAjPESMWvEaOn/A5HG
+b6ZdwM0MNAQL6b2UpGd1oe8ARcrJkMxD0pttYJFKCLYiTVZISfF/xqJuhQeuaPpH
+gU+lDoGNb/HF3Q8YlUfmuZktw45t3biZKRLUDals/EYZBrwPO+8up4/2Hp888gIt
+5bxUCVv32eKOwuLjFREwtDDCIZl95ZlzDEyeB0TzvssWFtwj8do3WZ0O3OnmdiKn
+C/AqURj6KZmKgWFzELjde+W261N26oCciscgqu565QHo9ZJcAa0IXkTxVgFT+1d5
+aUhhFv4oVs64gyAsxGv9EoTdlc2COm5ISqzy6tjVtzsXqaXM0cl7VGTow03ZAgMB
+AAEwDQYJKoZIhvcNAQELBQADggEBAIaDnxJwXKe4riMT19LygsVoYExX+tKC6Z/J
+37iosZLzu6bzNhvsCSuqDdvCQQkuumlNQgd9XkxtieOMVyrt0MBY7aYdg+dXJXqv
+1Ft40590w0Yg6HoAnA2eMvV7D9G1ss6q7VjOae/zxh9UJCsYrVdTU/xYrfyN5HEa
+jH7a0BjznBqRSSYub49syKq4EL1oeCF0SMjxuACpriAJ/iAxYibVfO1O2x+AZb6Q
+1iFUtU70nOEUrGM0EZ1wZF7atJVgsmdGpsh6kyfsSIZQ5aoNIZHmDVWTfiYcygQd
+47Yd5b55SMXDYHGr9ZtRFGKj4IMXqs7R46arQpT4VCPeeSGJhdA=
 -----END CERTIFICATE-----`
 
-func HelloServer(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("This is an example server.\n"))
-	// fmt.Fprintf(w, "This is an example server.\n")
-	// io.WriteString(w, "This is an example server.\n")
+var privateKey = `-----BEGIN RSA PRIVATE KEY-----
+MIIEpAIBAAKCAQEAvMcaCpjCQIzxEjFrxGjp/wORxm+mXcDNDDQEC+m9lKRndaHv
+AEXKyZDMQ9KbbWCRSgi2Ik1WSEnxf8aiboUHrmj6R4FPpQ6BjW/xxd0PGJVH5rmZ
+LcOObd24mSkS1A2pbPxGGQa8DzvvLqeP9h6fPPICLeW8VAlb99nijsLi4xURMLQw
+wiGZfeWZcwxMngdE877LFhbcI/HaN1mdDtzp5nYipwvwKlEY+imZioFhcxC43Xvl
+tutTduqAnIrHIKrueuUB6PWSXAGtCF5E8VYBU/tXeWlIYRb+KFbOuIMgLMRr/RKE
+3ZXNgjpuSEqs8urY1bc7F6mlzNHJe1Rk6MNN2QIDAQABAoIBAQCd4nepPTHaAwbs
+jGDxmD18h2O4b1DZQJM+DZME0603UHknLRRTSgvcoTn1z4Mm64kYPkj2T3BGbXGJ
+yHu5q5FNEYehnkkaZxN7U5EGR2iEyvWjxr6SQ+gvgy0NDAkvSW3WNPf7nmJS63GT
+t5jz45CSzGV+NZJZRqqglJ6jf+N6v4grEZEcIjVuOL5NppVCJE7mpOqAQlJG0kqu
+sb41VoHEfy2DHuHX3fby3LaCl+EpHbZG+zbEksEO08mbcPKj8qfg81QyQFzuUIkH
++E2tcVKhoR834fQ+n2MzI/4yR4pkNFghdjCwK3nn+3UUt7agKzo/VmEF6sCt6y29
+TnshnhIBAoGBAN7eLRpZ91znRNp6fmdbT0vQIpAtoGtvqyp6YZmR0ho8mxvBLROJ
+QIhI5Mc/cwPeOCwX2tzRjUmQjfRfl275NYi3tWQVJpSTGZdR8jYn6zt1ZA5H/VJj
+RJMrp4qksapCXPT0nv3Q7SRIhwT3V2TbJ0ssmDwahsSdtcDDguvjgR4xAoGBANjX
+iSRHmvm5LfYIzbMm6ZZ78JfFX7rPfkIunBM5F6GZJkAJGmDZCXi4M5JPePwv8xAC
+lOIc8HX8m53IvIC6MzBtU7k5/yhPsM7GRuQ4j6trrcs3IgkU87gwKEz1nrLIbWxI
+S6/4hNG2P2QVnMlt3FoRSgmsbk46W1SVYt99tvgpAoGBAINxDbDI9rb4PweLzxku
+JSpVas0V29MBXTYET6O++Oc4b1KDMA6hmEnIlAVfSnoxiXeX6iDqBiYo90/1QN7W
+Y9hqYLTSNJrT1vgEAJIoIPhEV+qEUsdQfJU/3eRLFe2Qjjp6O3r+yZ3omJk5N3Xo
+Oth/SJnKG0nCqfsyU/jDiNdBAoGAT+2auom+YUBV5bO3BstYHMUQmRECyVxEYObH
+VvqbcFCAXeg9FefKavoS4GJ06RhPkt4wvOwH4qW7QrzEZvq7daVG0CbFm7lMJdvG
+M8d5halKRXbMD+buMz1lDYEX/zSLyPcZFwMXCioQUbb5tPHO4FAxJ0Gs4x71nUb3
+TAQN1okCgYA+Oi0KYss+6kVfmin27Loo08UrGQwAgRPcHPeKHVBt1yCQD2QKBEkw
+r8q6iHv2b4jEsEWM2+V/ratUvN9ji/WKxhbQAARIW58n11kAJsE48hwpPBGPTnFX
+x4W9xFO4kHze4qDxeIBh2OlyUqA9eUptrkkzie5CSlYE2A7JqkB43g==
+-----END RSA PRIVATE KEY-----`
+
+func startHTTPServer(file, keyFile string) *http.Server {
+	srv := &http.Server{Addr: "localhost:8080"}
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "hello\n")
+	})
+	go func() {
+		if err := srv.ListenAndServeTLS(file, keyFile); err != nil {
+			// cannot panic, because this probably is an intentional close
+			log.Printf("Httpserver: ListenAndServe() error: %s", err)
+		}
+	}()
+
+	// returning reference so caller can call Shutdown()
+	return srv
 }
 
 func TestClient_NewWithCert(t *testing.T) {
 
 	file, err := ioutil.TempFile("/tmp/", "ca.pem")
-	file.WriteString(rootPem)
+	file.WriteString(caCert)
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
+	keyFile, err := ioutil.TempFile("/tmp/", "key.pem")
+	keyFile.WriteString(privateKey)
+	assert.NoError(t, err)
+	defer os.Remove(keyFile.Name())
 
-	http.HandleFunc("/hello", HelloServer)
-	err = http.ListenAndServeTLS(":443", "/tmp/ca.pem", "", nil)
+	srv := startHTTPServer(file.Name(), keyFile.Name())
+
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
@@ -61,13 +100,18 @@ func TestClient_NewWithCert(t *testing.T) {
 		"/tmp/",
 	}
 	client := c.NewWithCert()
-	resp, err := client.Get("https://google.com")
-	//defer resp.Body.Close()
+	resp, err := client.Get("https://localhost:8080")
+	// defer resp.Body.Close()
 	if err != nil {
 		log.Println(err)
 		return
 	}
+
 	_, err = ioutil.ReadAll(resp.Body)
+
+	if err := srv.Shutdown(nil); err != nil {
+		panic(err) // failure/timeout shutting down the server gracefully
+	}
 
 	assert.Equal(t, c.CABundleFile, "ca.pem")
 	assert.Equal(t, c.CABundleDir, "/tmp/")
