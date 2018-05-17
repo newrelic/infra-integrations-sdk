@@ -2,7 +2,18 @@ package inventory
 
 import (
 	"encoding/json"
+	"errors"
 	"sync"
+)
+
+// Limits
+const (
+	MaxKeyLen = 512
+)
+
+// Errors
+var (
+	ErrTooLongKey = errors.New("too long inventory key")
 )
 
 // Items ...
@@ -24,7 +35,11 @@ func (i Inventory) MarshalJSON() ([]byte, error) {
 }
 
 // SetItem stores a value into the inventory data structure.
-func (i Inventory) SetItem(key string, field string, value interface{}) {
+func (i Inventory) SetItem(key string, field string, value interface{}) error {
+	if len(key) > MaxKeyLen {
+		return ErrTooLongKey
+	}
+
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
@@ -33,6 +48,8 @@ func (i Inventory) SetItem(key string, field string, value interface{}) {
 	} else {
 		i.items[key] = Item{field: value}
 	}
+
+	return nil
 }
 
 // Item returns stored item
