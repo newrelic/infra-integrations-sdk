@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/newrelic/infra-integrations-sdk/persist"
+	"github.com/pkg/errors"
 )
 
 // SourceType defines the kind of data source. Based on this SourceType, metric
@@ -94,12 +95,20 @@ func (ms *Set) sample(name string, value interface{}, sourceType SourceType) (fl
 	}
 
 	// Retrieve the last value and timestamp from Storer
-	oldval, oldTime, ok := ms.storer.Get(name)
+	oldValI, oldTime, err := ms.storer.Get(name)
+	var oldval float64
+	if err == nil {
+		oldval = oldValI.(float64)
+	} else if err == persist.ErrNotFound {
+		oldval = 0
+	} else {
+		return sampledValue, errors.Wrapf(err, "sample-key: %s", name)
+	}
 	// And replace it with the new value which we want to keep
 	newTime := ms.storer.Set(name, floatValue)
 
-	if ok {
-		duration := (newTime - oldTime)
+	if err == nil {
+		duration := newTime - oldTime
 		if duration == 0 {
 			return sampledValue, fmt.Errorf("samples for %s are too close in time, skipping sampling", name)
 		}

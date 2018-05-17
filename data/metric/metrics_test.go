@@ -82,8 +82,8 @@ func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 					tt.testCase, tt.key, sourceType, tt.value, ms.Metrics[tt.key], tt.out)
 			}
 
-			v, _, ok := storer.Get(key)
-			if !ok {
+			v, _, err := storer.Get(key)
+			if err == persist.ErrNotFound {
 				t.Errorf("key %s not in cache for case %s", tt.key, tt.testCase)
 			} else if tt.cache != v {
 				t.Errorf("cache.Get(\"%v\") ==> %v, want %v", tt.key, v, tt.cache)
@@ -128,20 +128,19 @@ func TestSet_SetMetric_IncorrectMetricType(t *testing.T) {
 }
 
 func TestSet_MarshalJSON(t *testing.T) {
-	storer := persist.NewInMemoryStore()
-
-	ms, err := NewSet("some-event-type", storer)
+	ms, err := NewSet("some-event-type", persist.NewInMemoryStore())
 	assert.NoError(t, err)
-	expectedOutputRaw := []byte(
-		`{"bar":0,"baz":1,"event_type":"some-event-type","foo":0,"quux":"bar"}`)
 
 	ms.SetMetric("foo", 1, RATE)
 	ms.SetMetric("bar", 1, DELTA)
 	ms.SetMetric("baz", 1, GAUGE)
 	ms.SetMetric("quux", "bar", ATTRIBUTE)
 
-	marshalled, err := ms.MarshalJSON()
+	marshaled, err := ms.MarshalJSON()
 
-	assert.Equal(t, marshalled, expectedOutputRaw)
-
+	assert.NoError(t, err)
+	assert.Equal(t,
+		`{"bar":0,"baz":1,"event_type":"some-event-type","foo":0,"quux":"bar"}`,
+		string(marshaled),
+	)
 }

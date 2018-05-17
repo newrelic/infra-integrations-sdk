@@ -24,6 +24,7 @@ func (i Inventory) MarshalJSON() ([]byte, error) {
 }
 
 // SetItem stores a value into the inventory data structure.
+// key should be at most 512 character length.
 func (i Inventory) SetItem(key string, field string, value interface{}) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
