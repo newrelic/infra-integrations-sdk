@@ -119,7 +119,7 @@ $ make
 $ ./bin/myorg-redis -pretty
 ```
 The following JSON payload will be printed to stdout:
-```bash
+```json
 {
 	"name": "com.myorganization.redis",
 	"protocol_version": "1",
@@ -154,7 +154,7 @@ func main() {
 }
 ```
 you will receive the following output:
-```bash
+```json
 {
 	"name": "com.myorganization.redis",
 	"protocol_version": "1",
@@ -191,7 +191,7 @@ func main() {
 ```
 
 After building, formatting the source code and executing the integration the following output is returned:
-```bash
+```json
 {
 	"name": "com.myorganization.redis",
 	"protocol_version": "1",
@@ -224,7 +224,7 @@ func populateMetrics(ms *metric.MetricSet) error {
 }
 ```
 and build, format Go source code (using `gofmt` tool) and execute the integration. You will receive the following output:
-```bash
+```json
 {
 	"name": "com.myorganization.redis",
 	"protocol_version": "1",
@@ -296,7 +296,7 @@ import (
 
 After building, formatting the source code, and executing the integration, you should receive:
 
-```bash
+```json
 {
 	"name": "com.myorganization.redis",
 	"protocol_version": "1",
@@ -354,7 +354,7 @@ func populateMetrics(ms *metric.MetricSet) error {
 
 Build, format the source code, and execute the integration, and then check the output (note: your metric values may vary.)
 
-```bash
+```json
 {
 	"name": "com.myorganization.redis",
 	"protocol_version": "1",
@@ -485,7 +485,7 @@ Let's assume that we want to collect configuration information for Redis. For ex
 redis-cli CONFIG GET dbfilename
 ```
 gives the following result
-```bash
+```
 1) "dbfilename"
 2) "dump.rdb"
 ```
@@ -513,7 +513,7 @@ After building, formatting the source code and executing the integration (with j
 $ ./bin/myorg-redis -pretty -inventory
 ```
 we receive
-```bash
+```json
 {
 	"name": "com.myorganization.redis",
 	"protocol_version": "1",
@@ -533,7 +533,7 @@ Let's extend our `populateInventory` function in order to collect the bind confi
 redis-cli CONFIG GET bind
 ```
 we get
-```bash
+```
 1) "bind"
 2) "127.0.0.1"
 ```
@@ -569,7 +569,7 @@ Finally, build, format the source code and execute the integration to fetch all 
 $ go fmt src/redis.go
 $ ./bin/myorg-redis -pretty
 ```
-```bash
+```json
 {
 	"name": "com.myorganization.redis",
 	"protocol_version": "1",
@@ -774,7 +774,7 @@ $ ./bin/myorg-redis -pretty -events
 
 If Redis server was recently started, you will receive the following output:
 
-```bash
+```json
 {
 	"name": "com.myorg.redis",
 	"protocol_version": "1",
@@ -790,7 +790,7 @@ If Redis server was recently started, you will receive the following output:
 }
 ``` 
 Otherwise, `events` list will be empty:
-```bash
+```json
 {
 	"name": "com.myorg.redis",
 	"protocol_version": "1",
@@ -839,7 +839,7 @@ $ ./bin/myorg-redis -pretty
 ```
 check that the integration was created properly (this output assume that your Redis server was started in the latest 60 seconds.).
 
-```bash
+```json
 {
 	"name": "com.myorg.redis",
 	"protocol_version": "1",
@@ -878,17 +878,17 @@ As you can see in the output above, there was a second event created, with a new
 To test the integration with the Infrastucture Agent, it's required to update [the config file](tutorial-code/myorg-redis-config.yml) and [the definition file](tutorial-code/myorg-redis-definition.yml). Let's start with the definition file by adding the `events` command. 
 
 [Definition file](#Definition-file) will contain the `events` section:
-```bash
+```yaml
   events:
     command:
       - ./bin/myorg-redis
       - --events
-    interval: 60    
+    interval: 60
 ```
 
 Then we will use the `events` command in the `myorg-redis-config.yml` file specifying a new `redis-events` instance. 
 
-```bash
+```yaml
 integration_name: com.myorganization.redis
 
 instances:
@@ -911,7 +911,7 @@ instances:
     command: events
     labels:
       env: production
-      role: cache      
+      role: cache
 ```
 
 In order to finish the events configuration, place the executable and the updated definition file in `/var/db/newrelic-infra/custom-integrations/`
