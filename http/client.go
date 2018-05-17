@@ -1,7 +1,6 @@
 package http
 
 import (
-	"bytes"
 	"crypto/tls"
 	"crypto/x509"
 	"io/ioutil"
@@ -10,22 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/newrelic/infra-integrations-sdk/log"
 )
 
-// Client will create new HTTP client based on its configuration
-type Client struct {
-	CABundleFile string
-	CABundleDir  string
-}
-
 // NewWithCert creates a new http.Client with a custom certificate
-func (i Client) NewWithCert() *http.Client {
-	return httpClient(i.CABundleFile, i.CABundleDir)
-}
-
-func httpClient(certFile string, certDirectory string) *http.Client {
+func NewWithCert(CABundleFile, CABundleDir string) (*http.Client, error) {
 	// go default http transport settings
 	transport := &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
@@ -36,34 +23,34 @@ func httpClient(certFile string, certDirectory string) *http.Client {
 		ExpectContinueTimeout: 1 * time.Second,
 	}
 
-	if certFile != "" || certDirectory != "" {
-		transport.TLSClientConfig = &tls.Config{RootCAs: getCertPool(certFile, certDirectory)}
+	if CABundleFile != "" || CABundleDir != "" {
+		certs, err := getCertPool(CABundleFile, CABundleDir)
+		if err != nil {
+			return nil, err
+		}
+		transport.TLSClientConfig = &tls.Config{RootCAs: certs}
 	}
 
 	return &http.Client{
 		Transport: transport,
-	}
+	}, nil
 }
 
-func getCertPool(certFile string, certDirectory string) *x509.CertPool {
+func getCertPool(certFile string, certDirectory string) (*x509.CertPool, error) {
 	caCertPool := x509.NewCertPool()
-	var writer bytes.Buffer
-	log := log.New(false, &writer)
 	if certFile != "" {
 		caCert, err := ioutil.ReadFile(certFile)
 		if err != nil {
-			log.Errorf("Error: %s", err)
+			return nil, err
 		}
 
-		ok := caCertPool.AppendCertsFromPEM(caCert)
-		if !ok {
-			log.Errorf("Cert %q could not be appended", certFile)
-		}
+		_ = caCertPool.AppendCertsFromPEM(caCert)
+
 	}
 	if certDirectory != "" {
 		files, err := ioutil.ReadDir(certDirectory)
 		if err != nil {
-			log.Errorf("Error: %s", err)
+			return nil, err
 		}
 
 		for _, f := range files {
@@ -71,14 +58,11 @@ func getCertPool(certFile string, certDirectory string) *x509.CertPool {
 				caCertFilePath := filepath.Join(certDirectory + "/" + f.Name())
 				caCert, err := ioutil.ReadFile(caCertFilePath)
 				if err != nil {
-					log.Errorf("Error: %s", err)
+					return nil, err
 				}
-				ok := caCertPool.AppendCertsFromPEM(caCert)
-				if !ok {
-					log.Debugf("Cert %q could not be appended", caCertFilePath)
-				}
+				_ = caCertPool.AppendCertsFromPEM(caCert)
 			}
 		}
 	}
-	return caCertPool
+	return caCertPool, nil
 }

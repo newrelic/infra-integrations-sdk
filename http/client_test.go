@@ -95,11 +95,12 @@ func TestClient_NewWithCert(t *testing.T) {
 		log.Fatal("ListenAndServe: ", err)
 	}
 
-	c := Client{
-		"ca.pem",
-		"/tmp/",
+	client, err := NewWithCert("ca.pem", "/tmp/")
+	if err != nil {
+		log.Println(err)
+		return
 	}
-	client := c.NewWithCert()
+
 	resp, err := client.Get("https://localhost:8080")
 	// defer resp.Body.Close()
 	if err != nil {
@@ -112,7 +113,13 @@ func TestClient_NewWithCert(t *testing.T) {
 	if err := srv.Shutdown(nil); err != nil {
 		panic(err) // failure/timeout shutting down the server gracefully
 	}
+}
 
-	assert.Equal(t, c.CABundleFile, "ca.pem")
-	assert.Equal(t, c.CABundleDir, "/tmp/")
+func TestClient_NewWithEmptyCert(t *testing.T) {
+	_, err := NewWithCert("", "/tmp/")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	assert.NoError(t, err)
 }
