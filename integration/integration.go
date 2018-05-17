@@ -73,7 +73,7 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 
 	if i.storer == nil {
 		var err error
-		i.storer, err = persist.NewFileStore(persist.DefaultPath(i.Name), i.logger)
+		i.storer, err = persist.NewFileStore(persist.DefaultPath(i.Name), i.logger, persist.DefaultTTL)
 		if err != nil {
 			return nil, fmt.Errorf("can't create store: %s", err)
 		}

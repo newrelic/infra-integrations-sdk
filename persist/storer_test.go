@@ -1,168 +1,425 @@
-package persist_test
+package persist
 
 import (
 	"io/ioutil"
-	"os"
-	"path/filepath"
+	"path"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/newrelic/infra-integrations-sdk/log"
-	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
 )
 
-type FakeData struct {
-	timestamp time.Time
+// setNow forces a different "current time" for the storage.
+func setNow(newNow func() time.Time) {
+	now = newNow
 }
 
-func (fd *FakeData) DummyTime() time.Time {
-	fd.timestamp = time.Unix(1, 1)
-	return fd.timestamp
+type storerProvider interface {
+	new() (Storer, error)
+	prepareToRead(s Storer) (Storer, error)
 }
 
-func TestDefaultPath(t *testing.T) {
-	assert.Equal(t, filepath.Join(os.TempDir(), "nr-integrations", "file.json"), persist.DefaultPath("file"))
+type memoryStorerProvider struct{}
+
+func (m *memoryStorerProvider) new() (Storer, error) {
+	return NewInMemoryStore(), nil
 }
 
-func TestNewFileStore(t *testing.T) {
-	file, err := ioutil.TempFile("", "cache")
-	assert.NoError(t, err)
-	defer os.Remove(file.Name())
-
-	// Create Storer with existing file in env
-	_, err = persist.NewFileStore(file.Name(), log.Discard)
-	assert.NoError(t, err)
-
-	// Create Storer with unexisting file in env
-	tmpDir, err := ioutil.TempDir("", "cache-test")
-	assert.NoError(t, err)
-	defer os.Remove(tmpDir)
-
-	_, err = persist.NewFileStore(filepath.Join(tmpDir, "newfile.json"), log.Discard)
-	assert.NoError(t, err)
+func (m *memoryStorerProvider) prepareToRead(s Storer) (Storer, error) {
+	return s, nil
 }
 
-func TestNewFileStoreReturnsErrorOnForbiddenDirectory(t *testing.T) {
-	_, err := persist.NewFileStore("/forbidden-directory", log.Discard)
-	assert.Error(t, err)
+type diskStorerProvider struct {
+	rootDir string
 }
 
-func TestNewFileStoreReturnsErrorOnForbiddenFilePath(t *testing.T) {
-	_, err := persist.NewFileStore("/forbidden-directory/file.json", log.Discard)
-	assert.Error(t, err)
-}
-
-func TestInMemoryStore_Set(t *testing.T) {
-	s := persist.NewInMemoryStore()
-
-	s.Set("key", float64(100))
-
-	v, _, err := s.Get("key")
-
-	assert.NoError(t, err)
-	assert.Equal(t, float64(100), v)
-}
-
-func TestInMemoryStore_Get(t *testing.T) {
-	dc := persist.NewInMemoryStore()
-
-	setValue := float64(100)
-	dc.Set("key1", setValue)
-
-	v, ts, err := dc.Get("key1")
-
-	assert.NoError(t, err)
-	assert.Equal(t, setValue, v)
-	assert.NotEqual(t, 0, ts)
-
-	v, _, err = dc.Get("key2")
-
-	assert.Equal(t, persist.ErrNotFound, err)
-	assert.Equal(t, nil, v)
-}
-
-func TestStorerSave(t *testing.T) {
-	file, err := ioutil.TempFile("", "cache.json")
-	assert.NoError(t, err)
-	defer os.Remove(file.Name())
-
-	dc, err := persist.NewFileStore(file.Name(), log.Discard)
-
-	assert.NoError(t, err)
-
-	dc.Set("key1", float64(100))
-	dc.Set("key2", float64(200))
-
-	err = dc.Save()
-	assert.NoError(t, err)
-
-	dc, err = persist.NewFileStore(file.Name(), log.Discard)
-	assert.NoError(t, err)
-
-	value, ts, err := dc.Get("key1")
-	assert.NoError(t, err)
-	assert.InDelta(t, float64(100), value, 0.1)
-	assert.NotEqual(t, 0, ts)
-
-	value, ts, err = dc.Get("key2")
-	assert.NoError(t, err)
-	assert.InDelta(t, float64(200), value, 0.1)
-	assert.NotEqual(t, 0, ts)
-}
-
-func TestNewFileStoreIsNotPopulatedWhenModTimeGreaterThanTTL(t *testing.T) {
-	ft := time.Now()
-
-	x := func() time.Time {
-		if ft.IsZero() {
-			return time.Now()
+func (j *diskStorerProvider) new() (Storer, error) {
+	if j.rootDir == "" {
+		var err error
+		j.rootDir, err = ioutil.TempDir("", "disk_storage")
+		if err != nil {
+			return nil, err
 		}
-		return ft.Add(24 * time.Hour)
 	}
 
-	persist.SetNow(x)
+	ds, err := NewFileStore(path.Join(j.rootDir, "storage.json"), log.NewStdErr(true), DefaultTTL)
+	if err != nil {
+		return nil, err
+	}
 
-	file, err := ioutil.TempFile("", "cache.json")
-	assert.NoError(t, err)
-	defer os.Remove(file.Name())
-
-	dc, err := persist.NewFileStore(file.Name(), log.Discard)
-	assert.NoError(t, err)
-
-	dc.Set("key1", float64(100))
-
-	assert.NoError(t, dc.Save())
-
-	dc, err = persist.NewFileStore(file.Name(), log.Discard)
-	assert.NoError(t, err)
-
-	_, _, err = dc.Get("key1")
-	assert.Equal(t, persist.ErrNotFound, err)
+	return ds, nil
 }
 
-func TestSetNow(t *testing.T) {
-	fd := FakeData{timestamp: time.Unix(1, 1)}
-	persist.SetNow(fd.DummyTime)
+func (j *diskStorerProvider) prepareToRead(s Storer) (Storer, error) {
+	s.Save()
 
-	assert.Equal(t, fd.timestamp, time.Unix(1, 1))
+	return j.new()
 }
 
-func TestInMemoryStore_SaveDoesNothing(t *testing.T) {
-	s := persist.NewInMemoryStore()
-	assert.NoError(t, s.Save())
+func getStorerProviders() []storerProvider {
+	return []storerProvider{&memoryStorerProvider{}, &diskStorerProvider{}}
 }
 
-func TestInMemoryStore_Delete(t *testing.T) {
-	s := persist.NewInMemoryStore()
+func TestStorer_Struct(t *testing.T) {
+	nowTime := time.Now()
+	setNow(func() time.Time {
+		return nowTime
+	})
 
-	_ = s.Set("key", 1)
+	for _, provider := range getStorerProviders() {
+		storer, err := provider.new()
+		assert.NoError(t, err)
 
-	_, _, err := s.Get("key")
+		t.Run(reflect.TypeOf(storer).Name(), func(t *testing.T) {
+			// Given a Storer implementation
+
+			// And a stored struct value
+			type testStruct struct {
+				FloatVal  float64
+				StringVal string
+				MapVal    map[string]interface{}
+				StructVal struct {
+					A float64
+					B string
+				}
+			}
+			stored := testStruct{
+				1, "2",
+				map[string]interface{}{"hello": "how are you", "fine": "and you?"},
+				struct {
+					A float64
+					B string
+				}{11, "22"},
+			}
+			ts, err := storer.Write("my-storage-test", stored)
+			assert.Nil(t, err)
+			assert.Equal(t, nowTime.Unix(), ts)
+
+			storer, err = provider.prepareToRead(storer)
+			assert.NoError(t, err)
+
+			var read testStruct
+			// When reading it from the disk
+			ts, err = storer.Read("my-storage-test", &read)
+
+			assert.Equal(t, stored, read)
+
+			// As well as the insertion timestamp
+			assert.Equal(t, nowTime.Unix(), ts)
+			assert.Nil(t, err)
+		})
+	}
+}
+
+func TestStorer_Map(t *testing.T) {
+	nowTime := time.Now()
+	setNow(func() time.Time {
+		return nowTime
+	})
+
+	for _, provider := range getStorerProviders() {
+		storer, err := provider.new()
+		assert.NoError(t, err)
+
+		t.Run(reflect.TypeOf(storer).Name(), func(t *testing.T) {
+			// Given a Storer implementation
+
+			// And a stored map
+			stored := map[string]interface{}{
+				"1": "2",
+				"3": map[string]interface{}{"hello": "how are you", "fine": "and you?"},
+				"4": 5.0,
+			}
+			ts, err := storer.Write("my-storage-test", stored)
+			assert.Nil(t, err)
+			assert.Equal(t, nowTime.Unix(), ts)
+
+			storer, err = provider.prepareToRead(storer)
+			assert.NoError(t, err)
+
+			// When reading it from the disk
+			var read map[string]interface{}
+			ts, err = storer.Read("my-storage-test", &read)
+
+			// An map equal to the original has been returned
+			assert.Equal(t, stored, read)
+
+			// As well as the insertion timestamp
+			assert.Equal(t, nowTime.Unix(), ts)
+			assert.Nil(t, err)
+		})
+	}
+}
+
+func TestStorer_Array(t *testing.T) {
+	nowTime := time.Now()
+	setNow(func() time.Time {
+		return nowTime
+	})
+
+	for _, provider := range getStorerProviders() {
+		storer, err := provider.new()
+		assert.NoError(t, err)
+
+		t.Run(reflect.TypeOf(storer).Name(), func(t *testing.T) {
+			// Given a Storer implementation
+
+			// And a stored array
+			stored := []interface{}{"1", 2.0, "3", map[string]interface{}{"hello": "how are you", "fine": "and you?"}}
+			ts, err := storer.Write("my-storage-test", stored)
+			assert.Nil(t, err)
+			assert.Equal(t, nowTime.Unix(), ts)
+
+			storer, err = provider.prepareToRead(storer)
+			assert.NoError(t, err)
+
+			// When reading it from the disk
+			var read []interface{}
+			ts, err = storer.Read("my-storage-test", &read)
+
+			// It returns an array equal to the original
+			assert.Equal(t, stored, read)
+
+			// As well as the insertion timestamp
+			assert.Equal(t, nowTime.Unix(), ts)
+			assert.Nil(t, err)
+		})
+	}
+}
+
+func TestStorer_String(t *testing.T) {
+
+	nowTime := time.Now()
+	setNow(func() time.Time {
+		return nowTime
+	})
+
+	for _, provider := range getStorerProviders() {
+		storer, err := provider.new()
+		assert.NoError(t, err)
+
+		t.Run(reflect.TypeOf(storer).Name(), func(t *testing.T) {
+			// Given a Storer implementation
+
+			// And a stored string
+			stored := "hello my good friend"
+			ts, err := storer.Write("my-storage-test", stored)
+			assert.Nil(t, err)
+			assert.Equal(t, nowTime.Unix(), ts)
+
+			storer, err = provider.prepareToRead(storer)
+			assert.NoError(t, err)
+
+			// When reading it from the disk
+			var read string
+			ts, err = storer.Read("my-storage-test", &read)
+
+			// It returns a string equal to the original
+			assert.Equal(t, stored, read)
+
+			// As well as the insertion timestamp
+			assert.Equal(t, nowTime.Unix(), ts)
+			assert.Nil(t, err)
+		})
+	}
+}
+
+func TestStorer_Number(t *testing.T) {
+
+	nowTime := time.Now()
+	setNow(func() time.Time {
+		return nowTime
+	})
+
+	for _, provider := range getStorerProviders() {
+		storer, err := provider.new()
+		assert.NoError(t, err)
+
+		t.Run(reflect.TypeOf(storer).Name(), func(t *testing.T) {
+			// Given a Storer implementation
+
+			// And a stored integer
+			stored := int(123456)
+			ts, err := storer.Write("my-storage-test", stored)
+			assert.Nil(t, err)
+			assert.Equal(t, nowTime.Unix(), ts)
+
+			storer, err = provider.prepareToRead(storer)
+			assert.NoError(t, err)
+
+			// When reading it from the disk
+			var read int
+			ts, err = storer.Read("my-storage-test", &read)
+
+			// It returns the copy of the original number
+			assert.Equal(t, stored, read)
+
+			// As well as the insertion timestamp
+			assert.Equal(t, nowTime.Unix(), ts)
+			assert.Nil(t, err)
+		})
+	}
+}
+
+func TestStorer_Overwrite(t *testing.T) {
+	for _, provider := range getStorerProviders() {
+		storer, err := provider.new()
+		assert.NoError(t, err)
+
+		t.Run(reflect.TypeOf(storer).Name(), func(t *testing.T) {
+			// Given a Storer implementation
+
+			// And a stored record
+			nowTime := time.Unix(1234, 5678)
+			setNow(func() time.Time {
+				return nowTime
+			})
+			ts, err := storer.Write("my-storage-test", "initial Value")
+			assert.Nil(t, err)
+			assert.Equal(t, nowTime.Unix(), ts)
+
+			nowTime = time.Unix(78910, 111213)
+			// When this record is overwritten
+			ts, err = storer.Write("my-storage-test", "overwritten value")
+			assert.Nil(t, err)
+			assert.Equal(t, nowTime.Unix(), ts)
+
+			storer, err = provider.prepareToRead(storer)
+			assert.NoError(t, err)
+
+			// The read operation returns the last version of the record
+			var read string
+			storer.Read("my-storage-test", &read)
+			assert.Equal(t, "overwritten value", read)
+		})
+	}
+}
+
+func TestStorer_NotFound(t *testing.T) {
+	for _, provider := range getStorerProviders() {
+		storer, err := provider.new()
+		assert.NoError(t, err)
+
+		t.Run(reflect.TypeOf(storer).Name(), func(t *testing.T) {
+			// Given a Storer implementation
+
+			storer, err = provider.prepareToRead(storer)
+			assert.NoError(t, err)
+
+			// When trying to access an nonexistent record
+			var read string
+			_, err := storer.Read("my-storage-test", &read)
+
+			// The storage returns an ErrNotFound error
+			assert.Equal(t, ErrNotFound, err)
+		})
+	}
+}
+
+func TestStorer_Delete(t *testing.T) {
+	for _, provider := range getStorerProviders() {
+		storer, err := provider.new()
+		assert.NoError(t, err)
+
+		t.Run(reflect.TypeOf(storer).Name(), func(t *testing.T) {
+			// Given a Storer implementation
+
+			// And a stored record
+			_, err := storer.Write("my-storage-test", "initial Value")
+			assert.Nil(t, err)
+			// When removing the stored record
+			assert.Nil(t, storer.Delete("my-storage-test"))
+
+			storer, err = provider.prepareToRead(storer)
+			assert.NoError(t, err)
+
+			// When trying to access an nonexistent record
+			var read string
+			_, err = storer.Read("my-storage-test", &read)
+
+			// The storage returns an ErrNotFound error
+			assert.Equal(t, ErrNotFound, err)
+		})
+	}
+}
+
+func TestStorer_DeleteUnexistent(t *testing.T) {
+	for _, provider := range getStorerProviders() {
+		storer, err := provider.new()
+		assert.NoError(t, err)
+
+		t.Run(reflect.TypeOf(storer).Name(), func(t *testing.T) {
+			// Given a Storer implementation
+
+			// When trying to remove a non-existing record
+			err := storer.Delete("my-storage-test")
+
+			// The storage does not return any error
+			assert.Nil(t, err)
+		})
+	}
+}
+
+func TestFileStorer_Save(t *testing.T) {
+	nowTime := time.Now()
+	setNow(func() time.Time {
+		return nowTime
+	})
+
+	// Given a file storer
+	dir, err := ioutil.TempDir("", "filestorer_save")
+	assert.NoError(t, err)
+	filePath := path.Join(dir, "test.json")
+	storer, err := NewFileStore(filePath, log.NewStdErr(true), DefaultTTL)
 	assert.NoError(t, err)
 
-	s.Delete("key")
+	type testStruct struct {
+		A float64
+		B float64
+	}
 
-	_, _, err = s.Get("key")
-	assert.Equal(t, persist.ErrNotFound, err)
+	// When something is Saved
+	storer.Write("stringValue", "hello my friend")
+	storer.Write("arrayValue", []float64{0, 1, 2, 3, 4})
+	storer.Write("floatValue", 3)
+	storer.Write("deletedValue", "this won't be persisted")
+	storer.Delete("deletedValue")
+
+	stored := testStruct{555, 444}
+	storer.Write("structValue", stored)
+
+	storer.Save()
+
+	// And a new storer opens the file
+	storer, err = NewFileStore(filePath, log.NewStdErr(true), DefaultTTL)
+	assert.NoError(t, err)
+
+	// The data is persisted as expected
+	var stringValue string
+	_, err = storer.Read("stringValue", &stringValue)
+	assert.NoError(t, err)
+
+	_, err = storer.Read("deletedValue", &stringValue)
+	assert.Error(t, err)
+
+	// (int arrays are unmarshalled as float arrays)
+	arrayValue := make([]interface{}, 0, 0)
+	_, err = storer.Read("arrayValue", &arrayValue)
+	assert.NoError(t, err)
+	for i, v := range arrayValue {
+		assert.InDelta(t, float64(i), v, 0.01)
+	}
+
+	var floatValue float64
+	_, err = storer.Read("floatValue", &floatValue)
+	assert.NoError(t, err)
+	assert.InDelta(t, 3, floatValue, 0.01)
+
+	var structValue testStruct
+	_, err = storer.Read("structValue", &structValue)
+	assert.NoError(t, err)
+	assert.Equal(t, testStruct{555, 444}, structValue)
+
 }
