@@ -110,7 +110,7 @@ func TestClient_NewWithCert(t *testing.T) {
 
 	_, err = ioutil.ReadAll(resp.Body)
 
-	if err := srv.Shutdown(nil); err != nil {
+	if err := srv.Close(); err != nil {
 		panic(err) // failure/timeout shutting down the server gracefully
 	}
 }
