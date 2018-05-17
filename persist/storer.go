@@ -2,6 +2,7 @@ package persist
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	"github.com/newrelic/infra-integrations-sdk/log"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -98,7 +98,7 @@ func NewFileStore(storePath string, l log.Logger) (Storer, error) {
 	// Store file doesn't exist yet
 	if err != nil {
 		if _, err = os.OpenFile(store.path, os.O_CREATE|os.O_WRONLY, filePerm); err != nil {
-			return nil, errors.Errorf("store directory not writable: %s", storeDir)
+			return nil, fmt.Errorf("store directory not writable: %s", storeDir)
 		}
 		return store, nil
 	}
