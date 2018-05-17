@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,5 +35,21 @@ func TestInventory_Items(t *testing.T) {
 	i.SetItem("baz", "bar", "baz")
 
 	assert.Equal(t, len(i.Items()), 4)
+}
 
+func TestInventory_SetItemForbidsLargeKeys(t *testing.T) {
+	i := New()
+
+	randStringWithLen := func(n int) string {
+		var chars = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+		b := make([]rune, n)
+		for i := range b {
+			b[i] = chars[rand.Intn(len(chars))]
+		}
+		return string(b)
+	}
+
+	assert.NoError(t, i.SetItem(randStringWithLen(MaxKeyLen), "foo", "bar"))
+	assert.Error(t, i.SetItem(randStringWithLen(MaxKeyLen+1), "foo", "bar"))
 }
