@@ -25,12 +25,12 @@ type defaultLogger struct {
 	debug  bool
 }
 
-// NewStdErr creates a logger with stderr output, verbose enables Debug output
+// NewStdErr creates a logger with stderr output, the argument enables Debug (verbose) output
 func NewStdErr(debug bool) Logger {
 	return New(debug, os.Stderr)
 }
 
-// New creates a logger using provided writer, verbose enables Debug output
+// New creates a logger using the provided writer. The 'debug' argument enables Debug (verbose) output
 func New(debug bool, w io.Writer) Logger {
 	return &defaultLogger{
 		logger: log.New(w, "", 0),
@@ -41,18 +41,18 @@ func New(debug bool, w io.Writer) Logger {
 // Debugf logs a formatted message at level Debug.
 func (l *defaultLogger) Debugf(format string, args ...interface{}) {
 	if l.debug {
-		l.prefixPrint("DEBUG", format, args)
+		l.prefixPrint("DEBUG", format, args...)
 	}
 }
 
 // Infof logs a formatted message at level Info.
 func (l *defaultLogger) Infof(format string, args ...interface{}) {
-	l.prefixPrint("INFO", format, args)
+	l.prefixPrint("INFO", format, args...)
 }
 
 // Errorf logs a formatted message at level Error.
 func (l *defaultLogger) Errorf(format string, args ...interface{}) {
-	l.prefixPrint("ERR", format, args)
+	l.prefixPrint("ERR", format, args...)
 }
 
 func (l *defaultLogger) prefixPrint(prefix string, format string, args ...interface{}) {
