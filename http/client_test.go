@@ -102,7 +102,6 @@ func TestClient_NewWithCert(t *testing.T) {
 	}
 
 	resp, err := client.Get("https://localhost:8080")
-	// defer resp.Body.Close()
 	if err != nil {
 		log.Println(err)
 		return
@@ -110,7 +109,7 @@ func TestClient_NewWithCert(t *testing.T) {
 
 	_, err = ioutil.ReadAll(resp.Body)
 
-	if err := srv.Close(); err != nil {
+	if err := srv.Shutdown(nil); err != nil {
 		panic(err) // failure/timeout shutting down the server gracefully
 	}
 }

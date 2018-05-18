@@ -4,24 +4,15 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 // NewWithCert creates a new http.Client with a custom certificate
 func NewWithCert(CABundleFile, CABundleDir string) (*http.Client, error) {
 	// go default http transport settings
-	transport := &http.Transport{
-		Proxy:                 http.ProxyFromEnvironment,
-		DialContext:           (&net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second}).DialContext,
-		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-	}
+	transport := &http.Transport{}
 
 	if CABundleFile != "" || CABundleDir != "" {
 		certs, err := getCertPool(CABundleFile, CABundleDir)
