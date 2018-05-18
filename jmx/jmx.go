@@ -144,7 +144,7 @@ func doQuery(ctx context.Context, out chan []byte, errorChan chan error, querySt
 			errorChan <- fmt.Errorf("error reading output from JMX tool: %v", err)
 		} else {
 			// If scanner.Scan() returns false but err is also nil, it hit EOF. We consider that a problem, so we should return an error.
-			errorChan <- fmt.Errorf("got an EOF while reading JMX tool output")
+			errorChan <- fmt.Errorf("got an EOF while reading JMX tool output %v", err)
 		}
 	}
 }
