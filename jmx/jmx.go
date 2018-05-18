@@ -6,6 +6,7 @@ package jmx
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -75,8 +76,9 @@ func Open(hostname, port, username, password string) error {
 	cliCommand := getCommand(hostname, port, username, password)
 
 	ctx, cancel = context.WithCancel(context.Background())
-
+	var errbuf bytes.Buffer
 	cmd = exec.CommandContext(ctx, cliCommand[0], cliCommand[1:]...)
+	cmd.Stderr = &errbuf
 
 	if cmdOut, err = cmd.StdoutPipe(); err != nil {
 		return err
@@ -90,7 +92,8 @@ func Open(hostname, port, username, password string) error {
 
 	go func() {
 		if err = cmd.Wait(); err != nil {
-			cmdErr <- fmt.Errorf("JMX tool exited with error: %s", err)
+			strErr := fmt.Sprintf("%s", errbuf)
+			cmdErr <- fmt.Errorf("JMX tool exited with error: %s", strErr)
 		}
 		done.Done()
 
