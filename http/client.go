@@ -3,6 +3,7 @@ package http
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -35,7 +36,10 @@ func getCertPool(certFile string, certDirectory string) (*x509.CertPool, error) 
 			return nil, err
 		}
 
-		_ = caCertPool.AppendCertsFromPEM(caCert)
+		ok := caCertPool.AppendCertsFromPEM(caCert)
+		if !ok {
+			return nil, errors.New("can't parse certificate")
+		}
 
 	}
 	if certDirectory != "" {
@@ -51,7 +55,10 @@ func getCertPool(certFile string, certDirectory string) (*x509.CertPool, error) 
 				if err != nil {
 					return nil, err
 				}
-				_ = caCertPool.AppendCertsFromPEM(caCert)
+				ok := caCertPool.AppendCertsFromPEM(caCert)
+				if !ok {
+					return nil, errors.New("can't parse certificate")
+				}
 			}
 		}
 	}
