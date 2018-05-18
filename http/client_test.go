@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -61,21 +62,24 @@ r8q6iHv2b4jEsEWM2+V/ratUvN9ji/WKxhbQAARIW58n11kAJsE48hwpPBGPTnFX
 x4W9xFO4kHze4qDxeIBh2OlyUqA9eUptrkkzie5CSlYE2A7JqkB43g==
 -----END RSA PRIVATE KEY-----`
 
-func startHTTPServer(file, keyFile string) *http.Server {
+var quit = make(chan os.Signal, 1)
+var done = make(chan bool)
+
+func startHTTPServer(file, keyFile string) {
 	srv := &http.Server{Addr: "localhost:8080"}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "hello\n")
+		io.WriteString(w, "Test server\n")
 	})
 	go func() {
+		<-quit
 		if err := srv.ListenAndServeTLS(file, keyFile); err != nil {
 			// cannot panic, because this probably is an intentional close
 			log.Printf("Httpserver: ListenAndServe() error: %s", err)
 		}
+		close(done)
 	}()
 
-	// returning reference so caller can call Shutdown()
-	return srv
 }
 
 func TestClient_NewWithCert(t *testing.T) {
@@ -89,7 +93,9 @@ func TestClient_NewWithCert(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.Remove(keyFile.Name())
 
-	srv := startHTTPServer(file.Name(), keyFile.Name())
+	signal.Notify(quit, os.Interrupt)
+
+	startHTTPServer(file.Name(), keyFile.Name())
 
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
@@ -108,10 +114,8 @@ func TestClient_NewWithCert(t *testing.T) {
 	}
 
 	_, err = ioutil.ReadAll(resp.Body)
-
-	if err := srv.Shutdown(nil); err != nil {
-		panic(err) // failure/timeout shutting down the server gracefully
-	}
+	// Stop http server
+	<-done
 }
 
 func TestClient_NewWithEmptyCert(t *testing.T) {
