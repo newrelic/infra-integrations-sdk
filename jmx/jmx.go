@@ -83,14 +83,6 @@ func Open(hostname, port, username, password string) error {
 	if cmdIn, err = cmd.StdinPipe(); err != nil {
 		return err
 	}
-	if err = cmd.Start(); err != nil {
-		return err
-	}
-
-	_, err = cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
 
 	go func() {
 		if _, err = cmd.StderrPipe(); err != nil {
@@ -102,6 +94,10 @@ func Open(hostname, port, username, password string) error {
 		defer lock.Unlock()
 		cmd = nil
 	}()
+
+	if err = cmd.Start(); err != nil {
+		return err
+	}
 
 	return nil
 }
