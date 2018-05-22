@@ -6,7 +6,6 @@ package jmx
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -76,9 +75,7 @@ func Open(hostname, port, username, password string) error {
 	cliCommand := getCommand(hostname, port, username, password)
 
 	ctx, cancel = context.WithCancel(context.Background())
-	var errbuf bytes.Buffer
 	cmd = exec.CommandContext(ctx, cliCommand[0], cliCommand[1:]...)
-	cmd.Stderr = &errbuf
 
 	if cmdOut, err = cmd.StdoutPipe(); err != nil {
 		return err
@@ -90,10 +87,14 @@ func Open(hostname, port, username, password string) error {
 		return err
 	}
 
+	_, err = cmd.StderrPipe()
+	if err != nil {
+		return err
+	}
+
 	go func() {
-		if err = cmd.Wait(); err != nil {
-			strErr := fmt.Sprintf("%s", errbuf)
-			cmdErr <- fmt.Errorf("JMX tool exited with error: %s", strErr)
+		if _, err = cmd.StderrPipe(); err != nil {
+			cmdErr <- fmt.Errorf("JMX tool exited with error: %s", err)
 		}
 		done.Done()
 
@@ -144,7 +145,7 @@ func doQuery(ctx context.Context, out chan []byte, errorChan chan error, querySt
 			errorChan <- fmt.Errorf("error reading output from JMX tool: %v", err)
 		} else {
 			// If scanner.Scan() returns false but err is also nil, it hit EOF. We consider that a problem, so we should return an error.
-			errorChan <- fmt.Errorf("got an EOF while reading JMX tool output %v", err)
+			errorChan <- fmt.Errorf("got an EOF while reading JMX tool output")
 		}
 	}
 }
