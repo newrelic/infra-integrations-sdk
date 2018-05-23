@@ -24,9 +24,9 @@ func TestSetupArgsDefault(t *testing.T) {
 
 	os.Setenv("HOSTNAME", "")
 	os.Args = []string{"cmd"}
-	flag.CommandLine = flag.NewFlagSet("name", flag.ContinueOnError)
 
-	sdk_args.SetupArgs(&args)
+	clearFlagSet()
+	assert.NoError(t, sdk_args.SetupArgs(&args))
 
 	expected := argumentList{
 		Verbose: false, Pretty: false, Hostname: "localhost", Port: 3306,
@@ -75,12 +75,10 @@ func TestSetupArgsCommandLine(t *testing.T) {
 		List:     *sdk_args.NewJSON([]interface{}{"arg1", 2.0}),
 	}
 
-	flag.CommandLine = flag.NewFlagSet("name", flag.ContinueOnError)
-	sdk_args.SetupArgs(&args)
+	clearFlagSet()
+	assert.NoError(t, sdk_args.SetupArgs(&args))
 
-	if !reflect.DeepEqual(args, expected) {
-		t.Errorf("expected args list: %+v not equal to result: %+v", expected, args)
-	}
+	assertEqualArgs(t, expected, args)
 }
 
 func TestSetupArgsEnvironment(t *testing.T) {
@@ -102,23 +100,21 @@ func TestSetupArgsEnvironment(t *testing.T) {
 	os.Setenv("CONFIG", "{\"arg1\": 2}")
 	os.Args = []string{"cmd"}
 
-	flag.CommandLine = flag.NewFlagSet("name", flag.ContinueOnError)
-
-	sdk_args.SetupArgs(&args)
+	clearFlagSet()
+	assert.NoError(t, sdk_args.SetupArgs(&args))
 
 	cfg := sdk_args.NewJSON(map[string]interface{}{"arg1": 2.0})
 	expected := argumentList{
 		Verbose: true, Pretty: false, Hostname: "otherhost", Port: 1234,
 		Username: "", Password: "", Config: *cfg,
 	}
-	if !reflect.DeepEqual(args, expected) {
-		t.Error()
-	}
+
+	assertEqualArgs(t, expected, args)
 }
 
 func TestEnvironmentVarsOverrideCliArgs(t *testing.T) {
 	var args struct {
-		Verbose bool
+		Verbose bool `default:"false" help:"Print more information to logs."`
 	}
 
 	os.Setenv("VERBOSE", "false")
@@ -127,8 +123,8 @@ func TestEnvironmentVarsOverrideCliArgs(t *testing.T) {
 		"-verbose",
 	}
 
-	flag.CommandLine = flag.NewFlagSet("cmd", flag.ContinueOnError)
-	sdk_args.SetupArgs(&args)
+	clearFlagSet()
+	assert.NoError(t, sdk_args.SetupArgs(&args))
 
 	assert.False(t, args.Verbose)
 }
@@ -139,8 +135,8 @@ func TestSetupArgsErrors(t *testing.T) {
 	}
 
 	os.Args = []string{"cmd"}
-	flag.CommandLine = flag.NewFlagSet("name", flag.ContinueOnError)
 
+	clearFlagSet()
 	err := sdk_args.SetupArgs(&argumentList{})
 	if err == nil {
 		t.Error()
@@ -150,23 +146,15 @@ func TestSetupArgsErrors(t *testing.T) {
 		Verbose int `default:"badint" help:"Print more information to logs."`
 	}
 
-	flag.CommandLine = flag.NewFlagSet("name", flag.ContinueOnError)
-
-	err = sdk_args.SetupArgs(&argumentList2{})
-	if err == nil {
-		t.Error()
-	}
+	clearFlagSet()
+	assert.Error(t, sdk_args.SetupArgs(&argumentList2{}))
 
 	type argumentList3 struct {
 		Verbose float64 `default:"0.12" help:"Print more information to logs."`
 	}
 
-	flag.CommandLine = flag.NewFlagSet("name", flag.ContinueOnError)
-
-	err = sdk_args.SetupArgs(&argumentList3{})
-	if err == nil {
-		t.Error()
-	}
+	clearFlagSet()
+	assert.Error(t, sdk_args.SetupArgs(&argumentList3{}))
 }
 
 func TestSetupArgsParseJsonError(t *testing.T) {
@@ -179,7 +167,7 @@ func TestSetupArgsParseJsonError(t *testing.T) {
 		"-config={\"arg1\": 2",
 	}
 
-	flag.CommandLine = flag.NewFlagSet("name", flag.ContinueOnError)
+	clearFlagSet()
 	err := sdk_args.SetupArgs(&argumentList4{})
 	if err == nil {
 		t.Error()
@@ -193,21 +181,20 @@ func TestSetupArgsWithDefaultArguments(t *testing.T) {
 	}
 
 	var args argumentList
+	clearFlagSet()
 	os.Args = []string{
 		"cmd",
-		"-verbose",
 		"-pretty",
 		"-hostname=otherhost",
 	}
-	sdk_args.SetupArgs(&args)
+	assert.NoError(t, sdk_args.SetupArgs(&args))
 
 	expected := argumentList{
-		DefaultArgumentList: sdk_args.DefaultArgumentList{Verbose: true, Pretty: true},
+		DefaultArgumentList: sdk_args.DefaultArgumentList{Pretty: true},
 		Hostname:            "otherhost",
 	}
-	if !reflect.DeepEqual(args, expected) {
-		t.Error()
-	}
+
+	assertEqualArgs(t, expected, args)
 }
 
 func TestGetDefaultArgs(t *testing.T) {
@@ -217,28 +204,29 @@ func TestGetDefaultArgs(t *testing.T) {
 	}
 	da := sdk_args.GetDefaultArgs(&argumentListWithDefaults{})
 
-	expected := sdk_args.DefaultArgumentList{All: true}
-	if !reflect.DeepEqual(*da, expected) {
-		t.Error()
-	}
+	assertEqualArgs(t, sdk_args.DefaultArgumentList{All: true}, *da)
 
 	al := &argumentListWithDefaults{}
 	al.Metrics = true
 	dam := sdk_args.GetDefaultArgs(al)
 
-	expected = sdk_args.DefaultArgumentList{Metrics: true}
-	if !reflect.DeepEqual(*dam, expected) {
-		t.Error()
-	}
+	assertEqualArgs(t, sdk_args.DefaultArgumentList{Metrics: true}, *dam)
 }
 
 func TestGetDefaultArgsWithoutDefaults(t *testing.T) {
 	type argumentListWithoutDefaults struct {
 		Hostname string `default:"localhost" help:"Hostname or IP where MySQL is running."`
 	}
-	da := sdk_args.GetDefaultArgs(&argumentListWithoutDefaults{})
-	expected := sdk_args.DefaultArgumentList{}
-	if !reflect.DeepEqual(*da, expected) {
-		t.Error()
+
+	assertEqualArgs(t, sdk_args.DefaultArgumentList{}, *sdk_args.GetDefaultArgs(&argumentListWithoutDefaults{}))
+}
+
+func assertEqualArgs(t *testing.T, expected interface{}, args interface{}) {
+	if !reflect.DeepEqual(args, expected) {
+		t.Errorf("expected args list:\n\t%+v\n not equal to result:\n\t%+v", expected, args)
 	}
+}
+
+func clearFlagSet() {
+	flag.CommandLine = flag.NewFlagSet("cmd", flag.ContinueOnError)
 }
