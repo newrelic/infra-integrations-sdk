@@ -10,7 +10,6 @@ import (
 )
 
 func TestSetupArgsDefault(t *testing.T) {
-	t.Skip("Test fails when travis build executed")
 	type argumentList struct {
 		Verbose  bool          `default:"false" help:"Print more information to logs."`
 		Pretty   bool          `default:"false" help:"Print pretty formatted JSON."`
@@ -22,7 +21,7 @@ func TestSetupArgsDefault(t *testing.T) {
 	}
 	var args argumentList
 
-	os.Setenv("USERNAME", "")
+	os.Setenv("HOSTNAME", "")
 	os.Args = []string{"cmd"}
 	flag.CommandLine = flag.NewFlagSet("name", 0)
 
@@ -32,13 +31,13 @@ func TestSetupArgsDefault(t *testing.T) {
 		Verbose: false, Pretty: false, Hostname: "localhost", Port: 3306,
 		Username: "", Password: "",
 	}
+
 	if !reflect.DeepEqual(args, expected) {
-		t.Error()
+		t.Errorf("expected args list: %+v not equal to result: %+v", expected, args)
 	}
 }
 
 func TestSetupArgsCommandLine(t *testing.T) {
-	t.Skip("Test fails when travis build executed")
 	type argumentList struct {
 		Verbose  bool          `default:"false" help:"Print more information to logs."`
 		Pretty   bool          `default:"false" help:"Print pretty formatted JSON."`
@@ -51,7 +50,7 @@ func TestSetupArgsCommandLine(t *testing.T) {
 	}
 	var args argumentList
 
-	os.Setenv("USERNAME", "")
+	os.Setenv("HOSTNAME", "")
 	os.Args = []string{
 		"cmd",
 		"-verbose",
@@ -63,19 +62,23 @@ func TestSetupArgsCommandLine(t *testing.T) {
 		"-config={\"arg1\": 2}",
 		"-list=[\"arg1\", 2]",
 	}
-	flag.CommandLine = flag.NewFlagSet("name", 0)
-
-	sdk_args.SetupArgs(&args)
-
-	cfg := sdk_args.NewJSON(map[string]interface{}{"arg1": 2.0})
-	list := sdk_args.NewJSON([]interface{}{"arg1", 2.0})
 
 	expected := argumentList{
-		Verbose: true, Pretty: true, Hostname: "otherhost", Port: 1234,
-		Username: "dbuser", Password: "dbpwd", Config: *cfg, List: *list,
+		Verbose:  true,
+		Pretty:   true,
+		Hostname: "otherhost",
+		Port:     1234,
+		Username: "dbuser",
+		Password: "dbpwd",
+		Config:   *sdk_args.NewJSON(map[string]interface{}{"arg1": 2.0}),
+		List:     *sdk_args.NewJSON([]interface{}{"arg1", 2.0}),
 	}
+
+	flag.CommandLine = flag.NewFlagSet("name", 0)
+	sdk_args.SetupArgs(&args)
+
 	if !reflect.DeepEqual(args, expected) {
-		t.Error()
+		t.Errorf("expected args list: %+v not equal to result: %+v", expected, args)
 	}
 }
 
