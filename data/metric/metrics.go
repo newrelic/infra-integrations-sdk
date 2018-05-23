@@ -68,6 +68,10 @@ func (ms *Set) SetMetric(name string, value interface{}, sourceType SourceType) 
 		if !isNumeric(value) {
 			return fmt.Errorf("non-numeric source type for gauge metric %s", name)
 		}
+		newValue, err = castToNumeric(value)
+		if err != nil {
+			return fmt.Errorf("can't convert numeric gauge into float, value: %v", value)
+		}
 	case ATTRIBUTE:
 		if _, ok := value.(string); !ok {
 			return fmt.Errorf("non-string source type for attribute %s", name)
@@ -85,11 +89,15 @@ func isNumeric(value interface{}) bool {
 	return err == nil
 }
 
+func castToNumeric(value interface{}) (float64, error) {
+	return strconv.ParseFloat(fmt.Sprintf("%v", value), 64)
+}
+
 func (ms *Set) sample(name string, value interface{}, sourceType SourceType) (float64, error) {
 	sampledValue := 0.0
 
 	// Convert the value to a float64 so we can compare it with the stored one
-	floatValue, err := strconv.ParseFloat(fmt.Sprintf("%v", value), 64)
+	floatValue, err := castToNumeric(value)
 	if err != nil {
 		return sampledValue, fmt.Errorf("can't sample metric of unknown type %s", name)
 	}
