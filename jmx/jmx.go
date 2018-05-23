@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -85,9 +86,18 @@ func Open(hostname, port, username, password string) error {
 		return err
 	}
 
+	if cmdError, err = cmd.StderrPipe(); err != nil {
+		return err
+	}
+
+	if err = cmd.Start(); err != nil {
+		return err
+	}
+
 	go func() {
-		if cmdError, err = cmd.StderrPipe(); err != nil {
-			cmdErr <- fmt.Errorf("JMX tool exited with error: %s", err)
+		if err = cmd.Wait(); err != nil {
+			stdErr, _ := ioutil.ReadAll(cmdError)
+			cmdErr <- fmt.Errorf("JMX tool exited with error: %s (%s)", err, string(stdErr))
 		}
 		done.Done()
 
@@ -95,10 +105,6 @@ func Open(hostname, port, username, password string) error {
 		defer lock.Unlock()
 		cmd = nil
 	}()
-
-	if err = cmd.Start(); err != nil {
-		return err
-	}
 
 	return nil
 }
