@@ -67,7 +67,7 @@ func TestItStoresOnDiskByDefault(t *testing.T) {
 	i, err := New(integrationName, integrationVersion)
 	assert.NoError(t, err)
 
-	i.storer.Write("hello", 12.33)
+	i.storer.Set("hello", 12.33)
 
 	assert.NoError(t, i.Publish())
 
@@ -76,7 +76,7 @@ func TestItStoresOnDiskByDefault(t *testing.T) {
 	assert.NoError(t, err)
 
 	var v float64
-	ts, err := c.Read("hello", &v)
+	ts, err := c.Get("hello", &v)
 	assert.NoError(t, err)
 	assert.NotEqual(t, 0, ts)
 	assert.InDelta(t, 12.33, v, 0.1)
@@ -88,7 +88,7 @@ func TestInMemoryStoreDoesNotPersistOnDisk(t *testing.T) {
 	i, err := New(randomName, integrationVersion, InMemoryStore())
 	assert.NoError(t, err)
 
-	i.storer.Write("hello", 12.33)
+	i.storer.Set("hello", 12.33)
 
 	assert.NoError(t, i.Publish())
 
@@ -102,7 +102,7 @@ func TestInMemoryStoreDoesNotPersistOnDisk(t *testing.T) {
 	assert.NoError(t, err)
 
 	var v float64
-	_, err = s.Read("hello", &v)
+	_, err = s.Get("hello", &v)
 	assert.Equal(t, persist.ErrNotFound, err)
 }
 
@@ -136,11 +136,11 @@ func (m *fakeStorer) Save() error {
 	return nil
 }
 
-func (fakeStorer) Write(key string, value interface{}) (int64, error) {
-	return 0, nil
+func (fakeStorer) Set(key string, value interface{}) int64 {
+	return 0
 }
 
-func (fakeStorer) Read(key string, valuePtr interface{}) (int64, error) {
+func (fakeStorer) Get(key string, valuePtr interface{}) (int64, error) {
 	return 0, nil
 }
 

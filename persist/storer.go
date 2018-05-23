@@ -31,13 +31,13 @@ var now = time.Now
 // Storer defines the interface of a Key-Value storage system, which is able to store the timestamp
 // where the key was stored.
 type Storer interface {
-	// Write stores a value for a given key. Implementors must save also the time when it was stored.
+	// Set associates a value with a given key. Implementors must save also the time when it has been stored and return it.
 	// The value can be any type.
-	Write(key string, value interface{}) (int64, error)
-	// Read gets the value associated to a given key and stores in the value referenced by the pointer passed as argument.
-	// It returns the Unix timestamp when the value was stored (in seconds), or an error if the Read operation failed.
+	Set(key string, value interface{}) int64
+	// Get gets the value associated to a given key and stores in the value referenced by the pointer passed as argument.
+	// It returns the Unix timestamp when the value was stored (in seconds), or an error if the Get operation failed.
 	// It may return any type of value.
-	Read(key string, valuePtr interface{}) (int64, error)
+	Get(key string, valuePtr interface{}) (int64, error)
 	// Delete removes the cached data for the given key. If the data does not exist, the system does not return
 	// any error.
 	Delete(key string) error
@@ -115,7 +115,7 @@ func NewFileStore(storagePath string, ilog log.Logger, ttl time.Duration) (Store
 		store.loadFromDisk()
 	} else if os.IsNotExist(err) {
 		folder := path.Dir(storagePath)
-		err := os.MkdirAll(folder, 0644)
+		err := os.MkdirAll(folder, dirFilePerm)
 		if err != nil {
 			ilog.Errorf("can't create storage directory %q: %s", folder, err)
 		}
@@ -145,21 +145,21 @@ func (j *inMemoryStore) Save() error {
 	return nil
 }
 
-// Write stores a value for a given key. Implementors must save also the time when it was stored.
+// Set stores a value for a given key. Implementors must save also the time when it was stored.
 // This implementation adds a restriction to the key name: it must be a valid file name (without extension).
-func (j inMemoryStore) Write(key string, value interface{}) (int64, error) {
+func (j inMemoryStore) Set(key string, value interface{}) int64 {
 	ts := now().Unix()
 	j.cachedData[key] = jsonEntry{
 		Timestamp: ts,
 		Value:     value,
 	}
-	return ts, nil
+	return ts
 }
 
-// Read gets the value associated to a given key and stores it in the value referenced by the pointer passed as
+// Get gets the value associated to a given key and stores it in the value referenced by the pointer passed as
 // second argument
 // This implementation adds a restriction to the key name: it must be a valid file name (without extension).
-func (j inMemoryStore) Read(key string, valuePtr interface{}) (int64, error) {
+func (j inMemoryStore) Get(key string, valuePtr interface{}) (int64, error) {
 	rv := reflect.ValueOf(valuePtr)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return 0, errors.New("destination argument must be a pointer")

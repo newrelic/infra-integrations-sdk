@@ -96,17 +96,14 @@ func (ms *Set) sample(name string, value interface{}, sourceType SourceType) (fl
 
 	// Retrieve the last value and timestamp from Storer
 	var oldval float64
-	oldTime, err := ms.storer.Read(name, &oldval)
+	oldTime, err := ms.storer.Get(name, &oldval)
 	if err == persist.ErrNotFound {
 		oldval = 0
 	} else if err != nil {
 		return sampledValue, errors.Wrapf(err, "sample-key: %s", name)
 	}
 	// And replace it with the new value which we want to keep
-	newTime, err2 := ms.storer.Write(name, floatValue)
-	if err2 != nil {
-		return sampledValue, errors.Wrapf(err, "sample-key: %s", name)
-	}
+	newTime := ms.storer.Set(name, floatValue)
 
 	if err == nil {
 		duration := newTime - oldTime

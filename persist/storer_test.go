@@ -93,7 +93,7 @@ func TestStorer_Struct(t *testing.T) {
 					B string
 				}{11, "22"},
 			}
-			ts, err := storer.Write("my-storage-test", stored)
+			ts := storer.Set("my-storage-test", stored)
 			assert.Nil(t, err)
 			assert.Equal(t, nowTime.Unix(), ts)
 
@@ -102,7 +102,7 @@ func TestStorer_Struct(t *testing.T) {
 
 			var read testStruct
 			// When reading it from the disk
-			ts, err = storer.Read("my-storage-test", &read)
+			ts, err = storer.Get("my-storage-test", &read)
 
 			assert.Equal(t, stored, read)
 
@@ -132,7 +132,7 @@ func TestStorer_Map(t *testing.T) {
 				"3": map[string]interface{}{"hello": "how are you", "fine": "and you?"},
 				"4": 5.0,
 			}
-			ts, err := storer.Write("my-storage-test", stored)
+			ts := storer.Set("my-storage-test", stored)
 			assert.Nil(t, err)
 			assert.Equal(t, nowTime.Unix(), ts)
 
@@ -141,7 +141,7 @@ func TestStorer_Map(t *testing.T) {
 
 			// When reading it from the disk
 			var read map[string]interface{}
-			ts, err = storer.Read("my-storage-test", &read)
+			ts, err = storer.Get("my-storage-test", &read)
 
 			// An map equal to the original has been returned
 			assert.Equal(t, stored, read)
@@ -168,7 +168,7 @@ func TestStorer_Array(t *testing.T) {
 
 			// And a stored array
 			stored := []interface{}{"1", 2.0, "3", map[string]interface{}{"hello": "how are you", "fine": "and you?"}}
-			ts, err := storer.Write("my-storage-test", stored)
+			ts := storer.Set("my-storage-test", stored)
 			assert.Nil(t, err)
 			assert.Equal(t, nowTime.Unix(), ts)
 
@@ -177,7 +177,7 @@ func TestStorer_Array(t *testing.T) {
 
 			// When reading it from the disk
 			var read []interface{}
-			ts, err = storer.Read("my-storage-test", &read)
+			ts, err = storer.Get("my-storage-test", &read)
 
 			// It returns an array equal to the original
 			assert.Equal(t, stored, read)
@@ -205,7 +205,7 @@ func TestStorer_String(t *testing.T) {
 
 			// And a stored string
 			stored := "hello my good friend"
-			ts, err := storer.Write("my-storage-test", stored)
+			ts := storer.Set("my-storage-test", stored)
 			assert.Nil(t, err)
 			assert.Equal(t, nowTime.Unix(), ts)
 
@@ -214,7 +214,7 @@ func TestStorer_String(t *testing.T) {
 
 			// When reading it from the disk
 			var read string
-			ts, err = storer.Read("my-storage-test", &read)
+			ts, err = storer.Get("my-storage-test", &read)
 
 			// It returns a string equal to the original
 			assert.Equal(t, stored, read)
@@ -242,8 +242,7 @@ func TestStorer_Number(t *testing.T) {
 
 			// And a stored integer
 			stored := int(123456)
-			ts, err := storer.Write("my-storage-test", stored)
-			assert.Nil(t, err)
+			ts := storer.Set("my-storage-test", stored)
 			assert.Equal(t, nowTime.Unix(), ts)
 
 			storer, err = provider.prepareToRead(storer)
@@ -251,7 +250,7 @@ func TestStorer_Number(t *testing.T) {
 
 			// When reading it from the disk
 			var read int
-			ts, err = storer.Read("my-storage-test", &read)
+			ts, err = storer.Get("my-storage-test", &read)
 
 			// It returns the copy of the original number
 			assert.Equal(t, stored, read)
@@ -276,14 +275,12 @@ func TestStorer_Overwrite(t *testing.T) {
 			setNow(func() time.Time {
 				return nowTime
 			})
-			ts, err := storer.Write("my-storage-test", "initial Value")
-			assert.Nil(t, err)
+			ts := storer.Set("my-storage-test", "initial Value")
 			assert.Equal(t, nowTime.Unix(), ts)
 
 			nowTime = time.Unix(78910, 111213)
 			// When this record is overwritten
-			ts, err = storer.Write("my-storage-test", "overwritten value")
-			assert.Nil(t, err)
+			ts = storer.Set("my-storage-test", "overwritten value")
 			assert.Equal(t, nowTime.Unix(), ts)
 
 			storer, err = provider.prepareToRead(storer)
@@ -291,7 +288,7 @@ func TestStorer_Overwrite(t *testing.T) {
 
 			// The read operation returns the last version of the record
 			var read string
-			storer.Read("my-storage-test", &read)
+			storer.Get("my-storage-test", &read)
 			assert.Equal(t, "overwritten value", read)
 		})
 	}
@@ -310,7 +307,7 @@ func TestStorer_NotFound(t *testing.T) {
 
 			// When trying to access an nonexistent record
 			var read string
-			_, err := storer.Read("my-storage-test", &read)
+			_, err := storer.Get("my-storage-test", &read)
 
 			// The storage returns an ErrNotFound error
 			assert.Equal(t, ErrNotFound, err)
@@ -327,8 +324,7 @@ func TestStorer_Delete(t *testing.T) {
 			// Given a Storer implementation
 
 			// And a stored record
-			_, err := storer.Write("my-storage-test", "initial Value")
-			assert.Nil(t, err)
+			storer.Set("my-storage-test", "initial Value")
 			// When removing the stored record
 			assert.Nil(t, storer.Delete("my-storage-test"))
 
@@ -337,7 +333,7 @@ func TestStorer_Delete(t *testing.T) {
 
 			// When trying to access an nonexistent record
 			var read string
-			_, err = storer.Read("my-storage-test", &read)
+			_, err = storer.Get("my-storage-test", &read)
 
 			// The storage returns an ErrNotFound error
 			assert.Equal(t, ErrNotFound, err)
@@ -381,14 +377,14 @@ func TestFileStorer_Save(t *testing.T) {
 	}
 
 	// When something is Saved
-	storer.Write("stringValue", "hello my friend")
-	storer.Write("arrayValue", []float64{0, 1, 2, 3, 4})
-	storer.Write("floatValue", 3)
-	storer.Write("deletedValue", "this won't be persisted")
+	storer.Set("stringValue", "hello my friend")
+	storer.Set("arrayValue", []float64{0, 1, 2, 3, 4})
+	storer.Set("floatValue", 3)
+	storer.Set("deletedValue", "this won't be persisted")
 	storer.Delete("deletedValue")
 
 	stored := testStruct{555, 444}
-	storer.Write("structValue", stored)
+	storer.Set("structValue", stored)
 
 	storer.Save()
 
@@ -398,27 +394,27 @@ func TestFileStorer_Save(t *testing.T) {
 
 	// The data is persisted as expected
 	var stringValue string
-	_, err = storer.Read("stringValue", &stringValue)
+	_, err = storer.Get("stringValue", &stringValue)
 	assert.NoError(t, err)
 
-	_, err = storer.Read("deletedValue", &stringValue)
+	_, err = storer.Get("deletedValue", &stringValue)
 	assert.Error(t, err)
 
 	// (int arrays are unmarshalled as float arrays)
 	arrayValue := make([]interface{}, 0, 0)
-	_, err = storer.Read("arrayValue", &arrayValue)
+	_, err = storer.Get("arrayValue", &arrayValue)
 	assert.NoError(t, err)
 	for i, v := range arrayValue {
 		assert.InDelta(t, float64(i), v, 0.01)
 	}
 
 	var floatValue float64
-	_, err = storer.Read("floatValue", &floatValue)
+	_, err = storer.Get("floatValue", &floatValue)
 	assert.NoError(t, err)
 	assert.InDelta(t, 3, floatValue, 0.01)
 
 	var structValue testStruct
-	_, err = storer.Read("structValue", &structValue)
+	_, err = storer.Get("structValue", &structValue)
 	assert.NoError(t, err)
 	assert.Equal(t, testStruct{555, 444}, structValue)
 
