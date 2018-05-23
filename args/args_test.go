@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSetupArgsDefault(t *testing.T) {
@@ -23,7 +24,7 @@ func TestSetupArgsDefault(t *testing.T) {
 
 	os.Setenv("HOSTNAME", "")
 	os.Args = []string{"cmd"}
-	flag.CommandLine = flag.NewFlagSet("name", 0)
+	flag.CommandLine = flag.NewFlagSet("name", flag.ContinueOnError)
 
 	sdk_args.SetupArgs(&args)
 
@@ -74,7 +75,7 @@ func TestSetupArgsCommandLine(t *testing.T) {
 		List:     *sdk_args.NewJSON([]interface{}{"arg1", 2.0}),
 	}
 
-	flag.CommandLine = flag.NewFlagSet("name", 0)
+	flag.CommandLine = flag.NewFlagSet("name", flag.ContinueOnError)
 	sdk_args.SetupArgs(&args)
 
 	if !reflect.DeepEqual(args, expected) {
@@ -101,7 +102,7 @@ func TestSetupArgsEnvironment(t *testing.T) {
 	os.Setenv("CONFIG", "{\"arg1\": 2}")
 	os.Args = []string{"cmd"}
 
-	flag.CommandLine = flag.NewFlagSet("name", 0)
+	flag.CommandLine = flag.NewFlagSet("name", flag.ContinueOnError)
 
 	sdk_args.SetupArgs(&args)
 
@@ -115,13 +116,30 @@ func TestSetupArgsEnvironment(t *testing.T) {
 	}
 }
 
+func TestEnvironmentVarsOverrideCliArgs(t *testing.T) {
+	var args struct {
+		Verbose bool
+	}
+
+	os.Setenv("VERBOSE", "false")
+	os.Args = []string{
+		"cmd",
+		"-verbose",
+	}
+
+	flag.CommandLine = flag.NewFlagSet("cmd", flag.ContinueOnError)
+	sdk_args.SetupArgs(&args)
+
+	assert.False(t, args.Verbose)
+}
+
 func TestSetupArgsErrors(t *testing.T) {
 	type argumentList struct {
 		Verbose bool `default:"badbool" help:"Print more information to logs."`
 	}
 
 	os.Args = []string{"cmd"}
-	flag.CommandLine = flag.NewFlagSet("name", 0)
+	flag.CommandLine = flag.NewFlagSet("name", flag.ContinueOnError)
 
 	err := sdk_args.SetupArgs(&argumentList{})
 	if err == nil {
@@ -132,7 +150,7 @@ func TestSetupArgsErrors(t *testing.T) {
 		Verbose int `default:"badint" help:"Print more information to logs."`
 	}
 
-	flag.CommandLine = flag.NewFlagSet("name", 0)
+	flag.CommandLine = flag.NewFlagSet("name", flag.ContinueOnError)
 
 	err = sdk_args.SetupArgs(&argumentList2{})
 	if err == nil {
@@ -143,7 +161,7 @@ func TestSetupArgsErrors(t *testing.T) {
 		Verbose float64 `default:"0.12" help:"Print more information to logs."`
 	}
 
-	flag.CommandLine = flag.NewFlagSet("name", 0)
+	flag.CommandLine = flag.NewFlagSet("name", flag.ContinueOnError)
 
 	err = sdk_args.SetupArgs(&argumentList3{})
 	if err == nil {
@@ -161,7 +179,7 @@ func TestSetupArgsParseJsonError(t *testing.T) {
 		"-config={\"arg1\": 2",
 	}
 
-	flag.CommandLine = flag.NewFlagSet("name", 0)
+	flag.CommandLine = flag.NewFlagSet("name", flag.ContinueOnError)
 	err := sdk_args.SetupArgs(&argumentList4{})
 	if err == nil {
 		t.Error()
