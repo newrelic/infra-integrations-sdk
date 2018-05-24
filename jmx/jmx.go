@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -22,9 +23,11 @@ var lock sync.Mutex
 var cmd *exec.Cmd
 var cancel context.CancelFunc
 var cmdOut io.ReadCloser
+var cmdError io.ReadCloser
 var cmdIn io.WriteCloser
 var cmdErr = make(chan error, 1)
 var done sync.WaitGroup
+var warnings []string
 
 var (
 	jmxCommand = "/usr/bin/nrjmx"
@@ -75,7 +78,6 @@ func Open(hostname, port, username, password string) error {
 	cliCommand := getCommand(hostname, port, username, password)
 
 	ctx, cancel = context.WithCancel(context.Background())
-
 	cmd = exec.CommandContext(ctx, cliCommand[0], cliCommand[1:]...)
 
 	if cmdOut, err = cmd.StdoutPipe(); err != nil {
@@ -84,13 +86,19 @@ func Open(hostname, port, username, password string) error {
 	if cmdIn, err = cmd.StdinPipe(); err != nil {
 		return err
 	}
+
+	if cmdError, err = cmd.StderrPipe(); err != nil {
+		return err
+	}
+
 	if err = cmd.Start(); err != nil {
 		return err
 	}
 
 	go func() {
 		if err = cmd.Wait(); err != nil {
-			cmdErr <- fmt.Errorf("JMX tool exited with error: %s", err)
+			stdErr, _ := ioutil.ReadAll(cmdError)
+			cmdErr <- fmt.Errorf("JMX tool exited with error: %s (%s)", err, string(stdErr))
 		}
 		done.Done()
 
@@ -114,6 +122,8 @@ func Close() {
 
 	cancel()
 	_ = cmdIn.Close()
+	_ = cmdError.Close()
+
 	done.Wait()
 }
 
@@ -147,17 +157,21 @@ func doQuery(ctx context.Context, out chan []byte, errorChan chan error, querySt
 }
 
 // Query executes JMX query against nrjmx tool waiting up to timeout (in milliseconds)
-// and returns a map with the result.
 func Query(objectPattern string, timeout int) (map[string]interface{}, error) {
+	defer flushWarnings()
 	ctx, cancelFn := context.WithCancel(context.Background())
 
-	result := make(map[string]interface{})
 	lineCh := make(chan []byte, jmxLineBuffer*2)
 	queryErrors := make(chan error)
 	outTimeout := time.Duration(timeout) * time.Millisecond
 	// Send the query async to the underlying process so we can timeout it
 	go doQuery(ctx, lineCh, queryErrors, []byte(fmt.Sprintf("%s\n", objectPattern)))
 
+	return loop(lineCh, queryErrors, cancelFn, objectPattern, outTimeout)
+}
+
+// loop checks for channels to receive result from nrjmx command.
+func loop(lineCh chan []byte, queryErrors chan error, cancelFn context.CancelFunc, objectPattern string, timeout time.Duration) (result map[string]interface{}, err error) {
 	select {
 	case line := <-lineCh:
 		if line == nil {
@@ -169,14 +183,24 @@ func Query(objectPattern string, timeout int) (map[string]interface{}, error) {
 			return nil, fmt.Errorf("invalid return value for query: %s, %s", objectPattern, err)
 		}
 	case err := <-cmdErr: // Will receive an error if the nrjmx tool exited prematurely
-		return nil, err
+		if strings.HasPrefix(err.Error(), "WARNING") {
+			warnings = append(warnings, err.Error())
+		} else {
+			return nil, err
+		}
 	case err := <-queryErrors: // Will receive an error if we failed while reading query output
 		return nil, err
-	case <-time.After(outTimeout):
+	case <-time.After(timeout):
 		// In case of timeout, we want to close the command to avoid mixing up results coming up latter
 		cancelFn()
 		Close()
 		return nil, fmt.Errorf("timeout while waiting for query: %s", objectPattern)
 	}
 	return result, nil
+}
+
+func flushWarnings() {
+	for w := range warnings {
+		_, _ = os.Stderr.WriteString(string(w) + "\n")
+	}
 }
