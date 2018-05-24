@@ -1,3 +1,6 @@
+// This custom http package provides an easy way to construct an http client with custom certificates and customizable
+// timeout. If you need to customize other attributes you can use the golang http package.
+// https://golang.org/pkg/net/http/
 package http
 
 import (
@@ -8,10 +11,19 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
-// NewWithCert creates a new http.Client with a custom certificate
-func NewWithCert(CABundleFile, CABundleDir string) (*http.Client, error) {
+// This arguments are meant to be used as flags from a custom integrations. With this you could easily
+// send this arguments from the command line.
+type ClientArguments struct {
+	CA_BUNDLE_FILE string `default: "" help: "Name of the certificate file"`
+	CA_BUNDLE_DIR string `default: "" help: "Path where the certificate exists"`
+	HTTP_TIMEOUT time.Duration `default:30 help: "Client http timeout"`
+}
+
+// New creates a new http.Client with a custom certificate
+func New(CABundleFile, CABundleDir string, httpTimeout time.Duration) (*http.Client, error) {
 	// go default http transport settings
 	transport := &http.Transport{}
 
@@ -24,6 +36,7 @@ func NewWithCert(CABundleFile, CABundleDir string) (*http.Client, error) {
 	}
 
 	return &http.Client{
+		Timeout:   httpTimeout * time.Second,
 		Transport: transport,
 	}, nil
 }

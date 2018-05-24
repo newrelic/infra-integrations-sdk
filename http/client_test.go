@@ -101,7 +101,7 @@ func TestClient_NewWithCert(t *testing.T) {
 		log.Fatal("ListenAndServe: ", err)
 	}
 
-	client, err := NewWithCert("ca.pem", "/tmp/")
+	client, err := New("ca.pem", "/tmp/", 30)
 	if err != nil {
 		log.Println(err)
 		return
@@ -119,7 +119,7 @@ func TestClient_NewWithCert(t *testing.T) {
 }
 
 func TestClient_NewWithEmptyCert(t *testing.T) {
-	_, err := NewWithCert("", "/tmp/")
+	_, err := New("", "/tmp/", 30)
 	if err != nil {
 		log.Println(err)
 		return
