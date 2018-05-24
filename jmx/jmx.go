@@ -167,11 +167,11 @@ func Query(objectPattern string, timeout int) (map[string]interface{}, error) {
 	// Send the query async to the underlying process so we can timeout it
 	go doQuery(ctx, lineCh, queryErrors, []byte(fmt.Sprintf("%s\n", objectPattern)))
 
-	return loop(lineCh, queryErrors, cancelFn, objectPattern, outTimeout)
+	return receiveResult(lineCh, queryErrors, cancelFn, objectPattern, outTimeout)
 }
 
-// loop checks for channels to receive result from nrjmx command.
-func loop(lineCh chan []byte, queryErrors chan error, cancelFn context.CancelFunc, objectPattern string, timeout time.Duration) (result map[string]interface{}, err error) {
+// receiveResult checks for channels to receive result from nrjmx command.
+func receiveResult(lineCh chan []byte, queryErrors chan error, cancelFn context.CancelFunc, objectPattern string, timeout time.Duration) (result map[string]interface{}, err error) {
 	select {
 	case line := <-lineCh:
 		if line == nil {
