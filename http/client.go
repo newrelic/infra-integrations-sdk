@@ -13,12 +13,12 @@ import (
 	"time"
 )
 
-// This arguments are meant to be used as flags from a custom integrations. With this you could easily
+// ClientArguments are meant to be used as flags from a custom integrations. With this you could
 // send this arguments from the command line.
 type ClientArguments struct {
-	CA_BUNDLE_FILE string `default: "" help: "Name of the certificate file"`
-	CA_BUNDLE_DIR string `default: "" help: "Path where the certificate exists"`
-	HTTP_TIMEOUT time.Duration `default:30 help: "Client http timeout"`
+	HTTPCaBundleFile string        `default: "" help: "Name of the certificate file"`
+	HTTPCaBundleDir  string        `default: "" help: "Path where the certificate exists"`
+	HTTPTimeout      time.Duration `default:30 help: "Client http timeout"`
 }
 
 // New creates a new http.Client with a custom certificate
