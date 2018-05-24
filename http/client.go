@@ -1,6 +1,5 @@
-// This custom http package provides an easy way to construct an http client with custom certificates and customizable
-// timeout. If you need to customize other attributes you can use the golang http package.
-// https://golang.org/pkg/net/http/
+// Package http provides an easy way to construct an http client with custom certificates and customizable timeout.
+// If you need to customize other attributes you can use the golang http package. https://golang.org/pkg/net/http/
 package http
 
 import (
