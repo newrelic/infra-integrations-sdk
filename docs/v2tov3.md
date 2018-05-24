@@ -1,7 +1,7 @@
 # Upgrading from GoSDK v2.x to GoSDK v3
 
-This document targets the current GoSDK `v2.x` users that want to quickly know which are the changes and
-implications in case they want to upgrade to GoSDK `v3`.
+This document targets the current GoSDK `v2.x` users that want to quickly know what has changed and
+what they need to do if they want to upgrade to GoSDK `v3`.
 
 The GoSDK `v3` adds support for multiple monitoring entities through the new JSON `v2` protocol. The GoSDK
 `v3` API has been totally reworked to decouple the aforementioned JSON schema from the API that manages it, and
