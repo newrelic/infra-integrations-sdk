@@ -170,36 +170,37 @@ func Query(objectPattern string, timeout int) (map[string]interface{}, error) {
 	return loop(lineCh, queryErrors, cancelFn, objectPattern, outTimeout)
 }
 
+// loop checks for channels to receive result from nrjmx command.
 func loop(lineCh chan []byte, queryErrors chan error, cancelFn context.CancelFunc, objectPattern string, timeout time.Duration) (result map[string]interface{}, err error) {
 	select {
-		case line := <-lineCh:
-			if line == nil {
-				cancelFn()
-				Close()
-				return nil, fmt.Errorf("got empty result for query: %s", objectPattern)
-			}
-			if err := json.Unmarshal(line, &result); err != nil {
-				return nil, fmt.Errorf("invalid return value for query: %s, %s", objectPattern, err)
-			}
-		case err := <-cmdErr: // Will receive an error if the nrjmx tool exited prematurely
-			if strings.HasPrefix(err.Error(), "WARNING") {
-				warnings = append(warnings, err.Error())
-			} else {
-				return nil, err
-			}
-		case err := <-queryErrors: // Will receive an error if we failed while reading query output
-			return nil, err
-		case <-time.After(timeout):
-			// In case of timeout, we want to close the command to avoid mixing up results coming up latter
+	case line := <-lineCh:
+		if line == nil {
 			cancelFn()
 			Close()
-			return nil, fmt.Errorf("timeout while waiting for query: %s", objectPattern)
+			return nil, fmt.Errorf("got empty result for query: %s", objectPattern)
+		}
+		if err := json.Unmarshal(line, &result); err != nil {
+			return nil, fmt.Errorf("invalid return value for query: %s, %s", objectPattern, err)
+		}
+	case err := <-cmdErr: // Will receive an error if the nrjmx tool exited prematurely
+		if strings.HasPrefix(err.Error(), "WARNING") {
+			warnings = append(warnings, err.Error())
+		} else {
+			return nil, err
+		}
+	case err := <-queryErrors: // Will receive an error if we failed while reading query output
+		return nil, err
+	case <-time.After(timeout):
+		// In case of timeout, we want to close the command to avoid mixing up results coming up latter
+		cancelFn()
+		Close()
+		return nil, fmt.Errorf("timeout while waiting for query: %s", objectPattern)
 	}
-	return result ,nil
+	return result, nil
 }
 
 func flushWarnings() {
 	for w := range warnings {
-		os.Stderr.WriteString(string(w) + "\n")
+		_, _ = os.Stderr.WriteString(string(w) + "\n")
 	}
 }
