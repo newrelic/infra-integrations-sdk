@@ -14,14 +14,14 @@
 [GoDocWidget]: https://godoc.org/github.com/newrelic/infra-integrations-sdk?status.svg
 
 New Relic Infrastructure, provided by New Relic, Inc (http://www.newrelic.com),
-offers flexible, dynamic server monitoring. We provide an SDK for creating an
-integration for reporting custom host and server data, including metric, event,
-and inventory (system state) data. That data will be findable and usable in New Relic
+offers flexible, dynamic infrastructure monitoring. We provide an SDK for building custom
+integrations for custom instrumentation of servers and services, including metric, event,
+and inventory (system state) data. That data can be found and used in New Relic
 Infrastructure and in New Relic Insights. You can find the complete documentation
-of the SDK on [our docs site](https://docs.newrelic.com/docs/intro-infrastructure-integration-sdk).
+for the SDK on [our docs site](https://docs.newrelic.com/docs/intro-infrastructure-integration-sdk).
 
-This Go package helps take the complexity out of building an Infrastructure
-Integration by providing a set of useful GO functions and data structures. For
+This Go SDK reduces the complexity of building custom integrations with Infrastructure
+ by providing a set of useful GO functions and data structures. For
 instance, some common use cases like reading values from command-line arguments
 or environment variables, initializing a structure with all the necessary fields
 for an Integration defined by our SDK or generating and printing a JSON to
@@ -60,6 +60,9 @@ Agent supports 2 different data-structures called *protocols*:
 
 * v1: Legacy data structure to monitorize local entity.
 * v2: Latest data structure to monitorize also remote entities.
+
+You can find the latest documentation on the Infrastructue Agent
+[here](https://docs.newrelic.com/docs/infrastructure).
 
 
 #### Local Entity vs Remote Entities
