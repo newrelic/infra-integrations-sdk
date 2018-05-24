@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/magiconair/properties/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -167,7 +167,7 @@ func TestLoop(t *testing.T) {
 	lineCh := make(chan []byte, jmxLineBuffer*2)
 	queryErrors := make(chan error)
 	outTimeout := time.Duration(timeout) * time.Millisecond
-	loop(lineCh, queryErrors, cancelFn, "empty", outTimeout)
+	receiveResult(lineCh, queryErrors, cancelFn, "empty", outTimeout)
 	warningMessage := "WARNING foo bar"
 	cmdErr <- fmt.Errorf(warningMessage)
 	errorChannel := <-cmdErr
