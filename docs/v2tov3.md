@@ -1,11 +1,20 @@
 # Upgrading from GoSDK v2.x to GoSDK v3
 
-This document targets the current GoSDK `v2.x` users that want to quickly know what has changed and
+This document targets the current GoSDK `v2.x` users that want to quickly know what has changed in the new GoSDK `v3` and
 what they need to do if they want to upgrade to GoSDK `v3`.
 
-The GoSDK `v3` adds support for multiple monitoring entities through the new JSON `v2` protocol. The GoSDK
-`v3` API has been totally reworked to decouple the aforementioned JSON schema from the API that manages it, and
-removes support for version `v1` of the JSON Schema. However, `v1` schema is still supported by the New Relic
+The GoSDK `v3` has added the following new features that you should note in upgrading.
+* A new JSON protocol (`v2`)
+* Support for monitoring multiple entities through, what we refer to as `remote entities`
+* The API has been totally reworked to decouple the JSON schema from the API that manages it.
+
+The following section explains the changes from JSON `v1` to `v2` schema. Since GoSDK `v3` API hides
+all the JSON schema details, you may want to go directly to the
+[GoSDK `v3` API changes](#gosdk-v3-api-changes) section.
+
+**Note:**
+
+The GoSDK v3 removes support for version `v1` of the JSON Schema. However, `v1` schema is still supported by the New Relic
 Infrastructure agent. If you want to work with `v1` JSON schema you can still work with our [GoSDK `v2.1.0`](`https://github.com/newrelic/infra-integrations-sdk/tree/v2.1.0`), which is also supported by New Relic.
 
 JSON Schemas support table:
@@ -16,10 +25,6 @@ JSON Schemas support table:
 |GoSDK `v2.x`|✅|❌|
 |GoSDK `v3`|❌|✅|
 
-The following section explains the changes from JSON `v1` to `v2` schema. Since GoSDK `v3` API hides
-all the JSON schema details, you may want to go directly to the
-[GoSDK `v3` API changes](#gosdk-v3-api-changes) section.
-
 ## JSON `v2` schema changes
 
 The previous version of the GoSDK used the JSON `v1` schema, which stored information about the
@@ -29,7 +34,7 @@ or a [MySQL](https://github.com/newrelic/infra-integrations/tree/master/integrat
 Each `v1` payload contained the information of a single entity (often located in the same host as the
 integration).
 
-From the need to support modern distributed environments (e.g. [Kubernetes](https://kubernetes.io/)), our
+In order to support modern distributed environments (e.g. [Kubernetes](https://kubernetes.io/)), our
 Go-SDK v3 adopts the `v2` JSON schema, which encloses `metrics`, `inventory` and `events` information for
 multiple entities (e.g. multiple VMs, containers, storage, etc... See the following figure). 
 
@@ -111,6 +116,7 @@ The `v2` JSON schema also adds the following fields for each entry in the `metri
 }
 ```
 
+
 ## GoSDK `v3` API changes
 
 This section enumerates the main changes you have to keep in mind if you want to upgrade from GoSDK `v2.x` to `v3`.
@@ -119,8 +125,7 @@ For a complete view of the GoSDK `v3`, please refer to [TODO: link API and tutor
 
 ### Data persistence
 
-* The `cache.Cache` component has been renamed to `persist.Storer`, since it wasn't actually a cache but a simple
-  persistence backend.
+* The `cache.Cache` component has been renamed to `persist.Storer`, to align more with the implementation.
 * While `cache.Cache` was a global object, now `persist.Storer` is not global anymore.
 * `persist.Storer` is an interface that accepts multiple implementations: in-memory, disk-backed, or any other
   implementation provided by the user.
