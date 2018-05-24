@@ -116,11 +116,9 @@ func NewFileStore(storagePath string, ilog log.Logger, ttl time.Duration) (Store
 	} else if os.IsNotExist(err) {
 		folder := path.Dir(storagePath)
 		err := os.MkdirAll(folder, dirFilePerm)
-		if err != nil {
-			ilog.Errorf("can't create storage directory %q: %s", folder, err)
-		}
+		return nil, err
 	} else {
-		ilog.Errorf("Error accessing %q: %s", storagePath, err)
+		return nil, err
 	}
 
 	return &store, nil
