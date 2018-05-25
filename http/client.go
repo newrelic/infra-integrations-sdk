@@ -18,7 +18,7 @@ import (
 type ClientArguments struct {
 	HTTPCaBundleFile string        `default: "" help: "Name of the certificate file"`
 	HTTPCaBundleDir  string        `default: "" help: "Path where the certificate exists"`
-	HTTPTimeout      time.Duration `default:30 help: "Client http timeout"`
+	HTTPTimeout      time.Duration `default:30 help: "Client http timeout in seconds"`
 }
 
 // New creates a new http.Client with a custom certificate
