@@ -8,7 +8,7 @@ import (
 
 // Limits
 const (
-	MaxKeyLen = 425
+	MaxKeyLen = 375
 )
 
 // Items ...
@@ -29,7 +29,7 @@ func (i Inventory) MarshalJSON() ([]byte, error) {
 	return json.Marshal(i.items)
 }
 
-// SetItem stores a value into the inventory data structure.
+// SetItem stores a value into the inventory, key is limited to 375 characters.
 func (i Inventory) SetItem(key string, field string, value interface{}) error {
 	if len(key) > MaxKeyLen {
 		return fmt.Errorf("maximum inventory key length is %d, current key %s has %d characters", MaxKeyLen, key, len(key))
