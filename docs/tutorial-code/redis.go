@@ -34,7 +34,10 @@ func populateInventory(e *integration.Entity) error {
 
 	splittedLine := strings.Split(string(output), "\n")
 	if splittedLine[0] == "dbfilename" {
-		e.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
+		err = e.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
+		if err != nil {
+			return err
+		}
 	}
 
 	cmd = exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET bind")
@@ -44,7 +47,10 @@ func populateInventory(e *integration.Entity) error {
 	}
 	splittedLine = strings.Split(string(output), "\n")
 	if splittedLine[0] == "bind" {
-		e.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
+		err = e.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
