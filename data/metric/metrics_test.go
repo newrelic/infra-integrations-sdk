@@ -41,11 +41,9 @@ func TestSet_SetMetricGauge(t *testing.T) {
 	ms, err := NewSet("some-event-type", nil)
 	assert.NoError(t, err)
 
-	ms.SetMetric("key", 10, GAUGE)
+	assert.NoError(t, ms.SetMetric("key", 10, GAUGE))
 
-	if ms.Metrics["key"] != 10 {
-		t.Errorf("metric stored not valid: %v", ms.Metrics["key"])
-	}
+	assert.Equal(t, 10.0, ms.Metrics["key"], "stored gauge should be float")
 }
 
 func TestSet_SetMetricAttribute(t *testing.T) {
