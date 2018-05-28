@@ -3,6 +3,7 @@ package persist
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -112,15 +113,18 @@ func NewFileStore(storagePath string, ilog log.Logger, ttl time.Duration) (Store
 			return &store, nil
 		}
 
-		store.loadFromDisk()
+		err := store.loadFromDisk()
+		if err != nil {
+			ilog.Debugf(err.Error())
+		}
 	} else if os.IsNotExist(err) {
 		folder := path.Dir(storagePath)
 		err := os.MkdirAll(folder, dirFilePerm)
 		if err != nil {
-			ilog.Errorf("can't create storage directory %q: %s", folder, err)
+			return nil, err
 		}
 	} else {
-		ilog.Errorf("Error accessing %q: %s", storagePath, err)
+		return nil, err
 	}
 
 	return &store, nil
@@ -202,16 +206,16 @@ func (j *inMemoryStore) flushCache() error {
 	return nil
 }
 
-func (j *fileStore) loadFromDisk() {
+func (j *fileStore) loadFromDisk() error {
 	bytes, err := ioutil.ReadFile(j.path)
 	if err != nil {
-		j.ilog.Debugf("can't read %q: %s. Ignoring", j.path, err.Error())
-	} else {
-		err = json.Unmarshal(bytes, j)
-		if err != nil {
-			j.ilog.Debugf("can't unmarshall %q: %s. Ignoring", j.path, err.Error())
-		}
+		return fmt.Errorf("can't read %q: %s. Ignoring", j.path, err.Error())
 	}
+	err = json.Unmarshal(bytes, j)
+	if err != nil {
+		return fmt.Errorf("can't unmarshall %q: %s. Ignoring", j.path, err.Error())
+	}
+	return nil
 }
 
 // Delete removes the cached data for the given key. If the data does not exist, the system does not return

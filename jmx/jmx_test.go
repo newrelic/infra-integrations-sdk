@@ -1,7 +1,8 @@
-package jmx_test
+package jmx
 
 import (
 	"bufio"
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -9,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/newrelic/infra-integrations-sdk/jmx"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -54,101 +55,101 @@ func TestMain(m *testing.M) {
 }
 
 func TestJmxOpen(t *testing.T) {
-	defer jmx.Close()
+	defer Close()
 
-	if err := jmx.Open("", "", "", ""); err != nil {
+	if err := Open("", "", "", ""); err != nil {
 		t.Error(err)
 	}
 
-	if jmx.Open("", "", "", "") == nil {
+	if Open("", "", "", "") == nil {
 		t.Error()
 	}
 }
 
 func TestJmxQuery(t *testing.T) {
-	defer jmx.Close()
+	defer Close()
 
 	if err := openWait("", "", "", "", openAttempts); err != nil {
 		t.Error(err)
 	}
 
-	if _, err := jmx.Query("empty", timeout); err != nil {
+	if _, err := Query("empty", timeout); err != nil {
 		t.Error(err)
 	}
 }
 
 func TestJmxCrashQuery(t *testing.T) {
-	defer jmx.Close()
+	defer Close()
 
 	if err := openWait("", "", "", "", openAttempts); err != nil {
 		t.Error(err)
 	}
 
-	if _, err := jmx.Query("crash", timeout); err == nil {
+	if _, err := Query("crash", timeout); err == nil {
 		t.Error()
 	}
 }
 
 func TestJmxInvalidQuery(t *testing.T) {
-	defer jmx.Close()
+	defer Close()
 
 	if err := openWait("", "", "", "", openAttempts); err != nil {
 		t.Error(err)
 	}
 
-	if _, err := jmx.Query("invalid", timeout); err == nil {
+	if _, err := Query("invalid", timeout); err == nil {
 		t.Error()
 	}
 }
 
 func TestJmxTimeoutQuery(t *testing.T) {
-	defer jmx.Close()
+	defer Close()
 
 	if err := openWait("", "", "", "", openAttempts); err != nil {
 		t.Error(err)
 	}
 
-	if _, err := jmx.Query("timeout", timeout); err == nil {
+	if _, err := Query("timeout", timeout); err == nil {
 		t.Error()
 	}
 
-	if _, err := jmx.Query("empty", timeout); err == nil {
+	if _, err := Query("empty", timeout); err == nil {
 		t.Error()
 	}
 }
 
 func TestJmxNoTimeoutQuery(t *testing.T) {
-	defer jmx.Close()
+	defer Close()
 
 	if err := openWait("", "", "", "", openAttempts); err != nil {
 		t.Error(err)
 	}
 
-	if _, err := jmx.Query("timeout", 1500); err != nil {
+	if _, err := Query("timeout", 1500); err != nil {
 		t.Error(err)
 	}
 }
 
 func TestJmxTimeoutBigQuery(t *testing.T) {
-	defer jmx.Close()
+	defer Close()
 
 	if err := openWait("", "", "", "", openAttempts); err != nil {
 		t.Error(err)
 	}
 
-	if _, err := jmx.Query("bigPayload", timeout); err != nil {
+	if _, err := Query("bigPayload", timeout); err != nil {
 		t.Error(err)
 	}
 
-	if _, err := jmx.Query("bigPayloadError", timeout); err == nil {
+	if _, err := Query("bigPayloadError", timeout); err == nil {
 		t.Error()
 	}
 }
 
 // tests can overlap, and as jmx-cmd is a singleton, waiting for it to be closed is mandatory
 func openWait(hostname, port, username, password string, attempts int) error {
-	err := jmx.Open(hostname, port, username, password)
-	if err == jmx.ErrJmxCmdRunning && attempts > 0 {
+	err := Open(hostname, port, username, password)
+	if err == ErrJmxCmdRunning && attempts > 0 {
 		attempts--
 		time.Sleep(10 * time.Millisecond)
 
@@ -156,4 +157,24 @@ func openWait(hostname, port, username, password string, attempts int) error {
 	}
 
 	return err
+}
+
+// test that if we receive a WARNING message we still will receive the actual data.
+func TestLoop(t *testing.T) {
+	defer flushWarnings()
+	_, cancelFn := context.WithCancel(context.Background())
+
+	lineCh := make(chan []byte, jmxLineBuffer*2)
+	queryErrors := make(chan error)
+	outTimeout := time.Duration(timeout) * time.Millisecond
+	receiveResult(lineCh, queryErrors, cancelFn, "empty", outTimeout)
+	warningMessage := "WARNING foo bar"
+	cmdErr <- fmt.Errorf(warningMessage)
+	errorChannel := <-cmdErr
+	assert.Equal(t, errorChannel, fmt.Errorf(warningMessage))
+	b := []byte("{foo}")
+	lineCh <- b
+	msg := string(<-lineCh)
+	assert.Equal(t, msg, "{foo}")
+
 }

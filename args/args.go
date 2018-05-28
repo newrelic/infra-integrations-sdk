@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // DefaultArgumentList includes the minimal set of necessary arguments for an
@@ -20,6 +21,14 @@ type DefaultArgumentList struct {
 	Metrics   bool `default:"false" help:"Publish metrics data."`
 	Inventory bool `default:"false" help:"Publish inventory data."`
 	Events    bool `default:"false" help:"Publish events data."`
+}
+
+// HTTPClientArgumentList are meant to be used as flags from a custom integrations. With this you could
+// send this arguments from the command line.
+type HTTPClientArgumentList struct {
+	HTTPCaBundleFile string        `default: "" help: "Name of the certificate file"`
+	HTTPCaBundleDir  string        `default: "" help: "Path where the certificate exists"`
+	HTTPTimeout      time.Duration `default:30 help: "Client http timeout in seconds"`
 }
 
 func getArgsFromEnv() func(f *flag.Flag) {
