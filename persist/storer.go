@@ -6,56 +6,72 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
+	"reflect"
 	"time"
 
 	"github.com/newrelic/infra-integrations-sdk/log"
 )
 
 const (
-	ttl             = 1 * time.Minute
+	// DefaultTTL specifies the "Time To Live" of the disk storage.
+	DefaultTTL      = 1 * time.Minute
 	filePerm        = 0644
 	dirFilePerm     = 0755
 	integrationsDir = "nr-integrations"
 )
 
 var (
-	now = time.Now
+	// ErrNotFound defines an error that will be returned when trying to access a storage entry that can't be found
+	ErrNotFound = errors.New("key not found")
 )
 
-// Errors
-var (
-	ErrNotFound   = errors.New("key not found")
-	ErrTsNotFound = errors.New("timestamp for key not found")
-)
+var now = time.Now
 
-// Storer is a key-value structure that is initialized and stored in a persistent device.
-// It also saves the timestamp when a key was stored.
+// Storer defines the interface of a Key-Value storage system, which is able to store the timestamp
+// where the key was stored.
 type Storer interface {
-	// Set sets the value under the given key, storing the current timestamp that is also returned.
-	// This method does not persist until Save is called.
+	// Set associates a value with a given key. Implementors must save also the time when it has been stored and return it.
+	// The value can be any type.
 	Set(key string, value interface{}) int64
-	// Get returns the value for a given key. Last Set call timestamp is returned.
-	// If key is not found ErrNotFound error is returned.
-	Get(key string) (value interface{}, timestamp int64, err error)
-	// Delete removes the cached data for the given key
-	Delete(key string)
-	// Save persists all in-memory stored data.
+	// Get gets the value associated to a given key and stores in the value referenced by the pointer passed as argument.
+	// It returns the Unix timestamp when the value was stored (in seconds), or an error if the Get operation failed.
+	// It may return any type of value.
+	Get(key string, valuePtr interface{}) (int64, error)
+	// Delete removes the cached data for the given key. If the data does not exist, the system does not return
+	// any error.
+	Delete(key string) error
+	// Save persists all the data in the storer.
 	Save() error
 }
 
+// In-memory implementation of the storer
 type inMemoryStore struct {
-	Data       map[string]interface{}
+	cachedData map[string]jsonEntry
+	Data       map[string][]byte
 	Timestamps map[string]int64
 }
 
+// Holder for any entry in the JSON storage
+type jsonEntry struct {
+	Timestamp int64
+	Value     interface{}
+}
+
+// fileStore is a Storer implementation that uses the file system as persistence backend, storing
+// the objects as JSON.
+// This requires that any object that has to be stored is Marshallable and Unmarshallable.
+// TODO: make this implementation read all the cached values at the same time and persist them at the same time after
+// invoking a Persist() or Save() function. This will improve performance while minimizing disk usage.
 type fileStore struct {
 	inMemoryStore
 	path string
+	ilog log.Logger
 }
 
 // SetNow forces a different "current time" for the Storer.
-// This function is useful only for unit testing.
+// Deprecated: This function is useful only for unit testing outside the persist package.
 func SetNow(newNow func() time.Time) {
 	now = newNow
 }
@@ -63,108 +79,150 @@ func SetNow(newNow func() time.Time) {
 // DefaultPath returns a default folder/filename path to a Storer for an integration from the given name. The name of
 // the file will be the name of the integration with the .json extension.
 func DefaultPath(integrationName string) string {
-	baseDir := filepath.Join(os.TempDir(), integrationsDir)
+	dir := filepath.Join(os.TempDir(), integrationsDir)
+	baseDir := path.Join(dir, integrationName+".json")
 	// Create integrations Storer directory
-	if os.MkdirAll(baseDir, dirFilePerm) != nil {
+	if os.MkdirAll(dir, dirFilePerm) != nil {
 		baseDir = os.TempDir()
 	}
-	return filepath.Join(baseDir, fmt.Sprint(integrationName, ".json"))
+	return baseDir
 }
 
-// NewInMemoryStore will create and initialize an in-memory Storer.
+// NewInMemoryStore will create and initialize an in-memory Storer (not persistent).
 func NewInMemoryStore() Storer {
 	return &inMemoryStore{
-		Data:       make(map[string]interface{}),
+		cachedData: make(map[string]jsonEntry),
+		Data:       make(map[string][]byte),
 		Timestamps: make(map[string]int64),
 	}
 }
 
-// NewFileStore will create and initialize a disk-backed Storer.
-func NewFileStore(storePath string, l log.Logger) (Storer, error) {
-	store := &fileStore{
-		inMemoryStore: *NewInMemoryStore().(*inMemoryStore),
-		path:          storePath,
+// NewFileStore returns a disk-backed Storer using the provided file path
+func NewFileStore(storagePath string, ilog log.Logger, ttl time.Duration) (Storer, error) {
+	ms := NewInMemoryStore().(*inMemoryStore)
+
+	store := fileStore{
+		path:          storagePath,
+		ilog:          ilog,
+		inMemoryStore: *ms,
 	}
 
-	// Create the external directory for user-generated json
-	storeDir := filepath.Dir(store.path)
-	if _, err := os.Stat(storeDir); err != nil {
-		if err = os.MkdirAll(storeDir, dirFilePerm); err != nil {
-			return nil, fmt.Errorf("store directory in %s could not be created", storeDir)
+	if stat, err := os.Stat(storagePath); err == nil {
+		if now().Sub(stat.ModTime()) > ttl {
+			ilog.Debugf("store file (%s) is older than %v, skipping loading from disk.", storagePath, ttl)
+			return &store, nil
 		}
-	}
 
-	stat, err := os.Stat(store.path)
-	// Store file doesn't exist yet
-	if err != nil {
-		if _, err = os.OpenFile(store.path, os.O_CREATE|os.O_WRONLY, filePerm); err != nil {
-			return nil, fmt.Errorf("store directory not writable: %s", storeDir)
+		err := store.loadFromDisk()
+		if err != nil {
+			ilog.Debugf(err.Error())
 		}
-		return store, nil
+	} else if os.IsNotExist(err) {
+		folder := path.Dir(storagePath)
+		err := os.MkdirAll(folder, dirFilePerm)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, err
 	}
 
-	if now().Sub(stat.ModTime()) > ttl {
-		l.Infof("store file (%s) is older than %v, skipping loading from disk.", storePath, ttl)
-		return store, nil
-	}
-
-	file, err := ioutil.ReadFile(store.path)
-	if err != nil {
-		l.Infof("store file (%s) cannot be open for reading.", storePath)
-		return store, nil
-	}
-
-	err = json.Unmarshal(file, &store.inMemoryStore)
-	if err != nil {
-		l.Errorf("cannot json decode stored integration entities, starting from scratch")
-	}
-
-	return store, nil
+	return &store, nil
 }
 
-// Save persists all the data in the Storer.
-func (c *fileStore) Save() error {
-	if c.path == "" {
-		return nil
-	}
-
-	data, err := json.Marshal(c.inMemoryStore)
+func (j *fileStore) Save() error {
+	// An in-memory implementation does nothing
+	err := j.flushCache()
 	if err != nil {
 		return err
 	}
 
-	return ioutil.WriteFile(c.path, data, filePerm)
+	bytes, err := json.Marshal(j)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(j.path, bytes, filePerm)
 }
 
-// Save won't persist on disk.
-func (c *inMemoryStore) Save() error {
+func (j *inMemoryStore) Save() error {
+	// An in-memory implementation does nothing
 	return nil
 }
 
-// Get returns the value for a given key. Last Set call timestamp is returned.
-// If key is not found ErrNotFound error is returned.
-func (c *inMemoryStore) Get(key string) (value interface{}, timestamp int64, err error) {
-	var ok bool
-	if value, ok = c.Data[key]; ok {
-		if timestamp, ok = c.Timestamps[key]; !ok {
-			err = ErrTsNotFound
-		}
-		return
+// Set stores a value for a given key. Implementors must save also the time when it was stored.
+// This implementation adds a restriction to the key name: it must be a valid file name (without extension).
+func (j inMemoryStore) Set(key string, value interface{}) int64 {
+	ts := now().Unix()
+	j.cachedData[key] = jsonEntry{
+		Timestamp: ts,
+		Value:     value,
+	}
+	return ts
+}
+
+// Get gets the value associated to a given key and stores it in the value referenced by the pointer passed as
+// second argument
+// This implementation adds a restriction to the key name: it must be a valid file name (without extension).
+func (j inMemoryStore) Get(key string, valuePtr interface{}) (int64, error) {
+	rv := reflect.ValueOf(valuePtr)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return 0, errors.New("destination argument must be a pointer")
 	}
 
-	err = ErrNotFound
-	return
+	entry, ok := j.cachedData[key]
+
+	// If the entry is not cached, it may be stored as a JSON (as loaded from disk), and we unmarshall it
+	if !ok {
+		bytes, ok := j.Data[key]
+		if !ok {
+			return 0, ErrNotFound
+		}
+
+		entry = jsonEntry{}
+		entry.Value = valuePtr
+		err := json.Unmarshal(bytes, &entry)
+		if err != nil {
+			return 0, err
+		}
+		j.cachedData[key] = entry
+	}
+
+	// Using reflection to indirectly set the value passed as reference
+	reflect.Indirect(rv).Set(reflect.Indirect(reflect.ValueOf(entry.Value)))
+
+	return entry.Timestamp, nil
 }
 
-// Delete removes the key entry
-func (c *inMemoryStore) Delete(name string) {
-	delete(c.Data, name)
-	delete(c.Timestamps, name)
+// flushcache marshalls all the cached data into JSON, ready to be stored into disk
+func (j *inMemoryStore) flushCache() error {
+	for k, v := range j.cachedData {
+		bytes, err := json.Marshal(v)
+		if err != nil {
+			return err
+		}
+		j.Data[k] = bytes
+	}
+	j.cachedData = make(map[string]jsonEntry)
+	return nil
 }
 
-// Set adds a value into the store and it also stores the current timestamp.
-func (c *inMemoryStore) Set(name string, value interface{}) int64 {
-	c.Data[name] = value
-	c.Timestamps[name] = now().Unix()
-	return c.Timestamps[name]
+func (j *fileStore) loadFromDisk() error {
+	bytes, err := ioutil.ReadFile(j.path)
+	if err != nil {
+		return fmt.Errorf("can't read %q: %s. Ignoring", j.path, err.Error())
+	}
+	err = json.Unmarshal(bytes, j)
+	if err != nil {
+		return fmt.Errorf("can't unmarshall %q: %s. Ignoring", j.path, err.Error())
+	}
+	return nil
+}
+
+// Delete removes the cached data for the given key. If the data does not exist, the system does not return
+// any error.
+func (j inMemoryStore) Delete(key string) error {
+	delete(j.cachedData, key)
+	delete(j.Data, key)
+	delete(j.Timestamps, key)
+	return nil
 }

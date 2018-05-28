@@ -72,10 +72,11 @@ func TestItStoresOnDiskByDefault(t *testing.T) {
 	assert.NoError(t, i.Publish())
 
 	// assert data has been flushed to disk
-	c, err := persist.NewFileStore(persist.DefaultPath(integrationName), log.Discard)
+	c, err := persist.NewFileStore(persist.DefaultPath(integrationName), log.NewStdErr(true), persist.DefaultTTL)
 	assert.NoError(t, err)
 
-	v, ts, err := c.Get("hello")
+	var v float64
+	ts, err := c.Get("hello", &v)
 	assert.NoError(t, err)
 	assert.NotEqual(t, 0, ts)
 	assert.InDelta(t, 12.33, v, 0.1)
@@ -97,10 +98,11 @@ func TestInMemoryStoreDoesNotPersistOnDisk(t *testing.T) {
 	path := persist.DefaultPath(randomName)
 	assert.NoError(t, os.MkdirAll(path, 0755))
 
-	s, err := persist.NewFileStore(path, log.Discard)
+	s, err := persist.NewFileStore(path, log.Discard, persist.DefaultTTL)
 	assert.NoError(t, err)
 
-	_, _, err = s.Get("hello")
+	var v float64
+	_, err = s.Get("hello", &v)
 	assert.Equal(t, persist.ErrNotFound, err)
 }
 
@@ -134,13 +136,14 @@ func (m *fakeStorer) Save() error {
 	return nil
 }
 
-func (fakeStorer) Get(name string) (interface{}, int64, error) {
-	return 0, 0, nil
-}
-
-func (fakeStorer) Set(name string, value interface{}) int64 {
+func (fakeStorer) Set(key string, value interface{}) int64 {
 	return 0
 }
 
-func (fakeStorer) Delete(name string) {
+func (fakeStorer) Get(key string, valuePtr interface{}) (int64, error) {
+	return 0, nil
+}
+
+func (fakeStorer) Delete(key string) error {
+	return nil
 }
