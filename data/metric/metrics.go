@@ -57,16 +57,18 @@ func (ms *Set) SetMetric(name string, value interface{}, sourceType SourceType) 
 			// This will only happen if the user explicitly builds the integration invoking 'NoCache' function
 			return fmt.Errorf("integrations built with no-store can't use DELTAs and RATEs")
 		}
-		if !isNumeric(value) {
-			return fmt.Errorf("non-numeric source type for rate/delta metric %s", name)
+		floatVal, err := castToNumeric(value)
+		if err != nil {
+			return fmt.Errorf("non-numeric value for rate/delta metric: %s value: %v", name, value)
 		}
-		newValue, err = ms.sample(name, value, sourceType)
+		newValue, err = ms.sample(name, floatVal, sourceType)
 		if err != nil {
 			return err
 		}
 	case GAUGE:
-		if !isNumeric(value) {
-			return fmt.Errorf("non-numeric source type for gauge metric %s", name)
+		newValue, err = castToNumeric(value)
+		if err != nil {
+			return fmt.Errorf("non-numeric value for gauge metric: %s value: %v", name, value)
 		}
 	case ATTRIBUTE:
 		if _, ok := value.(string); !ok {
@@ -80,19 +82,12 @@ func (ms *Set) SetMetric(name string, value interface{}, sourceType SourceType) 
 	return nil
 }
 
-func isNumeric(value interface{}) bool {
-	_, err := strconv.ParseFloat(fmt.Sprintf("%v", value), 64)
-	return err == nil
+func castToNumeric(value interface{}) (float64, error) {
+	return strconv.ParseFloat(fmt.Sprintf("%v", value), 64)
 }
 
-func (ms *Set) sample(name string, value interface{}, sourceType SourceType) (float64, error) {
+func (ms *Set) sample(name string, floatValue float64, sourceType SourceType) (float64, error) {
 	sampledValue := 0.0
-
-	// Convert the value to a float64 so we can compare it with the stored one
-	floatValue, err := strconv.ParseFloat(fmt.Sprintf("%v", value), 64)
-	if err != nil {
-		return sampledValue, fmt.Errorf("can't sample metric of unknown type %s", name)
-	}
 
 	// Retrieve the last value and timestamp from Storer
 	var oldval float64
