@@ -104,9 +104,8 @@ func (e *Entity) AddEvent(event *event.Event) error {
 }
 
 // SetInventoryItem method adds a inventory item.
-// key should be at most 512 character length.
-func (e *Entity) SetInventoryItem(key string, field string, value interface{}) {
+func (e *Entity) SetInventoryItem(key string, field string, value interface{}) error {
 	e.lock.Lock()
 	defer e.lock.Unlock()
-	e.Inventory.SetItem(key, field, value)
+	return e.Inventory.SetItem(key, field, value)
 }

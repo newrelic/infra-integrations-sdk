@@ -176,9 +176,9 @@ func TestIntegration_Publish(t *testing.T) {
 	e.AddEvent(event.New("evnt1sum", "evnt1cat"))
 	e.AddEvent(event.New("evnt2sum", "evnt2cat"))
 
-	e.SetInventoryItem("key1", "field1", 123)
-	e.SetInventoryItem("key1", "field2", "hello")
-	e.SetInventoryItem("key2", "field3", "world")
+	assert.NoError(t, e.SetInventoryItem("key1", "field1", 123))
+	assert.NoError(t, e.SetInventoryItem("key1", "field2", "hello"))
+	assert.NoError(t, e.SetInventoryItem("key2", "field3", "world"))
 
 	e, err = i.Entity("EntityTwo", "test")
 	if err != nil {
@@ -196,7 +196,7 @@ func TestIntegration_Publish(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	e.SetInventoryItem("inv", "key", "value")
+	assert.NoError(t, e.SetInventoryItem("inv", "key", "value"))
 
 	ms, err = e.NewMetricSet("EventTypeForEntityThree")
 	assert.NoError(t, err)
