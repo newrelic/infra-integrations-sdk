@@ -13,8 +13,8 @@ type Mass string
 
 type Pizza struct {
 	Toppings []Topping
-	Mass Mass
-	Slices int
+	Mass     Mass
+	Slices   int
 }
 
 func main() {
@@ -30,10 +30,10 @@ func main() {
 
 	} else if err == persist.ErrNotFound {
 		fmt.Println("No pizza in the fridge. Ordering more...")
-		pizza = Pizza {
-			Toppings : []Topping{"Pepperoni", "Mozzarella", "Cheese"},
-			Mass: "thin",
-			Slices: 4,
+		pizza = Pizza{
+			Toppings: []Topping{"Pepperoni", "Mozzarella", "Cheese"},
+			Mass:     "thin",
+			Slices:   4,
 		}
 	} else {
 		fmt.Println("Unexpected error:", err)
