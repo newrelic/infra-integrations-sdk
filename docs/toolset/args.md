@@ -28,7 +28,6 @@ consider. All of them are `bool` and default to `false`. They are described foll
 * `Events`: whether the integration should publish events' data.
 * `Inventory`: whether the integration should publish inventory data.
 * `Metrics`: whether the integration should publish metrics' data.
-* `All`: whether the integration should publish events, inventory and metrics data.
 * `Pretty`: whether the output JSON must be pretty-formatted.
 * `Verbose`: whether the integration should log extra, detailed information.
 
@@ -68,8 +67,6 @@ for the users:
 
 ```
 Usage of argsTest:
-  -all
-        Publish all kind of data (metrics, inventory, events).
   -events
         Publish events data.
   -inventory
@@ -89,8 +86,8 @@ Usage of argsTest:
 Invoking `argsTest` without arguments should show the default values:
 
 ```
-{DefaultArgumentList:{Verbose:false Pretty:false All:false Metrics:false
-Inventory:false Events:false} SomeInt:1000 SomeString:hello}
+{DefaultArgumentList:{Verbose:false Pretty:false Metrics:false Inventory:false
+Events:false} SomeInt:1000 SomeString:hello}
 ```
 
 You can combine command-line with environment arguments, giving priority to command-line:
@@ -101,6 +98,6 @@ $ export SOME_INT=123456
 $ export SOME_STRING=goodbye
 $ go run args.go -some_string "OHAI rules"
 
-{DefaultArgumentList:{Verbose:false Pretty:false All:false Metrics:true
-Inventory:false Events:false} SomeInt:123456 SomeString:OHAI rules}
+{DefaultArgumentList:{Verbose:false Pretty:false Metrics:true Inventory:false
+Events:false} SomeInt:123456 SomeString:OHAI rules}
 ```
