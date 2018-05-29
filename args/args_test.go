@@ -217,7 +217,7 @@ func TestGetDefaultArgs(t *testing.T) {
 	}
 	da := sdk_args.GetDefaultArgs(&argumentListWithDefaults{})
 
-	assertEqualArgs(t, sdk_args.DefaultArgumentList{All: true}, *da)
+	assertEqualArgs(t, sdk_args.DefaultArgumentList{}, *da)
 
 	al := &argumentListWithDefaults{}
 	al.Metrics = true
@@ -232,6 +232,18 @@ func TestGetDefaultArgsWithoutDefaults(t *testing.T) {
 	}
 
 	assertEqualArgs(t, sdk_args.DefaultArgumentList{}, *sdk_args.GetDefaultArgs(&argumentListWithoutDefaults{}))
+}
+
+func TestDefaultArgumentList_All(t *testing.T) {
+	defaults := sdk_args.DefaultArgumentList{}
+	withMetrics := sdk_args.DefaultArgumentList{Metrics: true}
+	withInventory := sdk_args.DefaultArgumentList{Inventory: true}
+	withEvents := sdk_args.DefaultArgumentList{Events: true}
+
+	assert.True(t, defaults.All())
+	assert.False(t, withMetrics.All())
+	assert.False(t, withInventory.All())
+	assert.False(t, withEvents.All())
 }
 
 func assertEqualArgs(t *testing.T, expected interface{}, args interface{}) {

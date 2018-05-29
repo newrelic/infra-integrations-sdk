@@ -122,17 +122,17 @@ func main() {
 
 	e := i.LocalEntity()
 
-	if args.All || args.Inventory {
+	if args.All() || args.Inventory {
 		panicOnErr(populateInventory(e))
 	}
 
-	if args.All || args.Metrics {
+	if args.All() || args.Metrics {
 		ms, err := e.NewMetricSet("RedisSample")
 		panicOnErr(err)
 		panicOnErr(populateMetrics(ms))
 	}
 
-	if args.All || args.Events {
+	if args.All() || args.Events {
 		err := populateEvents(e)
 		if err != nil {
 			i.Logger().Debugf("adding event failed, got: %s", err)

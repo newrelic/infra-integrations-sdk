@@ -11,16 +11,19 @@ import (
 	"time"
 )
 
-// DefaultArgumentList includes the minimal set of necessary arguments for an
-// integration. To include them automatically, embed this struct in your struct
-// of arguments.
+// DefaultArgumentList includes the minimal set of necessary arguments for an integration.
+// If all data flags (Inventory, Metrics and Events) are false, all of them are published.
 type DefaultArgumentList struct {
 	Verbose   bool `default:"false" help:"Print more information to logs."`
 	Pretty    bool `default:"false" help:"Print pretty formatted JSON."`
-	All       bool `default:"false" help:"Publish all kind of data (metrics, inventory, events)."`
 	Metrics   bool `default:"false" help:"Publish metrics data."`
 	Inventory bool `default:"false" help:"Publish inventory data."`
 	Events    bool `default:"false" help:"Publish events data."`
+}
+
+// All returns if all data should be published
+func (d *DefaultArgumentList) All() bool {
+	return !d.Inventory && !d.Metrics && !d.Events
 }
 
 // HTTPClientArgumentList are meant to be used as flags from a custom integrations. With this you could
@@ -85,13 +88,10 @@ func SetupArgs(args interface{}) error {
 }
 
 // GetDefaultArgs checks if the arguments interface contains a
-// 'DefaultArgumentList' field. If so, it sets the value of 'All' flag to true
-// in case of all data default flags (Inventory, Metrics and Events) are missing
-// and returns this struct.  If there is no 'DefaultArgumentList' field, it
+// 'DefaultArgumentList' field. If there is no 'DefaultArgumentList' field, it
 // returns a DefaultArgumentList with default values.
 func GetDefaultArgs(arguments interface{}) *DefaultArgumentList {
 	if args, ok := arguments.(*DefaultArgumentList); ok {
-		fixAllFlag(args)
 		return args
 	}
 
@@ -99,16 +99,9 @@ func GetDefaultArgs(arguments interface{}) *DefaultArgumentList {
 
 	if defaultArgsI.IsValid() {
 		defaultArgs := defaultArgsI.Addr().Interface().(*DefaultArgumentList)
-		fixAllFlag(defaultArgs)
 		return defaultArgs
 	}
 	return &DefaultArgumentList{}
-}
-
-func fixAllFlag(arguments *DefaultArgumentList) {
-	if !arguments.All && !arguments.Inventory && !arguments.Metrics && !arguments.Events {
-		arguments.All = true
-	}
 }
 
 func defineFlags(args interface{}) error {
