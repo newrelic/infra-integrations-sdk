@@ -204,7 +204,7 @@ func main() {
 
 	// the code for populating Inventory omitted
 
-	if args.All || args.Metrics {
+	if args.All() || args.Metrics {
 		ms := integration.NewMetricSet("MyorgRedisSample")
 		fatalIfErr(populateMetrics(ms))
 	}
@@ -778,16 +778,16 @@ func main() {
 	integration, err := sdk.NewIntegration(integrationName, integrationVersion, &args)
 	fatalIfErr(err)
 
-	if args.All || args.Inventory {
+	if args.All() || args.Inventory {
 		fatalIfErr(populateInventory(integration.Inventory))
 	}
 
-	if args.All || args.Metrics {
+	if args.All() || args.Metrics {
 		ms := integration.NewMetricSet("RedisSample")
 		fatalIfErr(populateMetrics(ms))
 	}
 
-	if args.All || args.Events {
+	if args.All() || args.Events {
 		err := populateEvents(integration)
 		if err != nil {
 			log.Debug("adding event failed, got: %s", err)
