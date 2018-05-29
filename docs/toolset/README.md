@@ -18,4 +18,4 @@ of the core SDK, implement common operations that may be reused in different int
 ### Other helper libraries
 
 * [HTTP](http.md) (TO DO) 
-* [JMX]() (TO DO)
+* [JMX](jmx.go) (TO DO)
