@@ -18,8 +18,15 @@ client1, err := http.New("","/etc/ssl/crt", 5 * time.Second)
 // without specifying CA bundle directory  (timeout: 10 seconds)
 client2, err := http.New("/etc/ssl/crt/myserver.ca-bundle", "", 10 * time.Second)
 
+// Creating an HTTPS client which takes the certificates from both a bundle file
+// and a CA bundle directory
+client2, err := http.New(
+    "/etc/ssl/crt/myserver.ca-bundle",
+    "/etc/ssl/crt",
+    10 * time.Second)
+
 // Creating a simple HTTP (unsecure) client
-client3, err := http.New("", "", 5 * time.Second)
+client4, err := http.New("", "", 5 * time.Second)
 ```
 
 For more details, check the [http.New GoDoc](https://godoc.org/github.com/newrelic/infra-integrations-sdk/http#New)
