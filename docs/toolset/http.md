@@ -20,7 +20,7 @@ client2, err := http.New("/etc/ssl/crt/myserver.ca-bundle", "", 10 * time.Second
 
 // Creating an HTTPS client which takes the certificates from both a bundle file
 // and a CA bundle directory
-client2, err := http.New(
+client3, err := http.New(
     "/etc/ssl/crt/myserver.ca-bundle",
     "/etc/ssl/crt",
     10 * time.Second)
