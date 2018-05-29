@@ -13,7 +13,8 @@ import (
 	"time"
 )
 
-// New creates a new http.Client with a custom certificate
+// New creates a new http.Client with a custom certificate, which can be loaded from the passed CA Bundle file and/or
+// directory. If both CABundleFile and CABundleDir are empty arguments, it creates an unsecure HTTP client.
 func New(CABundleFile, CABundleDir string, httpTimeout time.Duration) (*http.Client, error) {
 	// go default http transport settings
 	transport := &http.Transport{}
@@ -27,7 +28,7 @@ func New(CABundleFile, CABundleDir string, httpTimeout time.Duration) (*http.Cli
 	}
 
 	return &http.Client{
-		Timeout:   httpTimeout * time.Second,
+		Timeout:   httpTimeout,
 		Transport: transport,
 	}, nil
 }
