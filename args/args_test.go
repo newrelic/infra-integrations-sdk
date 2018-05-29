@@ -174,7 +174,20 @@ func TestSetupArgsParseJsonError(t *testing.T) {
 	}
 }
 
-func TestSetupArgsWithDefaultArguments(t *testing.T) {
+func TestDefaultArgumentsWithPretty(t *testing.T) {
+	clearFlagSet()
+	os.Args = []string{
+		"cmd",
+		"-pretty",
+	}
+
+	var args sdk_args.DefaultArgumentList
+	assert.NoError(t, sdk_args.SetupArgs(&args))
+
+	assertEqualArgs(t, sdk_args.DefaultArgumentList{Pretty: true}, args)
+}
+
+func TestAddCustomArgumentsToDefault(t *testing.T) {
 	type argumentList struct {
 		sdk_args.DefaultArgumentList
 		Hostname string `default:"localhost" help:"Hostname or IP where MySQL is running."`
