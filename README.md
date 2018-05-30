@@ -152,17 +152,12 @@ New Relic, Inc.
 
 - **Can I reuse my Nagios checks?**
 
-    * Right now you can't but we plan to have a tooling to help you do that.
+    * We don't offer an Integration for "Nagios" checks. But with the SDK you can build a simple custom integration to push your check data
 
 - **How can I migrate my current integration from sdk v2 to sdk v3?**
     
     * You can check our [migration steps](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/v2tov3.md).
 
-- **Can I attach a custom calculation function to a metric type?**
-
-    ```bash
-    //TODO Add explanation or link to doc of how to do that.
-    ```
 - **How can I add a custom argument to my integration?**
 
     * Take a look at [arguments documentation](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/args.md).
