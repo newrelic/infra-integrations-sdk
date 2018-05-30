@@ -136,3 +136,57 @@ Find a bug? Contact us via [support.newrelic.com](http://support.newrelic.com/),
 or email support@newrelic.com.
 
 New Relic, Inc.
+
+
+## FAQS
+
+###SDK related questions:
+
+- Where can I see the data I'm sending to New Relic with my custom integration?
+
+    We have a [custom integration example code](https://github.com/newrelic/infra-integrations-sdk/tree/master/docs/tutorial-code) 
+    that you can check to know the structure and config files that an integration needs.
+    ```bash
+    //TODO Show an example of how you create the custom integration and then filter in insights
+    //TODO Link to instruction (add chef/puppet/ansible recipe/module/role to install the integration)
+    ```
+    
+- Are there more SDK in other languages?
+
+    * No, we plan to have more in the future though.
+
+- Can I reuse my Nagios checks?
+
+    * Right now you can't but we plan to have a tooling to help you do that.
+
+- How can I migrate my current integration from sdk v2 to sdk v3?
+    
+    * You can check our [migration steps.](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/v2tov3.md)
+
+- Can I attach a custom calculation function to a metric type?
+
+    ```bash
+    //TODO Add explanation or link to doc of how to do that.
+    ```
+- How can I add a custom argument to my integration?
+
+    * Take a look at [arguments documentation.](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/args.md)
+
+- How can I run my integration inside a container?
+
+    ```bash
+    //TODO instructions
+    ```
+
+- How can I query a server that uses a custom certificate?
+
+    * We have [http helper](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/http.md) that you can use to setup custom certificates easily.
+
+- How can I query JMX bean using the sdk?
+
+    * We have a [Jmx helper](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/jmx.md) that will help you query any beam you are interested in monitoring.
+
+        
+
+
+
