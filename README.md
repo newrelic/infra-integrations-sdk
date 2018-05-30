@@ -138,18 +138,15 @@ or email support@newrelic.com.
 New Relic, Inc.
 
 
-## FAQS
+## FAQs
 
 ###SDK related questions:
 
 - Where can I see the data I'm sending to New Relic with my custom integration?
 
-    We have a [custom integration example code](https://github.com/newrelic/infra-integrations-sdk/tree/master/docs/tutorial-code) 
-    that you can check to know the structure and config files that an integration needs.
-    ```bash
-    //TODO Show an example of how you create the custom integration and then filter in insights
-    //TODO Link to instruction (add chef/puppet/ansible recipe/module/role to install the integration)
-    ```
+    * You can go to [insights](https://insights.newrelic.com/) and run [these queries]( https://github.com/newrelic/infra-integrations-sdk/blob/faqs/docs/tutorial.md#view-metric-data-in-new-relic-insights) to see metric data.
+    * In order to see inventory data follow [these intructions].(https://github.com/newrelic/infra-integrations-sdk/blob/faqs/docs/tutorial.md#view-inventory-data-in-infrastructure)
+    
     
 - Are there more SDK in other languages?
 
@@ -174,9 +171,12 @@ New Relic, Inc.
 
 - How can I run my integration inside a container?
 
-    ```bash
-    //TODO instructions
-    ```
+    * There is a [documentation](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/data-instrumentation/monitor-containers-underlying-hosts-coreos) about how to run
+     our agent inside a container. You can achieve this by extending that Docker image and adding. If you use the [nrbuilder] tool you'll
+     have a base docker image doing that for you. After that you can simply run:
+     ```bash
+     docker run -ti -e NRIA_LICENSE_KEY=YOUR_API_KEY CONTAINER_IMAGE_NAME
+     ``` 
 
 - How can I query a server that uses a custom certificate?
 
