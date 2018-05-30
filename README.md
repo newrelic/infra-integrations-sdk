@@ -143,7 +143,7 @@ New Relic, Inc.
 - **Where can I see the data I'm sending to New Relic with my custom integration?**
 
     * You can go to [insights](https://insights.newrelic.com/) and run [these queries]( https://github.com/newrelic/infra-integrations-sdk/blob/faqs/docs/tutorial.md#view-metric-data-in-new-relic-insights) to see metric data.
-    * In order to see inventory data follow [these intructions].(https://github.com/newrelic/infra-integrations-sdk/blob/faqs/docs/tutorial.md#view-inventory-data-in-infrastructure)
+    * In order to see inventory data follow [these intructions](https://github.com/newrelic/infra-integrations-sdk/blob/faqs/docs/tutorial.md#view-inventory-data-in-infrastructure).
     
     
 - **Are there more SDK in other languages?**
@@ -156,7 +156,7 @@ New Relic, Inc.
 
 - **How can I migrate my current integration from sdk v2 to sdk v3?**
     
-    * You can check our [migration steps.](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/v2tov3.md)
+    * You can check our [migration steps](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/v2tov3.md).
 
 - **Can I attach a custom calculation function to a metric type?**
 
@@ -165,7 +165,7 @@ New Relic, Inc.
     ```
 - **How can I add a custom argument to my integration?**
 
-    * Take a look at [arguments documentation.](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/args.md)
+    * Take a look at [arguments documentation](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/args.md).
 
 - **How can I run my integration inside a container?**
 
