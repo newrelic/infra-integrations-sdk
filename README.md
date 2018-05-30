@@ -13,6 +13,8 @@
 [GoDocReference]: https://godoc.org/github.com/newrelic/infra-integrations-sdk
 [GoDocWidget]: https://godoc.org/github.com/newrelic/infra-integrations-sdk?status.svg
 
+**This branch is a development branch. For the latest, stable release, please see [v2.1](https://github.com/newrelic/infra-integrations-sdk/tree/v2.1.0)**
+
 New Relic Infrastructure, provided by New Relic, Inc (http://www.newrelic.com),
 offers flexible, dynamic server monitoring. We provide an SDK for creating an
 integration for reporting custom host and server data, including metric, event,
