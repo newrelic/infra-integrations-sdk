@@ -162,15 +162,6 @@ New Relic, Inc.
 
     * Take a look at [arguments documentation](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/args.md).
 
-- **How can I run my integration inside a container?**
-
-    * There is a [documentation](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/data-instrumentation/monitor-containers-underlying-hosts-coreos) about how to run
-     our agent inside a container. You can achieve this by extending that Docker image and adding. If you use the [nrbuilder] tool you'll
-     have a base docker image doing that for you. After that you can simply run:
-     ```bash
-     docker run -ti -e NRIA_LICENSE_KEY=YOUR_API_KEY CONTAINER_IMAGE_NAME
-     ``` 
-
 - **How can I query a server that uses a custom certificate?**
 
     * We have [http helper](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/http.md) that you can use to setup custom certificates easily.
