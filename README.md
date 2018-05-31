@@ -45,8 +45,9 @@ You can download the SDK code to your GOPATH with the following command:
 $ go get github.com/newrelic/infra-integrations-sdk
 ```
 
-Then you can import any of the packages provided with the SDK from your code and
-start writing your integration. If you need ideas or inspiration, you can follow [the tutorial](docs/tutorial.md).
+And then you can read the [SDK comprehensive documentation](docs/README.md) to know all the packages and functions
+it provides to start writing your integration. If you need ideas or inspiration, you can follow
+[the tutorial](docs/tutorial.md).
 
 ## API specification
 
