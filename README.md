@@ -158,6 +158,10 @@ New Relic, Inc.
     
     * You can check our [migration steps](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/v2tov3.md).
 
+<!--
+ - **Can I attach a custom calculation function to a metric type?** 
+-->
+
 - **How can I add a custom argument to my integration?**
 
     * Take a look at [arguments documentation](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/args.md).
