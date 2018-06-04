@@ -94,7 +94,7 @@ func TestDefaultArguments(t *testing.T) {
 	if len(i.Entities) != 0 {
 		t.Error()
 	}
-	if !al.All {
+	if !al.All() {
 		t.Error()
 	}
 	if al.Pretty {
@@ -110,14 +110,14 @@ func TestCustomArguments(t *testing.T) {
 		sdk_args.DefaultArgumentList
 	}
 
-	os.Args = []string{"cmd", "--pretty", "--verbose", "--all"}
+	os.Args = []string{"cmd", "--pretty", "--verbose"}
 	flag.CommandLine = flag.NewFlagSet("name", 0)
 
 	var al argumentList
 	_, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
 	assert.NoError(t, err)
 
-	if !al.All {
+	if !al.All() {
 		t.Error()
 	}
 	if !al.Pretty {

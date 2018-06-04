@@ -13,6 +13,8 @@
 [GoDocReference]: https://godoc.org/github.com/newrelic/infra-integrations-sdk
 [GoDocWidget]: https://godoc.org/github.com/newrelic/infra-integrations-sdk?status.svg
 
+**This branch is a development branch. For the latest, stable release, please see [v2.1](https://github.com/newrelic/infra-integrations-sdk/tree/v2.1.0)**
+
 New Relic Infrastructure, provided by New Relic, Inc (http://www.newrelic.com),
 offers flexible, dynamic server monitoring. We provide an SDK for creating an
 integration for reporting custom host and server data, including metric, event,
@@ -43,8 +45,9 @@ You can download the SDK code to your GOPATH with the following command:
 $ go get github.com/newrelic/infra-integrations-sdk
 ```
 
-Then you can import any of the packages provided with the SDK from your code and
-start writing your integration. If you need ideas or inspiration, you can follow [the tutorial](docs/tutorial.md).
+And then you can read the [SDK comprehensive documentation](docs/README.md) to know all the packages and functions
+it provides to start writing your integration. If you need ideas or inspiration, you can follow
+[the tutorial](docs/tutorial.md).
 
 ## API specification
 
