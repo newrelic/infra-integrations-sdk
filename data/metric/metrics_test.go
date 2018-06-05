@@ -2,9 +2,12 @@ package metric
 
 import (
 	"fmt"
+	"io/ioutil"
+	"path"
 	"testing"
 	"time"
 
+	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
 )
@@ -100,13 +103,10 @@ func TestSet_SetMetric_NilStorer(t *testing.T) {
 
 	err = ms.SetMetric("foo", 1, DELTA)
 	assert.Error(t, err, "integrations built with no-store can't use DELTAs and RATEs")
-
 }
 
 func TestSet_SetMetric_IncorrectMetricType(t *testing.T) {
-	storer := persist.NewInMemoryStore()
-
-	ms, err := NewSet("some-event-type", storer)
+	ms, err := NewSet("some-event-type", persist.NewInMemoryStore())
 	assert.NoError(t, err)
 
 	err = ms.SetMetric("foo", "bar", RATE)
@@ -142,4 +142,40 @@ func TestSet_MarshalJSON(t *testing.T) {
 		`{"bar":0,"baz":1,"event_type":"some-event-type","foo":0,"quux":"bar"}`,
 		string(marshaled),
 	)
+}
+
+func TestNewSet_FileStore_StoresBetweenRuns(t *testing.T) {
+	fd := FakeData{}
+	persist.SetNow(fd.Now)
+
+	storeFile := tempFile()
+
+	s, err := persist.NewFileStore(storeFile, log.Discard, 1 * time.Hour)
+	assert.NoError(t, err)
+
+	set1, err := NewSet("type", s)
+	assert.NoError(t, err)
+
+	assert.NoError(t, set1.SetMetric("foo", 1, DELTA))
+
+	assert.NoError(t, s.Save())
+
+	s2, err := persist.NewFileStore(storeFile, log.Discard, 1 * time.Hour)
+	assert.NoError(t, err)
+
+	set2, err := NewSet("type", s2)
+	assert.NoError(t, err)
+
+	assert.NoError(t, set2.SetMetric("foo", 3, DELTA))
+
+	assert.Equal(t, 2.0, set2.Metrics["foo"])
+}
+
+func tempFile() string {
+	dir, err := ioutil.TempDir("", "file_store")
+	if err != nil {
+		panic(err)
+	}
+
+	return path.Join(dir, "test.json")
 }

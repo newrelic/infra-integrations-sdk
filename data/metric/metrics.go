@@ -30,20 +30,22 @@ var (
 	ErrNonNumeric        = errors.New("non-numeric value for rate/delta")
 	ErrNoStoreToCalcDiff = errors.New("can't use deltas nor rates without persistent store")
 	ErrTooCloseSamples   = errors.New("samples too close in time, skipping")
-	ErrSameOldValue      = errors.New("source was reset, skipping")
+	ErrNegativeDiff      = errors.New("source was reset, skipping")
 )
 
 // Set is the basic structure for storing metrics.
 type Set struct {
-	storer  persist.Storer
-	Metrics map[string]interface{}
+	storer       persist.Storer
+	Metrics      map[string]interface{}
+	uniqueFields []string
 }
 
 // NewSet creates new metrics set.
-func NewSet(eventType string, storer persist.Storer) (*Set, error) {
+func NewSet(eventType string, storer persist.Storer, uniqueFields ...string) (*Set, error) {
 	ms := Set{
-		Metrics: map[string]interface{}{},
-		storer:  storer,
+		Metrics:      map[string]interface{}{},
+		storer:       storer,
+		uniqueFields: uniqueFields,
 	}
 
 	err := ms.SetMetric("event_type", eventType, ATTRIBUTE)
@@ -121,7 +123,7 @@ func (ms *Set) elapsedDifference(name string, absolute interface{}, sourceType S
 
 	elapsed = newValue - oldValue
 	if elapsed < 0 {
-		err = ErrSameOldValue
+		err = ErrNegativeDiff
 		return
 	}
 
