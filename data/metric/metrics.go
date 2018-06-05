@@ -14,10 +14,10 @@ import (
 // each one.
 type SourceType int
 
-// group identifies a metric group
-type group struct {
-	field string
-	value string
+// KV represents a metric key-value pair.
+type KV struct {
+	Key   string
+	Value string
 }
 
 const (
@@ -43,28 +43,28 @@ var (
 type Set struct {
 	storer  persist.Storer
 	Metrics map[string]interface{}
-	group   group
+	id      []KV
 }
 
-// NewSet creates new metrics set.
-func NewSet(eventType string, storer persist.Storer) (*Set, error) {
-	return NewSetGroup(eventType, storer, "", "")
-}
-
-// NewSetGroup creates a metrics set that will attach all the metrics to the given field-value.
-func NewSetGroup(eventType string, storer persist.Storer, field, value string) (*Set, error) {
+// NewSet creates new metrics set, optionally identified by a list of key-values.
+func NewSet(eventType string, storer persist.Storer, kv ...KV) (*Set, error) {
 	ms := Set{
 		Metrics: make(map[string]interface{}),
 		storer:  storer,
-		group: group{
-			field: field,
-			value: value,
-		},
+		id:      kv,
 	}
 
 	err := ms.SetMetric("event_type", eventType, ATTRIBUTE)
 
 	return &ms, err
+}
+
+// NewKV creates a new KV pair.
+func NewKV(key string, value string) KV {
+	return KV{
+		Key:   key,
+		Value: value,
+	}
 }
 
 // SetMetric adds a metric to the Set object or updates the metric value if the metric already exists.

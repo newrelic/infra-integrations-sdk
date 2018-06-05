@@ -171,7 +171,7 @@ func TestNewSet_FileStore_StoresBetweenRuns(t *testing.T) {
 	assert.Equal(t, 2.0, set2.Metrics["foo"])
 }
 
-func TestNewSetGroup_SolvesCacheCollision(t *testing.T) {
+func TestNewSetWithKV_SolvesCacheCollision(t *testing.T) {
 	fd := FakeData{}
 	persist.SetNow(fd.Now)
 
@@ -181,11 +181,11 @@ func TestNewSetGroup_SolvesCacheCollision(t *testing.T) {
 	storeWrite, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
 	assert.NoError(t, err)
 
-	ms1, err := NewSetGroup("type", storeWrite, "pod", "pod-a")
+	ms1, err := NewSet("type", storeWrite, NewKV("pod", "pod-a"))
 	assert.NoError(t, err)
-	ms2, err := NewSetGroup("type", storeWrite, "pod", "pod-a")
+	ms2, err := NewSet("type", storeWrite, NewKV("pod", "pod-a"))
 	assert.NoError(t, err)
-	ms3, err := NewSetGroup("type", storeWrite, "pod", "pod-b")
+	ms3, err := NewSet("type", storeWrite, NewKV("pod", "pod-b"))
 	assert.NoError(t, err)
 
 	assert.NoError(t, ms1.SetMetric("field", 1, DELTA))
@@ -198,7 +198,7 @@ func TestNewSetGroup_SolvesCacheCollision(t *testing.T) {
 	storeRead, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
 	assert.NoError(t, err)
 
-	msRead, err := NewSetGroup("type", storeRead, "pod", "pod-a")
+	msRead, err := NewSet("type", storeRead, NewKV("pod", "pod-a"))
 	assert.NoError(t, err)
 
 	// write is required to make data available for read
