@@ -14,6 +14,12 @@ import (
 // each one.
 type SourceType int
 
+// group identifies a metric group
+type group struct {
+	field string
+	value string
+}
+
 const (
 	// GAUGE is a value that may increase and decrease. It is stored as-is.
 	GAUGE SourceType = iota
@@ -35,17 +41,25 @@ var (
 
 // Set is the basic structure for storing metrics.
 type Set struct {
-	storer       persist.Storer
-	Metrics      map[string]interface{}
-	uniqueFields []string
+	storer  persist.Storer
+	Metrics map[string]interface{}
+	group   group
 }
 
 // NewSet creates new metrics set.
-func NewSet(eventType string, storer persist.Storer, uniqueFields ...string) (*Set, error) {
+func NewSet(eventType string, storer persist.Storer) (*Set, error) {
+	return NewSetGroup(eventType, storer, "", "")
+}
+
+// NewSetGroup creates a metrics set that will attach all the metrics to the given field-value.
+func NewSetGroup(eventType string, storer persist.Storer, field, value string) (*Set, error) {
 	ms := Set{
-		Metrics:      map[string]interface{}{},
-		storer:       storer,
-		uniqueFields: uniqueFields,
+		Metrics: make(map[string]interface{}),
+		storer:  storer,
+		group: group{
+			field: field,
+			value: value,
+		},
 	}
 
 	err := ms.SetMetric("event_type", eventType, ATTRIBUTE)

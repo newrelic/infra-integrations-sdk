@@ -150,7 +150,7 @@ func TestNewSet_FileStore_StoresBetweenRuns(t *testing.T) {
 
 	storeFile := tempFile()
 
-	s, err := persist.NewFileStore(storeFile, log.Discard, 1 * time.Hour)
+	s, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
 	assert.NoError(t, err)
 
 	set1, err := NewSet("type", s)
@@ -160,7 +160,7 @@ func TestNewSet_FileStore_StoresBetweenRuns(t *testing.T) {
 
 	assert.NoError(t, s.Save())
 
-	s2, err := persist.NewFileStore(storeFile, log.Discard, 1 * time.Hour)
+	s2, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
 	assert.NoError(t, err)
 
 	set2, err := NewSet("type", s2)
@@ -169,6 +169,42 @@ func TestNewSet_FileStore_StoresBetweenRuns(t *testing.T) {
 	assert.NoError(t, set2.SetMetric("foo", 3, DELTA))
 
 	assert.Equal(t, 2.0, set2.Metrics["foo"])
+}
+
+func TestNewSetGroup_SolvesCacheCollision(t *testing.T) {
+	fd := FakeData{}
+	persist.SetNow(fd.Now)
+
+	storeFile := tempFile()
+
+	// write in same store/integration-run
+	storeWrite, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
+	assert.NoError(t, err)
+
+	ms1, err := NewSetGroup("type", storeWrite, "pod", "pod-a")
+	assert.NoError(t, err)
+	ms2, err := NewSetGroup("type", storeWrite, "pod", "pod-a")
+	assert.NoError(t, err)
+	ms3, err := NewSetGroup("type", storeWrite, "pod", "pod-b")
+	assert.NoError(t, err)
+
+	assert.NoError(t, ms1.SetMetric("field", 1, DELTA))
+	assert.NoError(t, ms2.SetMetric("field", 2, DELTA))
+	assert.NoError(t, ms3.SetMetric("field", 3, DELTA))
+
+	assert.NoError(t, storeWrite.Save())
+
+	// retrieve from another store/integration-run
+	storeRead, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
+	assert.NoError(t, err)
+
+	msRead, err := NewSetGroup("type", storeRead, "pod", "pod-a")
+	assert.NoError(t, err)
+
+	// write is required to make data available for read
+	assert.NoError(t, msRead.SetMetric("field", 10, DELTA))
+
+	assert.Equal(t, 8.0, msRead.Metrics["field"], "read metrics: %+v", msRead.Metrics)
 }
 
 func tempFile() string {
