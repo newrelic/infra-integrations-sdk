@@ -229,6 +229,35 @@ func TestNewSetRelatedTo_SolvesCacheCollision(t *testing.T) {
 	assert.Equal(t, 8.0, msRead.Metrics["field"], "read metric-set: %+v", msRead.Metrics)
 }
 
+func TestSet_namespace(t *testing.T) {
+	s, err := NewSet("type", persist.NewInMemoryStore(), RelatedTo("k", "v"))
+	assert.NoError(t, err)
+
+	assert.Equal(t, fmt.Sprintf("k==v::foo"), s.namespace("foo"))
+
+	// several attributed are supported
+	s, err = NewSet(
+		"type",
+		persist.NewInMemoryStore(),
+		RelatedTo("k1", "v1"),
+		RelatedTo("k2", "v2"),
+	)
+	assert.NoError(t, err)
+
+	assert.Equal(t, fmt.Sprintf("k1==v1::k2==v2::foo"), s.namespace("foo"))
+
+	// provided attributes order does not matter
+	s, err = NewSet(
+		"type",
+		persist.NewInMemoryStore(),
+		RelatedTo("k2", "v2"),
+		RelatedTo("k1", "v1"),
+	)
+	assert.NoError(t, err)
+
+	assert.Equal(t, fmt.Sprintf("k1==v1::k2==v2::foo"), s.namespace("foo"))
+}
+
 func tempFile() string {
 	dir, err := ioutil.TempDir("", "file_store")
 	if err != nil {

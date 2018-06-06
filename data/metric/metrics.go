@@ -3,6 +3,7 @@ package metric
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/newrelic/infra-integrations-sdk/persist"
@@ -29,6 +30,13 @@ const (
 	DELTA SourceType = iota
 	// ATTRIBUTE is any string value
 	ATTRIBUTE SourceType = iota
+)
+
+const (
+	// NSSeparator is the metric namespace separator
+	NSSeparator = "::"
+	// NSAttributeSeparator is the metric attribute key-value separator applied to generate the metric ns.
+	NSAttributeSeparator = "=="
 )
 
 // Errors
@@ -126,13 +134,13 @@ func (ms *Set) elapsedDifference(name string, absolute interface{}, sourceType S
 
 	// Fetch last value & time
 	var oldValue float64
-	oldTime, err := ms.storer.Get(name, &oldValue)
+	oldTime, err := ms.storer.Get(ms.namespace(name), &oldValue)
 	if err != nil && err != persist.ErrNotFound {
 		return
 	}
 
 	// Store new value & time (no IO flush until Save)
-	newTime := ms.storer.Set(name, newValue)
+	newTime := ms.storer.Set(ms.namespace(name), newValue)
 
 	// First value
 	if err == persist.ErrNotFound {
@@ -157,6 +165,33 @@ func (ms *Set) elapsedDifference(name string, absolute interface{}, sourceType S
 	}
 
 	return
+}
+
+// prefix a metric name with a namespace based on the alphabetical order of the set related attributes.
+func (ms *Set) namespace(metricName string) string {
+	ns := ""
+	separator := ""
+
+	attrs := ms.relatedTo
+	sort.Slice(attrs, func(i, j int) bool {
+		if attrs[i].Key == attrs[j].Key {
+			return attrs[i].Value < attrs[j].Value
+		}
+
+		return attrs[i].Key < attrs[j].Key
+	})
+
+	for _, attr := range attrs {
+		ns = fmt.Sprintf("%s%s%s", ns, separator, attr.Namespace())
+		separator = NSSeparator
+	}
+
+	return fmt.Sprintf("%s%s%s", ns, separator, metricName)
+}
+
+// Namespace generates the string value of an attribute used to namespace a metric.
+func (a *Attribute) Namespace() string {
+	return fmt.Sprintf("%s%s%s", a.Key, NSAttributeSeparator, a.Value)
 }
 
 // MarshalJSON adapts the internal structure of the metrics Set to the payload that is compliant with the protocol
