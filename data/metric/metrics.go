@@ -3,9 +3,9 @@ package metric
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strconv"
 
+	"github.com/newrelic/infra-integrations-sdk/backported/sort"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/pkg/errors"
 )
