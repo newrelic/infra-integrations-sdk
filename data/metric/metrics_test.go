@@ -226,7 +226,7 @@ func TestNewSetRelatedTo_SolvesCacheCollision(t *testing.T) {
 	// write is required to make data available for read
 	assert.NoError(t, msRead.SetMetric("field", 10, DELTA))
 
-	assert.Equal(t, 8.0, msRead.Metrics["field"], "read metrics: %+v", msRead.Metrics)
+	assert.Equal(t, 8.0, msRead.Metrics["field"], "read metric-set: %+v", msRead.Metrics)
 }
 
 func tempFile() string {

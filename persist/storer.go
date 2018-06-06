@@ -191,7 +191,7 @@ func (j inMemoryStore) Get(key string, valuePtr interface{}) (int64, error) {
 	return entry.Timestamp, nil
 }
 
-// flushcache marshalls all the cached data into JSON, ready to be stored into disk
+// flushCache marshalls all the cached data into JSON, ready to be stored into disk
 func (j *inMemoryStore) flushCache() error {
 	for k, v := range j.cachedData {
 		bytes, err := json.Marshal(v)
