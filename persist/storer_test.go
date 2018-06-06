@@ -1,6 +1,7 @@
 package persist
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path"
 	"reflect"
@@ -418,4 +419,19 @@ func TestFileStorer_Save(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, testStruct{555, 444}, structValue)
 
+}
+
+func TestInMemoryStore_flushCache(t *testing.T) {
+	nowTime := time.Now()
+	setNow(func() time.Time {
+		return nowTime
+	})
+
+	s := NewInMemoryStore().(*inMemoryStore)
+
+	_ = s.Set("k", "v")
+
+	assert.NoError(t, s.flushCache())
+
+	assert.Equal(t, fmt.Sprintf("{\"Timestamp\":%d,\"Value\":\"v\"}", nowTime.Unix()), string(s.Data["k"]))
 }
