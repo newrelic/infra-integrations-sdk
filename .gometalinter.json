@@ -1,6 +1,5 @@
 {
   "Enable": ["deadcode", "errcheck", "gofmt", "golint", "goimports"],
   "Vendor": false,
-  "Exclude": ["docs/..."]
+  "Exclude": ["docs/...", "backported/..."]
 }
-// todo: empty "Exclude" section

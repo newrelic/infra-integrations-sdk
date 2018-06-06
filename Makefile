@@ -6,7 +6,7 @@ GOTOOLS = github.com/golang/lint/golint \
 # Temporary patch to avoid build failing because of the outdated documentation example
 # TODO: uncomment below commented lines and remove any line that uses $(NODOCS)
 NODOCS = $(shell go list ./... | grep -v /docs/)
-PKGS = $(shell go list ./... | egrep -v "\/docs\/|jmx")
+PKGS = $(shell go list ./... | egrep -v "\/docs\/|\/backported\/")
 
 all: lint test
 
