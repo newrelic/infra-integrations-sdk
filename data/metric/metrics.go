@@ -49,18 +49,18 @@ var (
 
 // Set is the basic structure for storing metrics.
 type Set struct {
-	storer    persist.Storer
-	Metrics   map[string]interface{}
-	relatedTo []Attribute
+	storer       persist.Storer
+	Metrics      map[string]interface{}
+	nsAttributes []Attribute
 }
 
 // NewSet creates new metrics set, optionally related to a list of attributes.
 // If related attributes are used, then a new attribute-metric is added per kv-pair.
-func NewSet(eventType string, storer persist.Storer, relatedTo ...Attribute) (s *Set, err error) {
+func NewSet(eventType string, storer persist.Storer, nsAttributes ...Attribute) (s *Set, err error) {
 	s = &Set{
-		Metrics:   make(map[string]interface{}),
-		storer:    storer,
-		relatedTo: relatedTo,
+		Metrics:      make(map[string]interface{}),
+		storer:       storer,
+		nsAttributes: nsAttributes,
 	}
 
 	err = s.SetMetric("event_type", eventType, ATTRIBUTE)
@@ -68,7 +68,7 @@ func NewSet(eventType string, storer persist.Storer, relatedTo ...Attribute) (s 
 		return
 	}
 
-	for _, attr := range relatedTo {
+	for _, attr := range nsAttributes {
 		err = s.SetMetric(attr.Key, attr.Value, ATTRIBUTE)
 		if err != nil {
 			return
@@ -78,8 +78,8 @@ func NewSet(eventType string, storer persist.Storer, relatedTo ...Attribute) (s 
 	return
 }
 
-// RelatedTo creates an attribute for a metric-set to be related to.
-func RelatedTo(key string, value string) Attribute {
+// Attr creates an attribute aimed to namespace a metric-set.
+func Attr(key string, value string) Attribute {
 	return Attribute{
 		Key:   key,
 		Value: value,
@@ -172,7 +172,7 @@ func (ms *Set) namespace(metricName string) string {
 	ns := ""
 	separator := ""
 
-	attrs := ms.relatedTo
+	attrs := ms.nsAttributes
 	sort.Slice(attrs, func(i, j int) bool {
 		if attrs[i].Key == attrs[j].Key {
 			return attrs[i].Value < attrs[j].Value

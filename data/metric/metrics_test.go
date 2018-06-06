@@ -171,7 +171,7 @@ func TestNewSet_FileStore_StoresBetweenRuns(t *testing.T) {
 	assert.Equal(t, 2.0, set2.Metrics["foo"])
 }
 
-func TestNewSetRelatedTo_AddsAttributes(t *testing.T) {
+func TestNewSet_Attr_AddsAttributes(t *testing.T) {
 	fd := FakeData{}
 	persist.SetNow(fd.Now)
 
@@ -184,16 +184,16 @@ func TestNewSetRelatedTo_AddsAttributes(t *testing.T) {
 	set, err := NewSet(
 		"type",
 		storeWrite,
-		RelatedTo("pod", "pod-a"),
-		RelatedTo("node", "node-a"),
+		Attr("pod", "pod-a"),
+		Attr("node", "node-a"),
 	)
-	assert.NoError(t, err)
 
+	assert.NoError(t, err)
 	assert.Equal(t, "pod-a", set.Metrics["pod"])
 	assert.Equal(t, "node-a", set.Metrics["node"])
 }
 
-func TestNewSetRelatedTo_SolvesCacheCollision(t *testing.T) {
+func TestNewSet_Attr_SolvesCacheCollision(t *testing.T) {
 	fd := FakeData{}
 	persist.SetNow(fd.Now)
 
@@ -203,11 +203,11 @@ func TestNewSetRelatedTo_SolvesCacheCollision(t *testing.T) {
 	storeWrite, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
 	assert.NoError(t, err)
 
-	ms1, err := NewSet("type", storeWrite, RelatedTo("pod", "pod-a"))
+	ms1, err := NewSet("type", storeWrite, Attr("pod", "pod-a"))
 	assert.NoError(t, err)
-	ms2, err := NewSet("type", storeWrite, RelatedTo("pod", "pod-a"))
+	ms2, err := NewSet("type", storeWrite, Attr("pod", "pod-a"))
 	assert.NoError(t, err)
-	ms3, err := NewSet("type", storeWrite, RelatedTo("pod", "pod-b"))
+	ms3, err := NewSet("type", storeWrite, Attr("pod", "pod-b"))
 	assert.NoError(t, err)
 
 	assert.NoError(t, ms1.SetMetric("field", 1, DELTA))
@@ -220,7 +220,7 @@ func TestNewSetRelatedTo_SolvesCacheCollision(t *testing.T) {
 	storeRead, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
 	assert.NoError(t, err)
 
-	msRead, err := NewSet("type", storeRead, RelatedTo("pod", "pod-a"))
+	msRead, err := NewSet("type", storeRead, Attr("pod", "pod-a"))
 	assert.NoError(t, err)
 
 	// write is required to make data available for read
@@ -230,7 +230,7 @@ func TestNewSetRelatedTo_SolvesCacheCollision(t *testing.T) {
 }
 
 func TestSet_namespace(t *testing.T) {
-	s, err := NewSet("type", persist.NewInMemoryStore(), RelatedTo("k", "v"))
+	s, err := NewSet("type", persist.NewInMemoryStore(), Attr("k", "v"))
 	assert.NoError(t, err)
 
 	assert.Equal(t, fmt.Sprintf("k==v::foo"), s.namespace("foo"))
@@ -239,8 +239,8 @@ func TestSet_namespace(t *testing.T) {
 	s, err = NewSet(
 		"type",
 		persist.NewInMemoryStore(),
-		RelatedTo("k1", "v1"),
-		RelatedTo("k2", "v2"),
+		Attr("k1", "v1"),
+		Attr("k2", "v2"),
 	)
 	assert.NoError(t, err)
 
@@ -250,8 +250,8 @@ func TestSet_namespace(t *testing.T) {
 	s, err = NewSet(
 		"type",
 		persist.NewInMemoryStore(),
-		RelatedTo("k2", "v2"),
-		RelatedTo("k1", "v1"),
+		Attr("k2", "v2"),
+		Attr("k1", "v1"),
 	)
 	assert.NoError(t, err)
 
