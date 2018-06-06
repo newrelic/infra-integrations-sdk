@@ -171,7 +171,7 @@ func TestNewSet_FileStore_StoresBetweenRuns(t *testing.T) {
 	assert.Equal(t, 2.0, set2.Metrics["foo"])
 }
 
-func TestNewSetWithKV_SolvesCacheCollision(t *testing.T) {
+func TestNewSetRelatedTo_AddsAttributes(t *testing.T) {
 	fd := FakeData{}
 	persist.SetNow(fd.Now)
 
@@ -181,11 +181,33 @@ func TestNewSetWithKV_SolvesCacheCollision(t *testing.T) {
 	storeWrite, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
 	assert.NoError(t, err)
 
-	ms1, err := NewSet("type", storeWrite, NewKV("pod", "pod-a"))
+	set, err := NewSet(
+		"type",
+		storeWrite,
+		RelatedTo("pod", "pod-a"),
+		RelatedTo("node", "node-a"),
+	)
 	assert.NoError(t, err)
-	ms2, err := NewSet("type", storeWrite, NewKV("pod", "pod-a"))
+
+	assert.Equal(t, "pod-a", set.Metrics["pod"])
+	assert.Equal(t, "node-a", set.Metrics["node"])
+}
+
+func TestNewSetRelatedTo_SolvesCacheCollision(t *testing.T) {
+	fd := FakeData{}
+	persist.SetNow(fd.Now)
+
+	storeFile := tempFile()
+
+	// write in same store/integration-run
+	storeWrite, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
 	assert.NoError(t, err)
-	ms3, err := NewSet("type", storeWrite, NewKV("pod", "pod-b"))
+
+	ms1, err := NewSet("type", storeWrite, RelatedTo("pod", "pod-a"))
+	assert.NoError(t, err)
+	ms2, err := NewSet("type", storeWrite, RelatedTo("pod", "pod-a"))
+	assert.NoError(t, err)
+	ms3, err := NewSet("type", storeWrite, RelatedTo("pod", "pod-b"))
 	assert.NoError(t, err)
 
 	assert.NoError(t, ms1.SetMetric("field", 1, DELTA))
@@ -198,7 +220,7 @@ func TestNewSetWithKV_SolvesCacheCollision(t *testing.T) {
 	storeRead, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
 	assert.NoError(t, err)
 
-	msRead, err := NewSet("type", storeRead, NewKV("pod", "pod-a"))
+	msRead, err := NewSet("type", storeRead, RelatedTo("pod", "pod-a"))
 	assert.NoError(t, err)
 
 	// write is required to make data available for read

@@ -14,8 +14,8 @@ import (
 // each one.
 type SourceType int
 
-// KV represents a metric key-value pair.
-type KV struct {
+// Attribute represents an attribute metric in key-value pair format.
+type Attribute struct {
 	Key   string
 	Value string
 }
@@ -41,27 +41,38 @@ var (
 
 // Set is the basic structure for storing metrics.
 type Set struct {
-	storer  persist.Storer
-	Metrics map[string]interface{}
-	id      []KV
+	storer    persist.Storer
+	Metrics   map[string]interface{}
+	relatedTo []Attribute
 }
 
-// NewSet creates new metrics set, optionally identified by a list of key-values.
-func NewSet(eventType string, storer persist.Storer, kv ...KV) (*Set, error) {
-	ms := Set{
-		Metrics: make(map[string]interface{}),
-		storer:  storer,
-		id:      kv,
+// NewSet creates new metrics set, optionally related to a list of attributes.
+// If related attributes are used, then a new attribute-metric is added per kv-pair.
+func NewSet(eventType string, storer persist.Storer, relatedTo ...Attribute) (s *Set, err error) {
+	s = &Set{
+		Metrics:   make(map[string]interface{}),
+		storer:    storer,
+		relatedTo: relatedTo,
 	}
 
-	err := ms.SetMetric("event_type", eventType, ATTRIBUTE)
+	err = s.SetMetric("event_type", eventType, ATTRIBUTE)
+	if err != nil {
+		return
+	}
 
-	return &ms, err
+	for _, attr := range relatedTo {
+		err = s.SetMetric(attr.Key, attr.Value, ATTRIBUTE)
+		if err != nil {
+			return
+		}
+	}
+
+	return
 }
 
-// NewKV creates a new KV pair.
-func NewKV(key string, value string) KV {
-	return KV{
+// RelatedTo creates an attribute for a metric-set to be related to.
+func RelatedTo(key string, value string) Attribute {
+	return Attribute{
 		Key:   key,
 		Value: value,
 	}
