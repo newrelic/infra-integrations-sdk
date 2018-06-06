@@ -173,13 +173,7 @@ func (ms *Set) namespace(metricName string) string {
 	separator := ""
 
 	attrs := ms.nsAttributes
-	sort.Slice(attrs, func(i, j int) bool {
-		if attrs[i].Key == attrs[j].Key {
-			return attrs[i].Value < attrs[j].Value
-		}
-
-		return attrs[i].Key < attrs[j].Key
-	})
+	sort.Sort(Attributes(attrs))
 
 	for _, attr := range attrs {
 		ns = fmt.Sprintf("%s%s%s", ns, separator, attr.Namespace())
@@ -197,4 +191,23 @@ func (a *Attribute) Namespace() string {
 // MarshalJSON adapts the internal structure of the metrics Set to the payload that is compliant with the protocol
 func (ms Set) MarshalJSON() ([]byte, error) {
 	return json.Marshal(ms.Metrics)
+}
+
+// Required for Go < v.18, as these do not include sort.Slice
+
+// Attributes list of attributes
+type Attributes []Attribute
+
+// Len ...
+func (a Attributes) Len() int { return len(a) }
+
+// Swap ...
+func (a Attributes) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+
+// Less ...
+func (a Attributes) Less(i, j int) bool {
+	if a[i].Key == a[j].Key {
+		return a[i].Value < a[j].Value
+	}
+	return a[i].Key < a[j].Key
 }
