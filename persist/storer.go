@@ -50,6 +50,7 @@ type Storer interface {
 type inMemoryStore struct {
 	cachedData map[string]jsonEntry
 	Data       map[string][]byte
+	Timestamps map[string]int64
 }
 
 // Holder for any entry in the JSON storage
@@ -92,6 +93,7 @@ func NewInMemoryStore() Storer {
 	return &inMemoryStore{
 		cachedData: make(map[string]jsonEntry),
 		Data:       make(map[string][]byte),
+		Timestamps: make(map[string]int64),
 	}
 }
 
@@ -221,5 +223,6 @@ func (j *fileStore) loadFromDisk() error {
 func (j inMemoryStore) Delete(key string) error {
 	delete(j.cachedData, key)
 	delete(j.Data, key)
+	delete(j.Timestamps, key)
 	return nil
 }
