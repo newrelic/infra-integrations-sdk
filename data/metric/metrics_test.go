@@ -2,9 +2,12 @@ package metric
 
 import (
 	"fmt"
+	"io/ioutil"
+	"path"
 	"testing"
 	"time"
 
+	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
 )
@@ -67,7 +70,7 @@ func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 	for _, sourceType := range []SourceType{DELTA, RATE} {
 		persist.SetNow(fd.Now)
 
-		ms, err := NewSet("some-event-type", storer)
+		ms, err := NewSet("some-event-type", storer, Attr("k", "v"))
 		assert.NoError(t, err)
 
 		for _, tt := range rateAndDeltaTests {
@@ -81,7 +84,7 @@ func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 			}
 
 			var v interface{}
-			_, err := storer.Get(key, &v)
+			_, err := storer.Get(ms.namespace(key), &v)
 			if err == persist.ErrNotFound {
 				t.Errorf("key %s not in cache for case %s", tt.key, tt.testCase)
 			} else if tt.cache != v {
@@ -100,13 +103,10 @@ func TestSet_SetMetric_NilStorer(t *testing.T) {
 
 	err = ms.SetMetric("foo", 1, DELTA)
 	assert.Error(t, err, "integrations built with no-store can't use DELTAs and RATEs")
-
 }
 
 func TestSet_SetMetric_IncorrectMetricType(t *testing.T) {
-	storer := persist.NewInMemoryStore()
-
-	ms, err := NewSet("some-event-type", storer)
+	ms, err := NewSet("some-event-type", persist.NewInMemoryStore())
 	assert.NoError(t, err)
 
 	err = ms.SetMetric("foo", "bar", RATE)
@@ -127,7 +127,7 @@ func TestSet_SetMetric_IncorrectMetricType(t *testing.T) {
 }
 
 func TestSet_MarshalJSON(t *testing.T) {
-	ms, err := NewSet("some-event-type", persist.NewInMemoryStore())
+	ms, err := NewSet("some-event-type", persist.NewInMemoryStore(), Attr("k", "v"))
 	assert.NoError(t, err)
 
 	ms.SetMetric("foo", 1, RATE)
@@ -139,7 +139,130 @@ func TestSet_MarshalJSON(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t,
-		`{"bar":0,"baz":1,"event_type":"some-event-type","foo":0,"quux":"bar"}`,
+		`{"bar":0,"baz":1,"event_type":"some-event-type","foo":0,"k":"v","quux":"bar"}`,
 		string(marshaled),
 	)
+}
+
+func TestNewSet_FileStore_StoresBetweenRuns(t *testing.T) {
+	fd := FakeData{}
+	persist.SetNow(fd.Now)
+
+	storeFile := tempFile()
+
+	s, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
+	assert.NoError(t, err)
+
+	set1, err := NewSet("type", s, Attr("k", "v"))
+	assert.NoError(t, err)
+
+	assert.NoError(t, set1.SetMetric("foo", 1, DELTA))
+
+	assert.NoError(t, s.Save())
+
+	s2, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
+	assert.NoError(t, err)
+
+	set2, err := NewSet("type", s2, Attr("k", "v"))
+	assert.NoError(t, err)
+
+	assert.NoError(t, set2.SetMetric("foo", 3, DELTA))
+
+	assert.Equal(t, 2.0, set2.Metrics["foo"])
+}
+
+func TestNewSet_Attr_AddsAttributes(t *testing.T) {
+	fd := FakeData{}
+	persist.SetNow(fd.Now)
+
+	storeFile := tempFile()
+
+	// write in same store/integration-run
+	storeWrite, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
+	assert.NoError(t, err)
+
+	set, err := NewSet(
+		"type",
+		storeWrite,
+		Attr("pod", "pod-a"),
+		Attr("node", "node-a"),
+	)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "pod-a", set.Metrics["pod"])
+	assert.Equal(t, "node-a", set.Metrics["node"])
+}
+
+func TestNewSet_Attr_SolvesCacheCollision(t *testing.T) {
+	fd := FakeData{}
+	persist.SetNow(fd.Now)
+
+	storeFile := tempFile()
+
+	// write in same store/integration-run
+	storeWrite, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
+	assert.NoError(t, err)
+
+	ms1, err := NewSet("type", storeWrite, Attr("pod", "pod-a"))
+	assert.NoError(t, err)
+	ms2, err := NewSet("type", storeWrite, Attr("pod", "pod-a"))
+	assert.NoError(t, err)
+	ms3, err := NewSet("type", storeWrite, Attr("pod", "pod-b"))
+	assert.NoError(t, err)
+
+	assert.NoError(t, ms1.SetMetric("field", 1, DELTA))
+	assert.NoError(t, ms2.SetMetric("field", 2, DELTA))
+	assert.NoError(t, ms3.SetMetric("field", 3, DELTA))
+
+	assert.NoError(t, storeWrite.Save())
+
+	// retrieve from another store/integration-run
+	storeRead, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
+	assert.NoError(t, err)
+
+	msRead, err := NewSet("type", storeRead, Attr("pod", "pod-a"))
+	assert.NoError(t, err)
+
+	// write is required to make data available for read
+	assert.NoError(t, msRead.SetMetric("field", 10, DELTA))
+
+	assert.Equal(t, 8.0, msRead.Metrics["field"], "read metric-set: %+v", msRead.Metrics)
+}
+
+func TestSet_namespace(t *testing.T) {
+	s, err := NewSet("type", persist.NewInMemoryStore(), Attr("k", "v"))
+	assert.NoError(t, err)
+
+	assert.Equal(t, fmt.Sprintf("k==v::foo"), s.namespace("foo"))
+
+	// several attributed are supported
+	s, err = NewSet(
+		"type",
+		persist.NewInMemoryStore(),
+		Attr("k1", "v1"),
+		Attr("k2", "v2"),
+	)
+	assert.NoError(t, err)
+
+	assert.Equal(t, fmt.Sprintf("k1==v1::k2==v2::foo"), s.namespace("foo"))
+
+	// provided attributes order does not matter
+	s, err = NewSet(
+		"type",
+		persist.NewInMemoryStore(),
+		Attr("k2", "v2"),
+		Attr("k1", "v1"),
+	)
+	assert.NoError(t, err)
+
+	assert.Equal(t, fmt.Sprintf("k1==v1::k2==v2::foo"), s.namespace("foo"))
+}
+
+func tempFile() string {
+	dir, err := ioutil.TempDir("", "file_store")
+	if err != nil {
+		panic(err)
+	}
+
+	return path.Join(dir, "test.json")
 }

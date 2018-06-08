@@ -79,8 +79,8 @@ func (e *Entity) isLocalEntity() bool {
 }
 
 // NewMetricSet returns a new instance of Set with its sample attached to the integration.
-func (e *Entity) NewMetricSet(eventType string) (s *metric.Set, err error) {
-	s, err = metric.NewSet(eventType, e.storer)
+func (e *Entity) NewMetricSet(eventType string, nameSpacingAttributes ...metric.Attribute) (s *metric.Set, err error) {
+	s, err = metric.NewSet(eventType, e.storer, nameSpacingAttributes...)
 	if err != nil {
 		return
 	}

@@ -1,6 +1,8 @@
 package persist
 
 import (
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"path"
 	"reflect"
@@ -32,24 +34,24 @@ func (m *memoryStorerProvider) prepareToRead(s Storer) (Storer, error) {
 }
 
 type diskStorerProvider struct {
-	rootDir string
+	filePath string
 }
 
 func (j *diskStorerProvider) new() (Storer, error) {
-	if j.rootDir == "" {
-		var err error
-		j.rootDir, err = ioutil.TempDir("", "disk_storage")
-		if err != nil {
-			return nil, err
-		}
+	if j.filePath == "" {
+		j.filePath = filePath()
 	}
 
-	ds, err := NewFileStore(path.Join(j.rootDir, "storage.json"), log.NewStdErr(true), DefaultTTL)
+	return NewFileStore(j.filePath, log.NewStdErr(true), DefaultTTL)
+}
+
+func filePath() string {
+	rootDir, err := ioutil.TempDir("", "disk_storage")
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	return ds, nil
+	return path.Join(rootDir, "storage.json")
 }
 
 func (j *diskStorerProvider) prepareToRead(s Storer) (Storer, error) {
@@ -417,5 +419,78 @@ func TestFileStorer_Save(t *testing.T) {
 	_, err = storer.Get("structValue", &structValue)
 	assert.NoError(t, err)
 	assert.Equal(t, testStruct{555, 444}, structValue)
+
+}
+
+func TestInMemoryStore_flushCache(t *testing.T) {
+	nowTime := time.Now()
+	setNow(func() time.Time {
+		return nowTime
+	})
+
+	s := NewInMemoryStore().(*inMemoryStore)
+
+	_ = s.Set("k", "v")
+
+	assert.NoError(t, s.flushCache())
+
+	assert.Equal(t, fmt.Sprintf("{\"Timestamp\":%d,\"Value\":\"v\"}", nowTime.Unix()), string(s.Data["k"]))
+}
+
+// Exaplained through different deserialization approaches
+func TestFileStore_Save(t *testing.T) {
+	nowTime := time.Now()
+	setNow(func() time.Time {
+		return nowTime
+	})
+
+	expectedTS := nowTime.Unix()
+
+	storeProvider := diskStorerProvider{}
+	s, err := storeProvider.new()
+	assert.NoError(t, err)
+
+	_ = s.Set("k", "v")
+
+	// assertion 1: using diskStorerProvider
+	s, err = storeProvider.prepareToRead(s)
+	assert.NoError(t, err)
+
+	var val string
+	ts, err := s.Get("k", &val)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "v", val)
+	assert.Equal(t, expectedTS, ts)
+
+	// reading file contents
+	readStore, err := ioutil.ReadFile(storeProvider.filePath)
+	assert.NoError(t, err)
+
+	// assertion 2.1: using a store with value deserialization on demand by Get
+	unserializedStore := NewInMemoryStore()
+	json.Unmarshal(readStore, &unserializedStore)
+
+	var v string
+	ts, err = unserializedStore.Get("k", &v)
+	assert.NoError(t, err)
+	assert.Equal(t, "v", v)
+	assert.Equal(t, expectedTS, ts)
+
+	// assertion 2.2: manual deserialization
+	expectedContent := fmt.Sprintf("{\"Data\":{ \"k\": { \"Timestamp\":%d, \"Value\":\"v\" } } }", nowTime.Unix())
+	var readJSON map[string]map[string][]byte
+	json.Unmarshal(readStore, &readJSON)
+	var expectedJSON map[string]map[string][]byte
+	json.Unmarshal([]byte(expectedContent), &expectedJSON)
+
+	bytes, ok := readJSON["Data"]["k"]
+	assert.True(t, ok)
+	var entry jsonEntry
+	err = json.Unmarshal(bytes, &entry)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "v", entry.Value)
+	assert.Equal(t, expectedTS, entry.Timestamp)
 
 }
