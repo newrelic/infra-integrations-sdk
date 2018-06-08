@@ -45,6 +45,8 @@ var (
 	ErrNoStoreToCalcDiff = errors.New("cannot use deltas nor rates without persistent store")
 	ErrTooCloseSamples   = errors.New("samples too close in time, skipping")
 	ErrNegativeDiff      = errors.New("source was reset, skipping")
+	ErrOverrideSetAttrs  = errors.New("cannot overwrite metric-set attributes")
+	ErrDeltaWithNoAttrs  = errors.New("delta/rate metrics should be attached to an attribute identified metric-set")
 )
 
 // Set is the basic structure for storing metrics.
@@ -56,6 +58,7 @@ type Set struct {
 
 // NewSet creates new metrics set, optionally related to a list of attributes. These attributes makes the metric-set unique.
 // If related attributes are used, then new attributes are added.
+// TODO remove obsolete returned error
 func NewSet(eventType string, storer persist.Storer, attributes ...Attribute) (s *Set, err error) {
 	s = &Set{
 		Metrics:      make(map[string]interface{}),
@@ -63,16 +66,10 @@ func NewSet(eventType string, storer persist.Storer, attributes ...Attribute) (s
 		nsAttributes: attributes,
 	}
 
-	err = s.SetMetric("event_type", eventType, ATTRIBUTE)
-	if err != nil {
-		return
-	}
+	s.setSetAttribute("event_type", eventType)
 
 	for _, attr := range attributes {
-		err = s.SetMetric(attr.Key, attr.Value, ATTRIBUTE)
-		if err != nil {
-			return
-		}
+		s.setSetAttribute(attr.Key, attr.Value)
 	}
 
 	return
@@ -88,16 +85,21 @@ func Attr(key string, value string) Attribute {
 
 // SetMetric adds a metric to the Set object or updates the metric value if the metric already exists.
 // It calculates elapsed difference for RATE and DELTA types.
-func (ms *Set) SetMetric(name string, value interface{}, sourceType SourceType) error {
-	var err error
+// WarnDeltaWithNoAttrs error is returned as a warning if a RATE or DELTA is used and the metric-set does not contain
+// any Attribute.
+func (ms *Set) SetMetric(name string, value interface{}, sourceType SourceType) (err error) {
+	var errElapsed error
 	var newValue = value
 
 	// Only sample metrics of numeric type
 	switch sourceType {
 	case RATE, DELTA:
-		newValue, err = ms.elapsedDifference(name, value, sourceType)
-		if err != nil {
-			return errors.Wrapf(err, "cannot calculate elapsed difference for metric: %s value %v", name, value)
+		if len(ms.nsAttributes) == 0 {
+			err = ErrDeltaWithNoAttrs
+		}
+		newValue, errElapsed = ms.elapsedDifference(name, value, sourceType)
+		if errElapsed != nil {
+			return errors.Wrapf(errElapsed, "cannot calculate elapsed difference for metric: %s value %v", name, value)
 		}
 	case GAUGE:
 		newValue, err = castToFloat(value)
@@ -105,15 +107,26 @@ func (ms *Set) SetMetric(name string, value interface{}, sourceType SourceType) 
 			return fmt.Errorf("non-numeric value for gauge metric: %s value: %v", name, value)
 		}
 	case ATTRIBUTE:
-		if _, ok := value.(string); !ok {
+		strVal, ok := value.(string)
+		if !ok {
 			return fmt.Errorf("non-string source type for attribute %s", name)
+		}
+		for _, attr := range ms.nsAttributes {
+			if name == attr.Key && strVal == attr.Value {
+				return ErrOverrideSetAttrs
+			}
 		}
 	default:
 		return fmt.Errorf("unknown source type for key %s", name)
 	}
 
 	ms.Metrics[name] = newValue
-	return nil
+
+	return
+}
+
+func (ms *Set) setSetAttribute(name string, value string) {
+	ms.Metrics[name] = value
 }
 
 func castToFloat(value interface{}) (float64, error) {

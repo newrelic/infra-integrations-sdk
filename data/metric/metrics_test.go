@@ -153,7 +153,7 @@ func TestNewSet_FileStore_StoresBetweenRuns(t *testing.T) {
 	s, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
 	assert.NoError(t, err)
 
-	set1, err := NewSet("type", s)
+	set1, err := NewSet("type", s, Attr("k", "v"))
 	assert.NoError(t, err)
 
 	assert.NoError(t, set1.SetMetric("foo", 1, DELTA))
@@ -163,7 +163,7 @@ func TestNewSet_FileStore_StoresBetweenRuns(t *testing.T) {
 	s2, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
 	assert.NoError(t, err)
 
-	set2, err := NewSet("type", s2)
+	set2, err := NewSet("type", s2, Attr("k", "v"))
 	assert.NoError(t, err)
 
 	assert.NoError(t, set2.SetMetric("foo", 3, DELTA))
