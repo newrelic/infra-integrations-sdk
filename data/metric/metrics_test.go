@@ -70,7 +70,7 @@ func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 	for _, sourceType := range []SourceType{DELTA, RATE} {
 		persist.SetNow(fd.Now)
 
-		ms, err := NewSet("some-event-type", storer)
+		ms, err := NewSet("some-event-type", storer, Attr("k", "v"))
 		assert.NoError(t, err)
 
 		for _, tt := range rateAndDeltaTests {
@@ -84,7 +84,7 @@ func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 			}
 
 			var v interface{}
-			_, err := storer.Get(key, &v)
+			_, err := storer.Get(ms.namespace(key), &v)
 			if err == persist.ErrNotFound {
 				t.Errorf("key %s not in cache for case %s", tt.key, tt.testCase)
 			} else if tt.cache != v {
@@ -127,7 +127,7 @@ func TestSet_SetMetric_IncorrectMetricType(t *testing.T) {
 }
 
 func TestSet_MarshalJSON(t *testing.T) {
-	ms, err := NewSet("some-event-type", persist.NewInMemoryStore())
+	ms, err := NewSet("some-event-type", persist.NewInMemoryStore(), Attr("k", "v"))
 	assert.NoError(t, err)
 
 	ms.SetMetric("foo", 1, RATE)
@@ -139,7 +139,7 @@ func TestSet_MarshalJSON(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t,
-		`{"bar":0,"baz":1,"event_type":"some-event-type","foo":0,"quux":"bar"}`,
+		`{"bar":0,"baz":1,"event_type":"some-event-type","foo":0,"k":"v","quux":"bar"}`,
 		string(marshaled),
 	)
 }
