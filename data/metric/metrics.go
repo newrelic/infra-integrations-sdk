@@ -33,16 +33,16 @@ const (
 )
 
 const (
-	// NSSeparator is the metric namespace separator
-	NSSeparator = "::"
-	// NSAttributeSeparator is the metric attribute key-value separator applied to generate the metric ns.
-	NSAttributeSeparator = "=="
+	// nsSeparator is the metric namespace separator
+	nsSeparator = "::"
+	// nsAttributeSeparator is the metric attribute key-value separator applied to generate the metric ns.
+	nsAttributeSeparator = "=="
 )
 
 // Errors
 var (
 	ErrNonNumeric        = errors.New("non-numeric value for rate/delta")
-	ErrNoStoreToCalcDiff = errors.New("can't use deltas nor rates without persistent store")
+	ErrNoStoreToCalcDiff = errors.New("cannot use deltas nor rates without persistent store")
 	ErrTooCloseSamples   = errors.New("samples too close in time, skipping")
 	ErrNegativeDiff      = errors.New("source was reset, skipping")
 )
@@ -177,7 +177,7 @@ func (ms *Set) namespace(metricName string) string {
 
 	for _, attr := range attrs {
 		ns = fmt.Sprintf("%s%s%s", ns, separator, attr.Namespace())
-		separator = NSSeparator
+		separator = nsSeparator
 	}
 
 	return fmt.Sprintf("%s%s%s", ns, separator, metricName)
@@ -185,7 +185,7 @@ func (ms *Set) namespace(metricName string) string {
 
 // Namespace generates the string value of an attribute used to namespace a metric.
 func (a *Attribute) Namespace() string {
-	return fmt.Sprintf("%s%s%s", a.Key, NSAttributeSeparator, a.Value)
+	return fmt.Sprintf("%s%s%s", a.Key, nsAttributeSeparator, a.Value)
 }
 
 // MarshalJSON adapts the internal structure of the metrics Set to the payload that is compliant with the protocol
