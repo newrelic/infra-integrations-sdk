@@ -24,9 +24,9 @@ type Attribute struct {
 const (
 	// GAUGE is a value that may increase and decrease. It is stored as-is.
 	GAUGE SourceType = iota
-	// RATE is an ever-growing value which might be reseted. The package calculates the change rate.
+	// RATE is an ever-growing value which might be reset. The package calculates the change rate.
 	RATE SourceType = iota
-	// DELTA is an ever-growing value which might be reseted. The package calculates the difference between samples.
+	// DELTA is an ever-growing value which might be reset. The package calculates the difference between samples.
 	DELTA SourceType = iota
 	// ATTRIBUTE is any string value
 	ATTRIBUTE SourceType = iota
@@ -54,13 +54,13 @@ type Set struct {
 	nsAttributes []Attribute
 }
 
-// NewSet creates new metrics set, optionally related to a list of attributes.
-// If related attributes are used, then a new attribute-metric is added per kv-pair.
-func NewSet(eventType string, storer persist.Storer, nsAttributes ...Attribute) (s *Set, err error) {
+// NewSet creates new metrics set, optionally related to a list of attributes. These attributes makes the metric-set unique.
+// If related attributes are used, then new attributes are added.
+func NewSet(eventType string, storer persist.Storer, attributes ...Attribute) (s *Set, err error) {
 	s = &Set{
 		Metrics:      make(map[string]interface{}),
 		storer:       storer,
-		nsAttributes: nsAttributes,
+		nsAttributes: attributes,
 	}
 
 	err = s.SetMetric("event_type", eventType, ATTRIBUTE)
@@ -68,7 +68,7 @@ func NewSet(eventType string, storer persist.Storer, nsAttributes ...Attribute) 
 		return
 	}
 
-	for _, attr := range nsAttributes {
+	for _, attr := range attributes {
 		err = s.SetMetric(attr.Key, attr.Value, ATTRIBUTE)
 		if err != nil {
 			return
