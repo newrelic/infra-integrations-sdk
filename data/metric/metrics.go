@@ -85,7 +85,7 @@ func Attr(key string, value string) Attribute {
 
 // SetMetric adds a metric to the Set object or updates the metric value if the metric already exists.
 // It calculates elapsed difference for RATE and DELTA types.
-// WarnDeltaWithNoAttrs error is returned as a warning if a RATE or DELTA is used and the metric-set does not contain
+// ErrDeltaWithNoAttrs error is returned as a warning if a RATE or DELTA is used and the metric-set does not contain
 // any Attribute.
 func (ms *Set) SetMetric(name string, value interface{}, sourceType SourceType) (err error) {
 	var errElapsed error
