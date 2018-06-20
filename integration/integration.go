@@ -111,7 +111,7 @@ func (i *Integration) Entity(name, namespace string) (e *Entity, err error) {
 
 	// we should change this to map for performance
 	for _, e = range i.Entities {
-		if e.Metadata.Name == name && e.Metadata.Namespace == namespace {
+		if e.Metadata != nil && e.Metadata.Name == name && e.Metadata.Namespace == namespace {
 			return e, nil
 		}
 	}
