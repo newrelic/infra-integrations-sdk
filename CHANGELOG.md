@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - New packages `inventory`, `event` with proper constructors 
 - Integration parametrized creation via optional `Option`s
 
+### Fixed
+- Nil pointer when creating a Remote entity after creating a Local entity.
+
 ### Changed
 - Package `sdk` renamed to `integration`
 - Package `cache` renamed to `persist` 

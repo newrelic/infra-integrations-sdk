@@ -252,6 +252,18 @@ func newTestIntegration(t *testing.T) *Integration {
 	return i
 }
 
+func TestIntegration_CreateLocalAndRemoteEntities(t *testing.T) {
+	i, err := New(integrationName, integrationVersion)
+	assert.NoError(t, err)
+
+	local := i.LocalEntity()
+	assert.NotEqual(t, local, nil)
+
+	remote, err := i.Entity("Entity1", "test")
+	assert.NoError(t, err)
+	assert.NotEqual(t, remote, nil)
+}
+
 type testWriter struct {
 	testFunc func([]byte)
 }
