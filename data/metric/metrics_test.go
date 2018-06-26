@@ -87,6 +87,17 @@ func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 	}
 }
 
+func TestSet_SetMetricAllowsNegativeDeltas(t *testing.T) {
+	persist.SetNow(growingTime)
+
+	ms, err := NewSet("some-event-type", persist.NewInMemoryStore(), Attr("k", "v"))
+	assert.NoError(t, err)
+
+	assert.NoError(t, ms.SetMetric("d", 5, DELTA))
+	assert.NoError(t, ms.SetMetric("d", 2, DELTA))
+	assert.Equal(t, ms.Metrics["d"], -3.0)
+}
+
 func TestSet_SetMetric_NilStorer(t *testing.T) {
 	ms, err := NewSet("some-event-type", nil)
 	assert.NoError(t, err)
