@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 - Protocol v2 (remote entities) support
-- Concurrency support (via `Synchronized` *option*)
+- Concurrency support
 - Configurable `Logger`
 - Configurable output `Writer`
 - Configurable `Storer`

@@ -107,7 +107,7 @@ func TestInMemoryStoreDoesNotPersistOnDisk(t *testing.T) {
 }
 
 func TestConcurrentModeHasNoDataRace(t *testing.T) {
-	in, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Synchronized())
+	in, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard))
 	assert.NoError(t, err)
 
 	for i := 0; i < 10; i++ {

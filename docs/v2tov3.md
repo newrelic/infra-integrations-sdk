@@ -142,8 +142,6 @@ For a complete view of the GoSDK `v3`, please refer to [TODO: link API and tutor
   - Output of the integration JSON payload (default: standard output).
   - Logger.
   - `persist.Storer` implementation.
-  - Synchronized (for safe, multi-threaded integrations) or non-synchronized (for faster operation in
-    single-threaded integrations).
   - Destination object where the command-line/environment flags will be parsed to.
 * Package `sdk` renamed to `integration`
 * Some member names changed, e.g. `MetricSet` is now `metric.Set`

@@ -2,7 +2,6 @@ package integration
 
 import (
 	"io"
-	"sync"
 
 	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/persist"
@@ -10,16 +9,6 @@ import (
 
 // Option sets an option on integration level.
 type Option func(*Integration) error
-
-var (
-	// DisabledLocker just a NOOP locker.
-	DisabledLocker = disabledLocker{}
-)
-
-type disabledLocker struct{}
-
-func (disabledLocker) Lock()   {}
-func (disabledLocker) Unlock() {}
 
 // Writer replaces the output writer.
 func Writer(w io.Writer) Option {
@@ -52,15 +41,6 @@ func Storer(s persist.Storer) Option {
 func InMemoryStore() Option {
 	return func(i *Integration) error {
 		i.storer = persist.NewInMemoryStore()
-
-		return nil
-	}
-}
-
-// Synchronized locks data on r/w to enable concurrency.
-func Synchronized() Option {
-	return func(i *Integration) error {
-		i.locker = &sync.Mutex{}
 
 		return nil
 	}
