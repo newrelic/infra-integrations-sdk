@@ -126,7 +126,7 @@ func TestEnvironmentVarsOverrideCliArgs(t *testing.T) {
 	clearFlagSet()
 	assert.NoError(t, sdk_args.SetupArgs(&args))
 
-	assert.False(t, args.Verbose)
+	assert.True(t, args.Verbose)
 }
 
 func TestSetupArgsErrors(t *testing.T) {
