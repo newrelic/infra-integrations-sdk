@@ -23,15 +23,13 @@ The above invocation will return an integration with the default configuration:
 
 * The final integration JSON payload is sent to the standard output.
 * The [logging](log.md) messages are submitted to the standard error (with `INFO` level).
-* No synchronization capabilities are set. That means that you cannot safely add data from different, concurrent
-  threads.
 * A persistent [Storer](persist.md) is set, whose contents will be stored in a file whose path can be constructed as
   `<OS temp dir>/nr-integrations/<integration name>.json`, whith a default 1-minute _Time To Live_.
 * Configuration specified in the [default arguments](args.md).
 
 The `integration.New` function accepts, as a variable number of arguments, diverse configuration options. For example,
 the following code would create an integration which logs data to a [Logrus](https://github.com/sirupsen/logrus)
-logger implementation. It is also synchronized so data can be managed from concurrent threads. In addition, the
+logger implementation. In addition, the
 output JSON payload is written to a file called `output.json` instead of the default standard output.
 
 ```go
@@ -39,13 +37,14 @@ payloadFile, _ := os.Create("output.json")
 
 payload, err := integration.New("my-integration-data", "1.0",
         integration.Logger(logrus.New()),
-        integration.Synchronized(),
         integration.Writer(payloadFile),
     )
 ```
 
 For more details, check the documentation of the
 [Option interface implementations](https://godoc.org/github.com/newrelic/infra-integrations-sdk/integration#Option).
+
+You can safely add data from different concurrent threads since the sdk is thread safe.
 
 ## Integration structure elements
 

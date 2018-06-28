@@ -50,7 +50,7 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 		IntegrationVersion: version,
 		Entities:           []*Entity{},
 		writer:             os.Stdout,
-		locker:             DisabledLocker,
+		locker:             &sync.Mutex{},
 	}
 
 	for _, opt := range opts {
@@ -97,15 +97,11 @@ func (i *Integration) LocalEntity() *Entity {
 		}
 	}
 
-	e := newLocalEntity(i.storer, i.isSynchronized())
+	e := newLocalEntity(i.storer)
 
 	i.Entities = append(i.Entities, e)
 
 	return e
-}
-
-func (i *Integration) isSynchronized() bool {
-	return i.locker != DisabledLocker
 }
 
 // Entity method creates or retrieves an already created entity.
@@ -120,7 +116,7 @@ func (i *Integration) Entity(name, namespace string) (e *Entity, err error) {
 		}
 	}
 
-	e, err = newEntity(name, namespace, i.storer, i.isSynchronized())
+	e, err = newEntity(name, namespace, i.storer)
 	if err != nil {
 		return nil, err
 	}
