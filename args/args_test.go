@@ -112,7 +112,7 @@ func TestSetupArgsEnvironment(t *testing.T) {
 	assertEqualArgs(t, expected, args)
 }
 
-func TestEnvironmentVarsOverrideCliArgs(t *testing.T) {
+func TestCliArgsOverrideEnvironmentArgs(t *testing.T) {
 	var args struct {
 		Verbose bool `default:"false" help:"Print more information to logs."`
 	}
@@ -126,7 +126,7 @@ func TestEnvironmentVarsOverrideCliArgs(t *testing.T) {
 	clearFlagSet()
 	assert.NoError(t, sdk_args.SetupArgs(&args))
 
-	assert.False(t, args.Verbose)
+	assert.True(t, args.Verbose)
 }
 
 func TestSetupArgsErrors(t *testing.T) {
