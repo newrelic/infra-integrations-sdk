@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"os"
@@ -126,6 +127,76 @@ func TestCustomArguments(t *testing.T) {
 	if !al.Verbose {
 		t.Error()
 	}
+}
+
+func TestVerboseLog(t *testing.T) {
+	type argumentList struct {
+		sdk_args.DefaultArgumentList
+	}
+
+	// Given an integration set in verbose mode
+	os.Args = []string{"cmd", "--verbose"}
+	flag.CommandLine = flag.NewFlagSet("name", 0)
+
+	// Whose log messages are written in the standard error
+	r, w, err := os.Pipe()
+	assert.NoError(t, err)
+	back := os.Stderr
+	os.Stderr = w
+	defer func() {
+		os.Stderr = back
+	}()
+	defer r.Close()
+
+	var al argumentList
+	i, err := New("TestIntegration", "1.0", Args(&al))
+	assert.NoError(t, err)
+
+	// When logging a debug message
+	i.logger.Debugf("hello everybody")
+	assert.NoError(t, w.Close())
+
+	// The message is correctly submitted to the standard error
+	stdErrBytes := new(bytes.Buffer)
+	stdErrBytes.ReadFrom(r)
+	assert.Contains(t, stdErrBytes.String(), "hello everybody")
+}
+
+func TestNonVerboseLog(t *testing.T) {
+	type argumentList struct {
+		sdk_args.DefaultArgumentList
+	}
+
+	// Given an integration set in non-verbose mode
+	os.Args = []string{"cmd"}
+	flag.CommandLine = flag.NewFlagSet("name", 0)
+
+	// Whose log messages are written in the standard error
+	r, w, err := os.Pipe()
+	assert.NoError(t, err)
+	back := os.Stderr
+	os.Stderr = w
+	defer func() {
+		os.Stderr = back
+	}()
+	defer r.Close()
+
+	var al argumentList
+	i, err := New("TestIntegration", "1.0", Args(&al))
+	assert.NoError(t, err)
+
+	// When logging info, error and debug messages
+	i.logger.Debugf("this is a debug")
+	i.logger.Infof("this is an info")
+	i.logger.Errorf("this is an error")
+	assert.NoError(t, w.Close())
+
+	// The standard error shows all the message levels but debug
+	stdErrBytes := new(bytes.Buffer)
+	stdErrBytes.ReadFrom(r)
+	assert.Contains(t, stdErrBytes.String(), "this is an error")
+	assert.Contains(t, stdErrBytes.String(), "this is an info")
+	assert.NotContains(t, stdErrBytes.String(), "this is a debug")
 }
 
 func TestIntegration_Publish(t *testing.T) {

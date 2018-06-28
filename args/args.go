@@ -77,12 +77,12 @@ func SetupArgs(args interface{}) error {
 		return err
 	}
 
+	// Override flags from environment variables with the same name
+	flag.VisitAll(getArgsFromEnv())
+
 	if err := flag.CommandLine.Parse(os.Args[1:]); err != nil {
 		return err
 	}
-
-	// Override flags from environment variables with the same name
-	flag.VisitAll(getArgsFromEnv())
 
 	return nil
 }
