@@ -95,10 +95,10 @@ func New(verbose bool) Logger {
 // Deprecated. Use log.NewWriter, log.NewStdErr or any custom implementation of the log.Logger interface.
 func ConfigureLogger(logger Logger, verbose bool) {
 	if logImpl, ok := logger.(*defaultLogger); ok {
-		*logImpl = *New(verbose).(*defaultLogger)
-
-		//logImpl.logger = log.New(os.Stderr, "", 0)
-		//logImpl.debug = verbose
+		logImpl.logger = log.New(os.Stderr, "", 0)
+		logImpl.debug = verbose
+	} else {
+		logger.Warnf("configureLogger has received a deprecated, unsupported logger implementation. Can't configure it")
 	}
 }
 

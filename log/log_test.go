@@ -122,7 +122,6 @@ func TestSetupLoggingNotVerbose(t *testing.T) {
 }
 
 func TestConfigureLoggerVerbose(t *testing.T) {
-	t.Skip("Being solved")
 	// Capturing standard error of global logger
 	r, w, err := os.Pipe()
 	assert.NoError(t, err)
@@ -136,8 +135,8 @@ func TestConfigureLoggerVerbose(t *testing.T) {
 	l := defaultLogger{}
 	ConfigureLogger(&l, true)
 
-	Debug("hello everybody")
-	Error("goodbye friend")
+	l.Debugf("hello everybody")
+	l.Errorf("goodbye friend")
 	assert.NoError(t, w.Close())
 
 	stdErrBytes := new(bytes.Buffer)
@@ -147,8 +146,6 @@ func TestConfigureLoggerVerbose(t *testing.T) {
 }
 
 func TestConfigureLoggerNotVerbose(t *testing.T) {
-	t.Skip("Being solved")
-
 	// Capturing standard error of global logger
 	r, w, err := os.Pipe()
 	assert.NoError(t, err)
@@ -162,8 +159,8 @@ func TestConfigureLoggerNotVerbose(t *testing.T) {
 	l := defaultLogger{}
 	ConfigureLogger(&l, false)
 
-	Debug("hello everybody")
-	Error("goodbye friend")
+	l.Debugf("hello everybody")
+	l.Errorf("goodbye friend")
 	assert.NoError(t, w.Close())
 
 	stdErrBytes := new(bytes.Buffer)
