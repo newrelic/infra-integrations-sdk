@@ -44,7 +44,6 @@ var (
 	ErrNonNumeric        = errors.New("non-numeric value for rate/delta")
 	ErrNoStoreToCalcDiff = errors.New("cannot use deltas nor rates without persistent store")
 	ErrTooCloseSamples   = errors.New("samples too close in time, skipping")
-	ErrNegativeDiff      = errors.New("source was reset, skipping")
 	ErrOverrideSetAttrs  = errors.New("cannot overwrite metric-set attributes")
 	ErrDeltaWithNoAttrs  = errors.New("delta/rate metrics should be attached to an attribute identified metric-set")
 )
@@ -167,11 +166,6 @@ func (ms *Set) elapsedDifference(name string, absolute interface{}, sourceType S
 	}
 
 	elapsed = newValue - oldValue
-	if elapsed < 0 {
-		err = ErrNegativeDiff
-		return
-	}
-
 	if sourceType == RATE {
 		elapsed = elapsed / float64(duration)
 	}
