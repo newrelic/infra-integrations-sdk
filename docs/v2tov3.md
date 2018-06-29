@@ -133,7 +133,7 @@ For a complete view of the GoSDK `v3`, please refer to [TODO: link API and tutor
 
 ### Logging
 
-* The global logger has been removed. Now the user can specify the logger implementation through the `log.Logger` interface.
+* The global logger has been deprecated. Now the user can specify the logger implementation through the `log.Logger` interface.
 
 ### Integration creation and publication
 
