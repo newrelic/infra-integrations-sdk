@@ -18,7 +18,7 @@ type Logger interface {
 
 var (
 	// Discard provides a discard all policy logger
-	Discard = NewWriter(false, ioutil.Discard)
+	Discard = New(false, ioutil.Discard)
 )
 
 type defaultLogger struct {
@@ -28,11 +28,11 @@ type defaultLogger struct {
 
 // NewStdErr creates a logger with stderr output, the argument enables Debug (verbose) output
 func NewStdErr(debug bool) Logger {
-	return NewWriter(debug, os.Stderr)
+	return New(debug, os.Stderr)
 }
 
-// NewWriter creates a logger using the provided writer. The 'debug' argument enables Debug (verbose) output
-func NewWriter(debug bool, w io.Writer) Logger {
+// New creates a logger using the provided writer. The 'debug' argument enables Debug (verbose) output
+func New(debug bool, w io.Writer) Logger {
 	return &defaultLogger{
 		logger: log.New(w, "", 0),
 		debug:  debug,
@@ -82,23 +82,6 @@ func SetupLogging(verbose bool) {
 	globalLogger = defaultLogger{
 		logger: log.New(os.Stderr, "", 0),
 		debug:  verbose,
-	}
-}
-
-// New creates an already configured logger.
-// Deprecated. Use log.NewWriter, log.NewStdErr or any custom implementation of the log.Logger interface.
-func New(verbose bool) Logger {
-	return NewStdErr(verbose)
-}
-
-// ConfigureLogger configures an already created logger. Redirects logs to stderr and configures the log level.
-// Deprecated. Use log.NewWriter, log.NewStdErr or any custom implementation of the log.Logger interface.
-func ConfigureLogger(logger Logger, verbose bool) {
-	if logImpl, ok := logger.(*defaultLogger); ok {
-		logImpl.logger = log.New(os.Stderr, "", 0)
-		logImpl.debug = verbose
-	} else {
-		logger.Warnf("configureLogger has received a deprecated, unsupported logger implementation. Can't configure it")
 	}
 }
 
