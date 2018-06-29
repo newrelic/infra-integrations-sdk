@@ -1,6 +1,7 @@
 package log
 
 import (
+	"os"
 	"testing"
 
 	"bytes"
@@ -15,6 +16,20 @@ func TestDefaultLogger_Errorf(t *testing.T) {
 
 	l.Errorf("foo")
 	l.Errorf("bar")
+
+	logged := writer.String()
+
+	assert.True(t, strings.Contains(logged, "foo"))
+	assert.True(t, strings.Contains(logged, "bar"))
+	assert.Equal(t, 2, strings.Count(logged, "\n"), "should add carriage return on each error")
+}
+
+func TestDefaultLogger_Warnf(t *testing.T) {
+	var writer bytes.Buffer
+	l := New(false, &writer)
+
+	l.Warnf("foo")
+	l.Warnf("bar")
 
 	logged := writer.String()
 
@@ -57,4 +72,51 @@ func TestDefaultLogger_Debugf_LogsWhenActive(t *testing.T) {
 
 	assert.True(t, strings.Contains(logged, "foo"))
 	assert.Equal(t, 1, strings.Count(logged, "\n"))
+}
+
+// Tests for deprecated, old global logger
+func TestSetupLoggingVerbose(t *testing.T) {
+	// Capturing standard error of global logger
+	r, w, err := os.Pipe()
+	assert.NoError(t, err)
+	back := os.Stderr
+	os.Stderr = w
+	defer func() {
+		os.Stderr = back
+	}()
+	defer r.Close()
+
+	SetupLogging(true)
+
+	Debug("hello everybody")
+	Error("goodbye friend")
+	assert.NoError(t, w.Close())
+
+	stdErrBytes := new(bytes.Buffer)
+	stdErrBytes.ReadFrom(r)
+	assert.Contains(t, stdErrBytes.String(), "hello everybody")
+	assert.Contains(t, stdErrBytes.String(), "goodbye friend")
+}
+
+func TestSetupLoggingNotVerbose(t *testing.T) {
+	// Capturing standard error of global logger
+	r, w, err := os.Pipe()
+	assert.NoError(t, err)
+	back := os.Stderr
+	os.Stderr = w
+	defer func() {
+		os.Stderr = back
+	}()
+	defer r.Close()
+
+	SetupLogging(false)
+
+	Debug("hello everybody")
+	Error("goodbye friend")
+	assert.NoError(t, w.Close())
+
+	stdErrBytes := new(bytes.Buffer)
+	stdErrBytes.ReadFrom(r)
+	assert.NotContains(t, stdErrBytes.String(), "hello everybody")
+	assert.Contains(t, stdErrBytes.String(), "goodbye friend")
 }

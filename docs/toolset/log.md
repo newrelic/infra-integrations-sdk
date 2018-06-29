@@ -7,6 +7,7 @@ any logger implementation that fulfills the interface:
 type Logger interface {
 	Debugf(format string, args ...interface{})
 	Infof(format string, args ...interface{})
+	Warnf(format string, args ...interface{})
 	Errorf(format string, args ...interface{})
 }
 ```
@@ -35,6 +36,10 @@ func (s verySimpleLogger) Infof(format string, args ...interface{}) {
 	fmt.Println("INFO:", fmt.Sprintf(format, args...))
 }
 
+func (s verySimpleLogger) Warnf(format string, args ...interface{}) {
+	fmt.Println("WARN:", fmt.Sprintf(format, args...))
+}
+
 func (s verySimpleLogger) Errorf(format string, args ...interface{}) {
 	fmt.Println("ERROR:", fmt.Sprintf(format, args...))
 }
@@ -47,5 +52,6 @@ type nullLogger struct{}
 
 func (nullLogger) Debugf(format string, args ...interface{}) { }
 func (nullLogger) Infof(format string, args ...interface{}) { }
+func (nullLogger) Warnf(format string, args ...interface{}) { }
 func (nullLogger) Errorf(format string, args ...interface{}) { }
 ```
