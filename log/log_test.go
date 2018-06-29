@@ -120,4 +120,3 @@ func TestSetupLoggingNotVerbose(t *testing.T) {
 	assert.NotContains(t, stdErrBytes.String(), "hello everybody")
 	assert.Contains(t, stdErrBytes.String(), "goodbye friend")
 }
-
