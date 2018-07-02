@@ -147,6 +147,71 @@ For a complete view of the GoSDK `v3`, please refer to [TODO: link API and tutor
 * Some member names changed, e.g. `MetricSet` is now `metric.Set`
 * Added `EntityMetadata` struct to fulfill the [JSON `v2` schema](#json-v2-schema-changes).
 
+## Migrate from `v2` to `v3` steps
+### Imports
+* First of all we've renamed some packages. So the first you can do when migrating from `v2` to `v3` is run these commands inside your 
+integration src folder :
+
+For **Linux**:
+```bash
+find . -type f -iname "*.go" |xargs -i {} sed -i '' 's/github.com/newrelic/infra-integrations-sdk/sdk/github.com/newrelic/infra-integrations-sdk/integration/' {}
+find . -type f -iname "*.go" |xargs -i {} sed -i '' 's/github.com/newrelic/infra-integrations-sdk/cache/github.com/newrelic/infra-integrations-sdk/persist/' {}
+find . -type f -iname "*.go" |xargs -i {} sed -i '' 's/github.com/newrelic/infra-integrations-sdk/metric/github.com/newrelic/infra-integrations-sdk/data/metric/' {}
+``` 
+
+For **MacOS**:
+```bash
+find . -type f -iname "*.go" |xargs -I {} sed -i '' 's/github.com/newrelic/infra-integrations-sdk/sdk/github.com/newrelic/infra-integrations-sdk/integration/' {}
+find . -type f -iname "*.go" |xargs -I {} sed -i '' 's/github.com/newrelic/infra-integrations-sdk/cache/github.com/newrelic/infra-integrations-sdk/persist/' {}
+find . -type f -iname "*.go" |xargs -I {} sed -i '' 's/github.com/newrelic/infra-integrations-sdk/metric/github.com/newrelic/infra-integrations-sdk/data/metric/' {}
+``` 
+
+These commands will change all references to old packages and use the new ones.
+Expect things to crash right now since all the references to sdk will now fail.
+
+In `v3` metrics, inventory or events cannot be attached to the integration itself but to `Entities`. So things like this 
+does not makes sense anymore:
+```bash
+integration, err := sdk.NewIntegration(integrationName, integrationVersion, &args)
+integration.NewMetricSet("ApacheSample")
+``` 
+
+Instead it should be like this:
+ 
+ ```bash
+ integration, err := integration.New(integrationName, integrationVersion)
+ e := integration.LocalEntity() # Local or remote entity it depends in the use case
+ e.NewMetricSet("TestSample")
+ ```
+
+Or in the case of **remote** entities:
+ ```bash
+ integration, err := integration.New(integrationName, integrationVersion)
+ e := integration.Entity("Entity1", "test") # Local or remote entity it depends in the use case
+ e.NewMetricSet("TestSample")
+ ```
+
+When creating a new Metric Set a storer object is needed in order for the integration to be able to persist them into disk.
+
+```bash
+storer, _ := persist.NewFileStore(storagePath string, ilog log.Logger, ttl time.Duration)
+populatedMetrics, _ := metric.NewSet("NewSet", storer)
+```
+
+Besides all of the changes mentioned above these are some terms that you can look for in your integration code and the `v3`
+ version of them.
+
+| v2                      | v3                              |
+| ----------------------- | ------------------------------- |
+| sdk.NewIntegration()    | integration.New()               |
+| args.All                | args.All()                      |
+| sdk.Inventory           | inventory.Inventory             |
+| make(sdk.Inventory)     | *inventory.New()                |
+| inventory["foo"]["bar"] | inventory.Items()["foo"]["bar"] |
+| len(inventory)          | len(inventory.Items())          |
+| metric.MetricSet        | metric.Set                      |
+
+
 ## References
 
 * Official public `Entity` definition https://docs.newrelic.com/docs/using-new-relic/welcome-new-relic/getting-started/glossary#alert-entity
