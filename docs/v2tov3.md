@@ -152,14 +152,6 @@ For a complete view of the GoSDK `v3`, please refer to [TODO: link API and tutor
 * First of all we've renamed some packages. So the first you can do when migrating from `v2` to `v3` is run these commands inside your 
 integration src folder :
 
-For **Linux**:
-```bash
-find . -type f -iname "*.go" |xargs -i {} sed -i '' 's/github.com/newrelic/infra-integrations-sdk/sdk/github.com/newrelic/infra-integrations-sdk/integration/' {}
-find . -type f -iname "*.go" |xargs -i {} sed -i '' 's/github.com/newrelic/infra-integrations-sdk/cache/github.com/newrelic/infra-integrations-sdk/persist/' {}
-find . -type f -iname "*.go" |xargs -i {} sed -i '' 's/github.com/newrelic/infra-integrations-sdk/metric/github.com/newrelic/infra-integrations-sdk/data/metric/' {}
-``` 
-
-For **MacOS**:
 ```bash
 find . -type f -iname "*.go" |xargs -I {} sed -i '' 's/github.com/newrelic/infra-integrations-sdk/sdk/github.com/newrelic/infra-integrations-sdk/integration/' {}
 find . -type f -iname "*.go" |xargs -I {} sed -i '' 's/github.com/newrelic/infra-integrations-sdk/cache/github.com/newrelic/infra-integrations-sdk/persist/' {}
