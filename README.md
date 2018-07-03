@@ -61,8 +61,8 @@ This `stdout` data is formatted as JSON.
 
 Agent supports 2 different data-structures called *protocols*:
 
-* v1: Legacy data structure to monitorize local entity.
-* v2: Latest data structure to monitorize also remote entities.
+* v1: Legacy data structure to monitor local entity.
+* v2: Latest data structure to monitor the local entity and remote entities.
 
 
 #### Local Entity vs Remote Entities
