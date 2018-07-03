@@ -79,7 +79,7 @@ An entity can have its own `inventory` (configuration/state) and report any kind
 
 Although we may define a new `entity` for each monitored thing, we may want to relate/group some of them within a **parent (local) entity** (ie: *host it's running on*).
 
-For more information on the definition of a remote entity, please see the following document on [local vs remote entites]: https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/entity-definition.md.
+For more information on the definition of a remote entity, please see the following document on [local vs remote entites](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/entity-definition.md).
 
 #### SDK & agent-protocol compatibility 
 
