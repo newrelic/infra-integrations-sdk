@@ -1,5 +1,11 @@
 # Tutorial
 
+## Important note:
+In this new version we've added support for multiple entities. If you are familiar with this the sdk and this term please 
+go to [tutorial for multiple entities](tutorial_multiple_entities.md). If not better keep reading since this tutorial will be
+easier to understand.
+ 
+
 ## Overview
 This tutorial will guide you through the process of developing a custom integration for New Relic Infrastructure in the Go language. To simplify the process, New Relic provides the following tools:
 * [nr-integrations-builder](https://github.com/newrelic/nr-integrations-builder): command line tool that generates an integration "scaffold", with basic integration files in the correct directory structure.
@@ -7,7 +13,7 @@ This tutorial will guide you through the process of developing a custom integrat
 
 For a simple overview of what Infrastructure integrations are and how they work, see the [Intro to the Integrations SDK](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/get-started/intro-infrastructure-integrations-sdk).
 
-This tutorial is compatible with `nr-integration-builder` v1.0.x and `Integration Golang SDK` v1.0.x.
+This tutorial is compatible with `nr-integration-builder` v1.0.x and `Integration Golang SDK` v3.0.x.
 
 ## Best Practices
 
@@ -121,7 +127,7 @@ Your current directory will be used as the default destination. The following st
     * vendor.json
     * _external\_packages_name_
 
-## Building a Redis integration using the Integration Golang SDK v1.0
+## Building a Redis integration using the Integration Golang SDK v3.0
 **Step1:** Create the directory where you want to place the Redis integration (it needs to be under `$GOPATH/src`)
 ```bash
 $ mkdir $GOPATH/src/myorg-integrations/
@@ -580,7 +586,7 @@ we receive
 }
 ```
 
-Let's extend our `populateInventory` function in order to collect the bind configuration parameter from Redis. By executing
+Lets get some more config data and insert it to the inventory using `getRedisConfig()` function. By executing
 ```bash
 redis-cli CONFIG GET bind
 ```
@@ -590,7 +596,7 @@ we get
 2) "127.0.0.1"
 ```
 
-To add this to our integration we can update the `populateInventory` function:
+To add this to our integration we can use the `queryRedisConfig` function and add the items using `SetInventoryItem`:
 ```go
 // ...
 // code for creating the integration and entity omitted
@@ -785,7 +791,7 @@ if args.All() || args.Events {
 }
 ```
 
-Then, update `main()` function including `populateEvents` function.
+Then, update `main()` function including the snippet above that add events.
 
 ```go
 func main() {
