@@ -93,11 +93,31 @@ https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/v2tov3.md
 
 ## Tools
 
+This section shows the documentation of all the core components of the GoSDK v3. This is, all the packages that are required to setup and manage the integration data, as well as some other libraries that, despite they are not part of the core SDK, implement common operations that may be reused in different integrations:
+
 ### Integration scaffold builder
 
 Command-line tool to scaffold new New Relic custom integrations
 
 https://github.com/newrelic/nr-integrations-builder
+
+Integration data model
+
+https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/integration.md
+
+
+Configuration arguments
+
+https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/args.md
+
+Internal logging
+
+https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/log.md
+
+Persistence/Key-Value storage
+
+https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/persist.md
+
 
 #### Legacy protocol v1 builder
 
