@@ -65,7 +65,7 @@ Agent supports 2 different data-structures called *protocols*:
 * v2: Latest data structure to monitor the local entity and remote entities.
 
 
-#### Local Entity vs Remote Entities
+### Local Entity vs Remote Entities
 
 `Entity` is a specific thing we collect data about. We used this vague term because we want to support hosts, pods, load balancers, DBs, etc. in a generic way. In the previous SDK versions (v1 & v2) the entity was local and just one, the host.
 
