@@ -196,10 +196,6 @@ you will receive the following output:
 	"integration_version": "0.1.0",
 	"data": [
 		{
-			"entity": {
-				"name": "instance-1",
-				"type": "custom"
-			},
 			"metrics": [],
 			"inventory": {},
 			"events": []
