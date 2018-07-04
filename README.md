@@ -61,8 +61,8 @@ This `stdout` data is formatted as JSON.
 
 Agent supports 2 different data-structures called *protocols*:
 
-* v1: Legacy data structure to monitorize local entity.
-* v2: Latest data structure to monitorize also remote entities.
+* v1: Legacy data structure to monitor local entity.
+* v2: Latest data structure to monitor the local entity and remote entities.
 
 
 #### Local Entity vs Remote Entities
@@ -78,6 +78,8 @@ In later versions the host reporting is called **local entity**, and it's option
 An entity can have its own `inventory` (configuration/state) and report any kind of `metrics` about itself.
 
 Although we may define a new `entity` for each monitored thing, we may want to relate/group some of them within a **parent (local) entity** (ie: *host it's running on*).
+
+For more information on the definition of a remote entity, please see the following document on [local vs remote entites](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/entity-definition.md).
 
 #### SDK & agent-protocol compatibility 
 
