@@ -129,7 +129,7 @@ $ cd $GOPATH/src/myorg-integrations/
 ```
 **Step2:** Initialize the integration
 ```bash
-$ nr-integrations-builder init redis --company-prefix "myorg" --company-name "myorganization"
+$ nr-integrations-builder init redis --company-prefix "myorg" --company-name "myorganization" -e local
 ```
 **Step 3:** Build the executable file and test that the integration was created properly
 ```bash
@@ -144,14 +144,10 @@ The following JSON payload will be printed to stdout:
 	"integration_version": "0.1.0",
 	"data": [
 		{
-			"entity": {
-				"name": "instance-1",
-				"type": "custom"
-			},
 			"metrics": [
 				{
 					"event_type": "CustomSample",
-					"some-data": 1000
+					"some-data": 4000
 				}
 			],
 			"inventory": {
@@ -165,24 +161,6 @@ The following JSON payload will be printed to stdout:
 					"category": "status"
 				}
 			]
-		},
-		{
-			"entity": {
-				"name": "instance-2",
-				"type": "custom"
-			},
-			"metrics": [
-				{
-					"event_type": "CustomSample",
-					"some-data": 2000
-				}
-			],
-			"inventory": {
-				"instance": {
-					"version": "3.0.4"
-				}
-			},
-			"events": []
 		}
 	]
 }
@@ -199,15 +177,15 @@ the mandatory _event_type_ field), and an empty structure for [inventory](https:
 The SDK package contains a function called `integration.New`, which initializes a new instance of integration data. If you run the following simplified `main` function that calls `integration.New`:
 ```go
 func main() {
-    integration, err := integration.New(integrationName, integrationVersion)
+    i, err := integration.New(integrationName, integrationVersion)
     fatalIfErr(err)
     
     // Create Entity, entities name must be unique
-    e1, err := integration.Entity("instance-1", "custom")
+    entity := i.LocalEntity()
     
     // the code for populating Inventory and Metrics omitted
     
-    fatalIfErr(integration.Publish())
+    panicOnErr(integration.Publish())
 }
 ```
 you will receive the following output:
@@ -320,18 +298,18 @@ func main() {
 	panicOnErr(err)
 
 	// Create Entity, entities name must be unique
-	e1, err := integration.Entity("instance-1", "custom")
+	entity := entity := i.LocalEntity()
 	panicOnErr(err)
 	// the code for populating Inventory omitted
 
 	if args.All() || args.Metrics {
-		m1, err := e1.NewMetricSet("MyorgRedisSample")
+		ms, err := entity.NewMetricSet("MyorgRedisSample")
 		panicOnErr(err)
         metricValue, err := queryRedisInfo("instantaneous_ops_per_sec:") 
         if err != nil {
             return err
         }
-		err = m1.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
+		err = ms.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
 		panicOnErr(err)
 	}
 
@@ -402,14 +380,14 @@ func main() {
     // ...
 	
 	if args.All() || args.Metrics {
-		m1, err := e1.NewMetricSet("MyorgRedisSample")
+		ms, err := entity.NewMetricSet("MyorgRedisSample")
 		panicOnErr(err)
         
         metricValue, err := queryRedisInfo("total_connections_received:")
         if err != nil {
             return err
         }
-        err = m1.SetMetric("net.connectionsReceivedPerSecond", metricValue, metric.RATE)
+        err = ms.SetMetric("net.connectionsReceivedPerSecond", metricValue, metric.RATE)
 		panicOnErr(err)
 	}
 
@@ -543,7 +521,7 @@ This snippet shows where you can add inventory data:
 // Add Inventory item
 if args.All() || args.Inventory {
     // Insert here the logic of your integration to get the inventory data
-	// err = e1.SetInventoryItem("instance", "version", "3.0.1")
+	// err = entity.SetInventoryItem("instance", "version", "3.0.1")
     //panicOnErr(err)
 }
 ```
@@ -573,7 +551,7 @@ if args.All() || args.Inventory {
     
     splittedLine := strings.Split(string(output), "\n")
     if splittedLine[0] == "dbfilename" {
-    	err = e1.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
+    	err = entity.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
     	panicOnErr(err)
     }
 }
@@ -628,7 +606,7 @@ if args.All() || args.Inventory {
     }
     splittedLine := strings.Split(string(output), "\n")
     if splittedLine[0] == "dbfilename" {
-    	err = e1.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
+    	err = entity.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
     	panicOnErr(err)
     }
     
@@ -639,7 +617,8 @@ if args.All() || args.Inventory {
     }
     splittedLine = strings.Split(string(output), "\n")
     if splittedLine[0] == "bind" {
-        inventory.SetItem(splittedLine[0], "value", splittedLine[1])
+        err = entity.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
+        panicOnErr(err)
     }
     
 }
