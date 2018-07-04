@@ -1,6 +1,8 @@
 ### What is an entity?
+
+We use the vague term entity because we want to support hosts, pods, load balancers, DBs, etc. in a generic way. In the previous SDK versions (v1 & v2) the entity was local and just one, the host. In later versions the host reporting is called local entity, and it's optional to add metrics to it. You could just use remote entities to attach metrics. An entity can have its own inventory (configuration/state) and report any kind of metrics about itself. Although we may define a new entity for each monitored thing, we may want to relate/group some of them within a parent (local) entity (ie: host it's running on).
  
-With V3, we wanted to offer support for remote entities. To understand what we mean, let’s start by defining what we mean by an entity. **Entity** is a general term and refers to is a specific thing we collect data about. We used this term generally because we want to monitor different services and will need to support different parts such as hosts, pods, load balancers, DBs, etc. In the previous SDK versions (v1 & v2) the entity was local and just one, the host. However, as the entity does not necessarily have to be a host, we have broadened our support to include remote entities.
+Given we wanted to offer support for remote entities,let’s start by defining what we mean by an entity. **Entity** is a general term and refers to is a specific thing we collect data about. We used this term generally because we want to monitor different services and will need to support different parts such as hosts, pods, load balancers, DBs, etc. In the previous SDK versions (v1 & v2) the entity was local and just one, the host. However, as the entity does not necessarily have to be a host, we have broadened our support to include remote entities.
  
 ### What do we mean by remote entity?
 

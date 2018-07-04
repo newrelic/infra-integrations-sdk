@@ -65,41 +65,55 @@ Agent supports 2 different data-structures called *protocols*:
 * v2: Latest data structure to monitor the local entity and remote entities.
 
 
-#### Local Entity vs Remote Entities
+### Local Entity vs Remote Entities
 
-`Entity` is a specific thing we collect data about.
-
-We used this vague term because we want to support hosts, pods, load balancers, DBs, etc. in a generic way.
-
-In the previous SDK versions (v1 & v2) the entity was local and just one, the host.
+`Entity` is a specific thing we collect data about. We used this vague term because we want to support hosts, pods, load balancers, DBs, etc. in a generic way. In the previous SDK versions (v1 & v2) the entity was local and just one, the host.
 
 In later versions the host reporting is called **local entity**, and it's optional to add metrics to it. You could just use **remote entities** to attach metrics.
 
-An entity can have its own `inventory` (configuration/state) and report any kind of `metrics` about itself.
-
-Although we may define a new `entity` for each monitored thing, we may want to relate/group some of them within a **parent (local) entity** (ie: *host it's running on*).
-
 For more information on the definition of a remote entity, please see the following document on [local vs remote entites](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/entity-definition.md).
+
+
+
+## Upgrading from SDK v2 to v3
+
+https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/v2tov3.md
 
 #### SDK & agent-protocol compatibility 
 
 SDK v1 and v2 use *protocol-v1*.
 
 SDK v3 use *protocol-v2*.
-
-## Upgrading from SDK v2 to v3
  
-https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/v2tov3.md
+
 
 ## Tools
 
-### Integration scaffold builder
+This section shows the documentation of all the core components of the GoSDK v3. This is, all the packages that are required to setup and manage the integration data, as well as some other libraries that, despite they are not part of the core SDK, implement common operations that may be reused in different integrations:
 
-Command-line tool to scaffold new New Relic custom integrations
+### Command-line tool to scaffold new New Relic custom integrations
 
 https://github.com/newrelic/nr-integrations-builder
 
-#### Legacy protocol v1 builder
+### Integration data model
+
+https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/integration.md
+
+
+### Configuration arguments
+
+https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/args.md
+
+### Internal logging
+
+https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/log.md
+
+### Persistence/Key-Value storage
+
+https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/persist.md
+
+
+### Legacy protocol v1 builder
 
 In case you want to use the previous builder, you still can do it via `gopkg.in/newrelic/nr-integrations-builder.v1`.
 
@@ -118,6 +132,11 @@ the [nrjmx](https://github.com/newrelic/nrjmx) repository to build it and set
 the `NR_JMX_TOOL` environment variable to point to the location of the nrjmx
 executable. If the `NR_JMX_TOOL` variable is not set, the SDK will use
 `/usr/bin/nrjmx` by default.
+
+### HTTP support
+
+GoSDK v3 provides a helper HTTP package to create secure HTTPS clients that require loading credentials from a Certificate Authority Bundle (stored in a file or in a directory).You can read more [here](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/http.md).
+
 
 ## Contributing Code
 
