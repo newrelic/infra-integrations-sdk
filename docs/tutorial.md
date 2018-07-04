@@ -1,7 +1,7 @@
 # Tutorial
 
 ## Important note:
-In this new version we've added support for multiple entities. If you are familiar with this the sdk and this term please 
+In this new version we've added support for [multiple entities](toolset/integration.md#entity). If you are familiar with this the sdk and this term please 
 go to [tutorial for multiple entities](tutorial_multiple_entities.md). If not better keep reading since this tutorial will be
 easier to understand.
  
