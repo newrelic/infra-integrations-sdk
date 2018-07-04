@@ -185,7 +185,7 @@ func main() {
     
     // the code for populating Inventory and Metrics omitted
     
-    panicOnErr(integration.Publish())
+    panicOnErr(i.Publish())
 }
 ```
 you will receive the following output:
@@ -219,22 +219,22 @@ automatically using the `company-prefix` flag (that you specified initializing t
 function should look like:
 ```go
 func main() {
-	integration, err := integration.New(integrationName, integrationVersion)
+	i, err := integration.New(integrationName, integrationVersion)
 	panicOnErr(err)
 
 	// Create Entity, entities name must be unique
-	e1, err := integration.Entity("instance-1", "custom")
+	entity := i.LocalEntity()
 	panicOnErr(err)
 	// the code for populating Inventory omitted
 
 	if args.All() || args.Metrics {
-		m1, err := e1.NewMetricSet("MyorgRedisSample")
+		ms, err := entity.NewMetricSet("MyorgRedisSample")
 		panicOnErr(err)
-		err = m1.SetMetric("some-data", 1000, metric.GAUGE)
+		err = ms.SetMetric("some-data", 1000, metric.GAUGE)
 		panicOnErr(err)
 	}
 
-	panicOnErr(integration.Publish())
+	panicOnErr(i.Publish())
 }
 ```
 In order to define the metric value, we will use the function `SetMetric` from the `data/metric` package.
@@ -245,18 +245,18 @@ After building, formatting the source code and executing the integration the fol
 	"name": "com.myorganization.redis",
 	"protocol_version": "2",
 	"integration_version": "0.1.0",
-	"data": [{
-		"entity": {
-			"name": "instance-1",
-			"type": "custom"
-		},
-		"metrics": [{
-			"event_type": "MyorgRedisSample",
-			"some-data": 1000
-		}],
-		"inventory": {},
-		"events": []
-	}]
+	"data": [
+		{
+			"metrics": [
+				{
+					"event_type": "MyorgRedisSample",
+					"some-data": 1000
+				}
+			],
+			"inventory": {},
+			"events": []
+		}
+	]
 }
 ```
 
@@ -280,35 +280,32 @@ source type in these cases. For metric names, it is recommended that you use a p
 them (check [the currently used prefixes](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/file-specifications/integration-executable-file-specifications#metric-data)), innerCamelCase naming format, and specify the measurement unit using a unit suffix, i.e. PerSecond. In this case, for the metric data key, use `query.instantaneousOpsPerSecond`:
 
 ```go
-func queryRedisInfo(query string) (string, error){
-	cmd := exec.Command(Sprintf("/bin/sh", "-c", "redis-cli info | grep %s" % query))
-    output, err := cmd.CombinedOutput()
-    if err != nil {
-        return _, err
-    }
-    splittedLine := strings.Split(string(output), ":")
-    if len(splittedLine) != 2 {
-        return _, fmt.Errorf("Cannot split the output line")
-    }
-    return strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64), nil
+func queryRedisInfo(query string) (float64, error) {
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("redis-cli info | grep %s" , query))
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return 0, err
+	}
+	splittedLine := strings.Split(string(output), ":")
+	if len(splittedLine) != 2 {
+		return 0, fmt.Errorf("Cannot split the output line")
+	}
+	return strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
 }
 
 func main() {
-	integration, err := integration.New(integrationName, integrationVersion)
+	i, err := integration.New(integrationName, integrationVersion)
 	panicOnErr(err)
 
 	// Create Entity, entities name must be unique
 	entity := entity := i.LocalEntity()
 	panicOnErr(err)
 	// the code for populating Inventory omitted
-
-	if args.All() || args.Metrics {
+if args.All() || args.Metrics {
 		ms, err := entity.NewMetricSet("MyorgRedisSample")
 		panicOnErr(err)
-        metricValue, err := queryRedisInfo("instantaneous_ops_per_sec:") 
-        if err != nil {
-            return err
-        }
+		metricValue, err := queryRedisInfo("instantaneous_ops_per_sec:")
+		panicOnErr(err)
 		err = ms.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
 		panicOnErr(err)
 	}
@@ -340,18 +337,18 @@ After building, formatting the source code, and executing the integration, you s
 	"name": "com.myorganization.redis",
 	"protocol_version": "2",
 	"integration_version": "0.1.0",
-	"data": [{
-		"entity": {
-			"name": "instance-1",
-			"type": "custom"
-		},
-		"metrics": [{
-			"event_type": "MyorgRedisSample",
-			"query.instantaneousOpsPerSecond": 3
-		}],
-		"inventory": {},
-		"events": []
-	}]
+	"data": [
+		{
+			"metrics": [
+				{
+					"event_type": "MyorgRedisSample",
+					"query.instantaneousOpsPerSecond": 4
+				}
+			],
+			"inventory": {},
+			"events": []
+		}
+	]
 }
 ```
 
@@ -376,20 +373,20 @@ Modify the `populateMetrics` function to process the metric data using the RATE 
 func main() {
     // ...
     // code for creating the integration and entity omitted
-    // code for instantaneous_ops_per_sec metric omitted.
     // ...
 	
 	if args.All() || args.Metrics {
-		ms, err := entity.NewMetricSet("MyorgRedisSample")
-		panicOnErr(err)
-        
-        metricValue, err := queryRedisInfo("total_connections_received:")
-        if err != nil {
-            return err
-        }
-        err = ms.SetMetric("net.connectionsReceivedPerSecond", metricValue, metric.RATE)
-		panicOnErr(err)
-	}
+    		ms, err := entity.NewMetricSet("MyorgRedisSample")
+    		panicOnErr(err)
+    		metricValue, err := queryRedisInfo("instantaneous_ops_per_sec:")
+    		panicOnErr(err)
+    		err = ms.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
+    		panicOnErr(err)
+    		metricValue1, err := queryRedisInfo("total_connections_received:")
+    		panicOnErr(err)
+    		err = ms.SetMetric("net.connectionsReceivedPerSecond", metricValue1, metric.RATE)
+    		panicOnErr(err)
+    }
 
 	panicOnErr(integration.Publish())
 }
@@ -399,23 +396,23 @@ Build, format the source code, and execute the integration, and then check the o
 
 ```json
 {
- 	"name": "com.myorganization.redis",
- 	"protocol_version": "2",
- 	"integration_version": "0.1.0",
- 	"data": [{
- 		"entity": {
- 			"name": "instance-1",
- 			"type": "custom"
- 		},
- 		"metrics": [{
- 			"event_type": "MyorgRedisSample",
- 			"net.connectionsReceivedPerSecond": 2,
- 			"query.instantaneousOpsPerSecond": 3
- 		}],
- 		"inventory": {},
- 		"events": []
- 	}]
- }
+	"name": "com.myorganization.redis",
+	"protocol_version": "2",
+	"integration_version": "0.1.0",
+	"data": [
+		{
+			"metrics": [
+				{
+					"event_type": "MyorgRedisSample",
+					"net.connectionsReceivedPerSecond": 4,
+					"query.instantaneousOpsPerSecond": 2
+				}
+			],
+			"inventory": {},
+			"events": []
+		}
+	]
+}
 ```
 The calculations for a given metric source type are handled by `SetMetric`; the only information you need to provide is the desired source type. Besides RATE and GAUGE type, there is a DELTA type, which is similar to RATE, but it is calculated as the difference between samples, not as a rate change, and the ATTRIBUTE type, which is used for string values.
 [Here](toolset/integration.md#metrics) you can find the definition of the different source type.
@@ -431,7 +428,7 @@ The schema that will contain the different data types is:
 ```yml
 name: com.myorganization.redis
 description: Reports status and metrics for redis service
-protocol_version: 1
+protocol_version: 2
 os: linux
 
 commands:
@@ -543,16 +540,14 @@ To parse this output and create the proper inventory data structure, modify the 
 // code for creating the integration and entity omitted
 // ...
 if args.All() || args.Inventory {
-	cmd := exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET dbfilename")
+    cmd := exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET dbfilename")
     output, err := cmd.CombinedOutput()
-    if err != nil {
-        return err
-    }
-    
+    panicOnErr(err)
+
     splittedLine := strings.Split(string(output), "\n")
     if splittedLine[0] == "dbfilename" {
-    	err = entity.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
-    	panicOnErr(err)
+        err = entity.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
+        panicOnErr(err)
     }
 }
 ```
@@ -564,23 +559,21 @@ $ ./bin/myorg-redis -pretty -inventory
 we receive
 ```json
 {
- 	"name": "com.myorganization.redis",
- 	"protocol_version": "2",
- 	"integration_version": "0.1.0",
- 	"data": [{
- 		"entity": {
- 			"name": "instance-1",
- 			"type": "custom"
- 		},
- 		"metrics": [],
- 		"inventory": {
-        	"dbfilename": {
-        		"value": "dump.rdb"
-        	}
-        },
- 		"events": []
- 	}]
- }
+	"name": "com.myorganization.redis",
+	"protocol_version": "2",
+	"integration_version": "0.1.0",
+	"data": [
+		{
+			"metrics": [],
+			"inventory": {
+				"dbfilename": {
+					"value": "dump.rdb"
+				}
+			},
+			"events": []
+		}
+	]
+}
 ```
 
 Let's extend our `populateInventory` function in order to collect the bind configuration parameter from Redis. By executing
@@ -599,22 +592,20 @@ To add this to our integration we can update the `populateInventory` function:
 // code for creating the integration and entity omitted
 // ...
 if args.All() || args.Inventory {
-	cmd := exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET dbfilename")
+    cmd := exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET dbfilename")
     output, err := cmd.CombinedOutput()
-    if err != nil {
-        return err
-    }
+    panicOnErr(err)
+    
     splittedLine := strings.Split(string(output), "\n")
     if splittedLine[0] == "dbfilename" {
-    	err = entity.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
-    	panicOnErr(err)
+        err = entity.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
+        panicOnErr(err)
     }
-    
+
     cmd = exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET bind")
     output, err = cmd.CombinedOutput()
-    if err != nil {
-        return err
-    }
+    panicOnErr(err)
+    
     splittedLine = strings.Split(string(output), "\n")
     if splittedLine[0] == "bind" {
         err = entity.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
@@ -633,22 +624,26 @@ $ ./bin/myorg-redis -pretty
 	"name": "com.myorganization.redis",
 	"protocol_version": "2",
 	"integration_version": "0.1.0",
-	"data": [{
-		"entity": {
-			"name": "instance-1",
-			"type": "custom"
-		},
-		"metrics": [],
-		"inventory": {
-			"bind": {
-				"value": "127.0.0.1"
+	"data": [
+		{
+			"metrics": [
+				{
+					"event_type": "MyorgRedisSample",
+					"net.connectionsReceivedPerSecond": 0.625,
+					"query.instantaneousOpsPerSecond": 1
+				}
+			],
+			"inventory": {
+				"bind": {
+					"value": "127.0.0.1"
+				},
+				"dbfilename": {
+					"value": "dump.rdb"
+				}
 			},
-			"dbfilename": {
-				"value": "dump.rdb"
-			}
-		},
-		"events": []
-	}]
+			"events": []
+		}
+	]
 }
 ```
 
@@ -782,28 +777,25 @@ you will receive (value will vary):
 uptime_in_seconds:54782
 ```
 
-We assume that when the uptime is less than 60 seconds, the Redis service has recently started. Let's create a new function called `populateEvents`. It will call the `redis-cli info | grep uptime_in_seconds:` command and then create a notification event if the uptime value is smaller than a defined limit. To do so, we will use the method `AddNotificationEvent`, which adds a new event with the default `notifications` category for an integration object. It accepts the `string` argument, which is a summary message, i.e. `"Redis Server recently started"`.
+We assume that when the uptime is less than 60 seconds, the Redis service has recently started. We will call the `redis-cli info | grep uptime_in_seconds:` command and then create a notification event if the uptime value is smaller than a defined limit. To do so, we will use the type of event `event.NewNotification`, which is a event with the default `notifications` category for an integration object. It accepts the `string` argument, which is a summary message, i.e. `"Redis Server recently started"`.
 
 ```go
-func populateEvents(integration *sdk.Integration) error {
-	cmd := exec.Command("/bin/sh", "-c", "redis-cli info | grep uptime_in_seconds:")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return err
-	}
-	splittedLine := strings.Split(string(output), ":")
-	if len(splittedLine) != 2 {
-		return fmt.Errorf("Cannot split the output line")
-	}
-	uptime, err := strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
-	if err != nil {
-		return err
-	}
-	if uptime < 60 {
-		err = integration.AddNotificationEvent("Redis Server recently started")
-	}
+if args.All() || args.Events {
+    cmd := exec.Command("/bin/sh", "-c", "redis-cli info | grep uptime_in_seconds:")
+    output, err := cmd.CombinedOutput()
+    panicOnErr(err)
 
-	return err
+    splittedLine := strings.Split(string(output), ":")
+    if len(splittedLine) != 2 {
+        panic(fmt.Errorf("Cannot split the output line"))
+    }
+    uptime, err := strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
+    panicOnErr(err)
+    if uptime < 60 {
+        err = entity.AddEvent(event.NewNotification("Redis Server recently started"))
+    }
+
+    panicOnErr(err)
 }
 ```
 
@@ -844,15 +836,19 @@ If Redis server was recently started, you will receive the following output:
 
 ```json
 {
-	"name": "com.myorg.redis",
-	"protocol_version": "1",
+	"name": "com.myorganization.redis",
+	"protocol_version": "2",
 	"integration_version": "0.1.0",
-	"metrics": [],
-	"inventory": {},
-	"events": [
+	"data": [
 		{
-			"summary": "Redis Server recently started",
-			"category": "notifications"
+			"metrics": [],
+			"inventory": {},
+			"events": [
+				{
+					"summary": "Redis Server recently started",
+					"category": "notifications"
+				}
+			]
 		}
 	]
 }
@@ -860,44 +856,43 @@ If Redis server was recently started, you will receive the following output:
 Otherwise, `events` list will be empty:
 ```json
 {
-	"name": "com.myorg.redis",
-	"protocol_version": "1",
+	"name": "com.myorganization.redis",
+	"protocol_version": "2",
 	"integration_version": "0.1.0",
-	"metrics": [],
-	"inventory": {},
-	"events": []
+	"data": [
+		{
+			"metrics": [],
+			"inventory": {},
+			"events": []
+		}
+	]
 }
 ```
 
 
-Now, let's assume that we would like to create an event with a different category. To do this, we will extend the previous `populateEvents` function and include another method called `AddEvent`. This method accepts as an argument `Event` structure. To easily identify a new event in the Infrastructure Events UI, we will use a new category called `redis-server`. 
+Now, let's assume that we would like to create an event with a different category. To easily identify a new event in the Infrastructure Events UI, we will use a new category called `redis-server`. To do that we will use the same method as before `AddEvent` but instead of using
+the `newNotification` method we will use the `Event` constructor and set the category to `redis-server`.  
 
 ```go
-func populateEvents(integration *sdk.Integration) error {
-	cmd := exec.Command("/bin/sh", "-c", "redis-cli info | grep uptime_in_seconds:")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return err
-	}
-	splittedLine := strings.Split(string(output), ":")
-	if len(splittedLine) != 2 {
-		return fmt.Errorf("Cannot split the output line")
-	}
-	uptime, err := strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
-	if err != nil {
-		return err
-	}
-	if uptime < 60 {
-		err = integration.AddNotificationEvent("Redis Server recently started")
-		if err != nil {
-			return err
-		}
-	}
-	if uptime < 60 {
-		err = integration.AddEvent(sdk.Event{Summary: "Redis Server recently started", Category: "redis-server"})
-	}
+if args.All() || args.Events {
+    cmd := exec.Command("/bin/sh", "-c", "redis-cli info | grep uptime_in_seconds:")
+    output, err := cmd.CombinedOutput()
+    panicOnErr(err)
 
-	return err
+    splittedLine := strings.Split(string(output), ":")
+    if len(splittedLine) != 2 {
+        panic(fmt.Errorf("Cannot split the output line"))
+    }
+    uptime, err := strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
+    panicOnErr(err)
+    if uptime < 60 {
+        err = entity.AddEvent(event.NewNotification("Redis Server recently started"))
+    }
+    panicOnErr(err)
+    if uptime < 60 {
+        err = entity.AddEvent(event.New("Redis Server recently started", "redis-server"))
+    }
+
 }
 ```
 
@@ -909,32 +904,36 @@ check that the integration was created properly (this output assume that your Re
 
 ```json
 {
-	"name": "com.myorg.redis",
-	"protocol_version": "1",
+	"name": "com.myorganization.redis",
+	"protocol_version": "2",
 	"integration_version": "0.1.0",
-	"metrics": [
+	"data": [
 		{
-			"event_type": "RedisSample",
-			"net.connectionsReceivedPerSecond": 0.23809523809523808,
-			"query.instantaneousOpsPerSecond": 0
-		}
-	],
-	"inventory": {
-		"bind": {
-			"value": "127.0.0.1"
-		},
-		"dbfilename": {
-			"value": "dump.rdb"
-		}
-	},
-	"events": [
-		{
-			"summary": "Redis Server recently started",
-			"category": "notifications"
-		},
-		{
-			"summary": "Redis Server just started",
-			"category": "redis-server"
+			"metrics": [
+				{
+					"event_type": "MyorgRedisSample",
+					"net.connectionsReceivedPerSecond": 0.8333333333333334,
+					"query.instantaneousOpsPerSecond": 2
+				}
+			],
+			"inventory": {
+				"bind": {
+					"value": "127.0.0.1"
+				},
+				"dbfilename": {
+					"value": "dump.rdb"
+				}
+			},
+			"events": [
+				{
+					"summary": "Redis Server recently started",
+					"category": "notifications"
+				},
+				{
+					"summary": "Redis Server recently started",
+					"category": "redis-server"
+				}
+			]
 		}
 	]
 }
