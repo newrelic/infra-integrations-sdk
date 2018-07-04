@@ -131,12 +131,7 @@ $ cd $GOPATH/src/myorg-integrations/
 ```bash
 $ nr-integrations-builder init redis --company-prefix "myorg" --company-name "myorganization"
 ```
-**Step 3:** Go to the directory you created. Before building the executable file you have to format the Go source code using [gofmt tool](https://blog.golang.org/go-fmt-your-code). If you don't do this, the `make` command will fail and the executable file will not be created.
-```bash
-$ cd redis/
-$ go fmt src/redis.go
-```
-**Step 4:** Build the executable file and test that the integration was created properly
+**Step 3:** Build the executable file and test that the integration was created properly
 ```bash
 $ make
 $ ./bin/myorg-redis -pretty
@@ -145,15 +140,51 @@ The following JSON payload will be printed to stdout:
 ```json
 {
 	"name": "com.myorganization.redis",
-	"protocol_version": "1",
+	"protocol_version": "2",
 	"integration_version": "0.1.0",
-	"metrics": [
+	"data": [
 		{
-			"event_type": "MyorgRedisSample"
+			"entity": {
+				"name": "instance-1",
+				"type": "custom"
+			},
+			"metrics": [
+				{
+					"event_type": "CustomSample",
+					"some-data": 1000
+				}
+			],
+			"inventory": {
+				"instance": {
+					"version": "3.0.1"
+				}
+			},
+			"events": [
+				{
+					"summary": "restart",
+					"category": "status"
+				}
+			]
+		},
+		{
+			"entity": {
+				"name": "instance-2",
+				"type": "custom"
+			},
+			"metrics": [
+				{
+					"event_type": "CustomSample",
+					"some-data": 2000
+				}
+			],
+			"inventory": {
+				"instance": {
+					"version": "3.0.4"
+				}
+			},
+			"events": []
 		}
-	],
-	"inventory": {},
-	"events": []
+	]
 }
 ```
 This is the basic JSON data format that is expected by the Infrastructure agent. The main logic is placed in `src/redis.go`, which is the source that will be compiled into [the integration executable file](https://docs.newrelic.com/docs/create-integration-executable-file).
@@ -165,33 +196,44 @@ _integration_version_),
 [metrics data](https://docs.newrelic.com/docs/create-integration-executable-file#metric-data) (with
 the mandatory _event_type_ field), and an empty structure for [inventory](https://docs.newrelic.com/docs/create-integration-executable-file#inventory) and [events data](https://docs.newrelic.com/docs/create-integration-executable-file#event-data).
 
-The SDK package contains a function called `NewIntegration`, which initializes a new instance of integration data. If you run the following simplified `main` function that calls `NewIntegration`:
+The SDK package contains a function called `integration.New`, which initializes a new instance of integration data. If you run the following simplified `main` function that calls `integration.New`:
 ```go
 func main() {
-	integration, err := sdk.NewIntegration(integrationName, integrationVersion, &args)
-	fatalIfErr(err)
-
-	// the code for populating Inventory and Metrics omitted
-
-	fatalIfErr(integration.Publish())
+    integration, err := integration.New(integrationName, integrationVersion)
+    fatalIfErr(err)
+    
+    // Create Entity, entities name must be unique
+    e1, err := integration.Entity("instance-1", "custom")
+    
+    // the code for populating Inventory and Metrics omitted
+    
+    fatalIfErr(integration.Publish())
 }
 ```
 you will receive the following output:
 ```json
 {
 	"name": "com.myorganization.redis",
-	"protocol_version": "1",
+	"protocol_version": "2",
 	"integration_version": "0.1.0",
-	"metrics": [],
-	"inventory": {},
-	"events": []
+	"data": [
+		{
+			"entity": {
+				"name": "instance-1",
+				"type": "custom"
+			},
+			"metrics": [],
+			"inventory": {},
+			"events": []
+		}
+	]
 }
 ```
 
 The complete files for the Redis integration can be found in [tutorial-code](tutorial-code).
 
 ### Fetching metric data
-Let's start by defining the metric data. `MetricSet` is the basic structure for storing metrics. The `NewMetricSet` function returns a new instance of MetricSet with its sample attached to the integration data.
+Let's start by defining the metric data. `Metric.Set` is the basic structure for storing metrics. The `NewMetricSet` function returns a new instance of Metric.Set with its sample attached to the integration data.
 
 Next, if you think it's necessary, modify the argument for `NewMetricSet` in the
 code. By default, `nr-integrations-builder` generates an Event Type
@@ -199,69 +241,47 @@ automatically using the `company-prefix` flag (that you specified initializing t
 function should look like:
 ```go
 func main() {
-	integration, err := sdk.NewIntegration(integrationName, integrationVersion, &args)
-	fatalIfErr(err)
+	integration, err := integration.New(integrationName, integrationVersion)
+	panicOnErr(err)
 
+	// Create Entity, entities name must be unique
+	e1, err := integration.Entity("instance-1", "custom")
+	panicOnErr(err)
 	// the code for populating Inventory omitted
 
 	if args.All() || args.Metrics {
-		ms := integration.NewMetricSet("MyorgRedisSample")
-		fatalIfErr(populateMetrics(ms))
+		m1, err := e1.NewMetricSet("MyorgRedisSample")
+		panicOnErr(err)
+		err = m1.SetMetric("some-data", 1000, metric.GAUGE)
+		panicOnErr(err)
 	}
 
-	fatalIfErr(integration.Publish())
+	panicOnErr(integration.Publish())
 }
 ```
+In order to define the metric value, we will use the function `SetMetric` from the `data/metric` package.
 
 After building, formatting the source code and executing the integration the following output is returned:
 ```json
 {
 	"name": "com.myorganization.redis",
-	"protocol_version": "1",
+	"protocol_version": "2",
 	"integration_version": "0.1.0",
-	"metrics": [
-		{
-            "event_type": "MyorgRedisSample"
-        }
-	],
-	"inventory": {},
-	"events": []
-}
-```
-In order to define the metric value, we will use the function `SetMetric` from the SDK package. `nr-integrations-builder` automatically generates the `populateMetrics` function:
-```go
-func populateMetrics(ms *metric.MetricSet) error {
-	// Insert here the logic of your integration to get the metrics data
-	// Ex: ms.SetMetric("requestsPerSecond", 10, metric.GAUGE)
-	// --
-	return nil
-}
-```
-Uncomment the line that calls the `SetMetric` function:
-```go
-func populateMetrics(ms *metric.MetricSet) error {
-	// Insert here the logic of your integration to get the metrics data
-	ms.SetMetric("requestsPerSecond", 10, metric.GAUGE)
-	// --
-	return nil
-}
-```
-and build, format Go source code (using `gofmt` tool) and execute the integration. You will receive the following output:
-```json
-{
-	"name": "com.myorganization.redis",
-	"protocol_version": "1",
-	"integration_version": "0.1.0",
-	"metrics": [
-		{
+	"data": [{
+		"entity": {
+			"name": "instance-1",
+			"type": "custom"
+		},
+		"metrics": [{
 			"event_type": "MyorgRedisSample",
-			"requestsPerSecond": 10
-		}
-	],
-	"inventory": {},
-	"events": []
+			"some-data": 1000
+		}],
+		"inventory": {},
+		"events": []
+	}]
 }
 ```
+
 The function `SetMetric` requires three arguments. The first one is the _metric name_, the second is the _metric value_, and the last one is the _source type_ of the metric.
 
 The metric source type can be one of the following: GAUGE, RATE, DELTA or ATTRIBUTE. Continue reading to understand how to use the different source types.
@@ -282,24 +302,42 @@ source type in these cases. For metric names, it is recommended that you use a p
 them (check [the currently used prefixes](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/file-specifications/integration-executable-file-specifications#metric-data)), innerCamelCase naming format, and specify the measurement unit using a unit suffix, i.e. PerSecond. In this case, for the metric data key, use `query.instantaneousOpsPerSecond`:
 
 ```go
-func populateMetrics(ms *metric.MetricSet) error {
-	cmd := exec.Command("/bin/sh", "-c", "redis-cli info | grep instantaneous_ops_per_sec:")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return err
-	}
-	splittedLine := strings.Split(string(output), ":")
-	if len(splittedLine) != 2 {
-		return fmt.Errorf("Cannot split the output line")
-	}
-	metricValue, err := strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
-	if err != nil {
-		return err
-	}
-	ms.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
-
-	return nil
+func queryRedisInfo(query string) (string, error){
+	cmd := exec.Command(Sprintf("/bin/sh", "-c", "redis-cli info | grep %s" % query))
+    output, err := cmd.CombinedOutput()
+    if err != nil {
+        return _, err
+    }
+    splittedLine := strings.Split(string(output), ":")
+    if len(splittedLine) != 2 {
+        return _, fmt.Errorf("Cannot split the output line")
+    }
+    return strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64), nil
 }
+
+func main() {
+	integration, err := integration.New(integrationName, integrationVersion)
+	panicOnErr(err)
+
+	// Create Entity, entities name must be unique
+	e1, err := integration.Entity("instance-1", "custom")
+	panicOnErr(err)
+	// the code for populating Inventory omitted
+
+	if args.All() || args.Metrics {
+		m1, err := e1.NewMetricSet("MyorgRedisSample")
+		panicOnErr(err)
+        metricValue, err := queryRedisInfo("instantaneous_ops_per_sec:") 
+        if err != nil {
+            return err
+        }
+		err = m1.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
+		panicOnErr(err)
+	}
+
+	panicOnErr(integration.Publish())
+}
+
 ```
 
 In order to continue to build the source, you'll need to add the needed packages to the import statement at the top of the program:
@@ -309,8 +347,8 @@ import (
 	"fmt"
 	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/log"
-	"github.com/newrelic/infra-integrations-sdk/metric"
-	"github.com/newrelic/infra-integrations-sdk/sdk"
+    "github.com/newrelic/infra-integrations-sdk/data/metric"
+    "github.com/newrelic/infra-integrations-sdk/integration"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -322,16 +360,20 @@ After building, formatting the source code, and executing the integration, you s
 ```json
 {
 	"name": "com.myorganization.redis",
-	"protocol_version": "1",
+	"protocol_version": "2",
 	"integration_version": "0.1.0",
-	"metrics": [
-		{
+	"data": [{
+		"entity": {
+			"name": "instance-1",
+			"type": "custom"
+		},
+		"metrics": [{
 			"event_type": "MyorgRedisSample",
 			"query.instantaneousOpsPerSecond": 3
-		}
-	],
-	"inventory": {},
-	"events": []
+		}],
+		"inventory": {},
+		"events": []
+	}]
 }
 ```
 
@@ -352,26 +394,26 @@ This provides information about the total number of connections accepted by the 
 Modify the `populateMetrics` function to process the metric data using the RATE type:
 
 ```go
-func populateMetrics(ms *metric.MetricSet) error {
-  // ...
-  // previous code for getting `instantaneous_ops_per_sec` omitted
-  // ...
 
-	cmd = exec.Command("/bin/sh", "-c", "redis-cli info | grep total_connections_received:")
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		return err
+func main() {
+    // ...
+    // code for creating the integration and entity omitted
+    // code for instantaneous_ops_per_sec metric omitted.
+    // ...
+	
+	if args.All() || args.Metrics {
+		m1, err := e1.NewMetricSet("MyorgRedisSample")
+		panicOnErr(err)
+        
+        metricValue, err := queryRedisInfo("total_connections_received:")
+        if err != nil {
+            return err
+        }
+        err = m1.SetMetric("net.connectionsReceivedPerSecond", metricValue, metric.RATE)
+		panicOnErr(err)
 	}
-	splittedLine = strings.Split(string(output), ":")
-	if len(splittedLine) != 2 {
-		return fmt.Errorf("Cannot split the output line")
-	}
-	metricValue, err = strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
-	if err != nil {
-		return err
-	}
-	ms.SetMetric("net.connectionsReceivedPerSecond", metricValue, metric.RATE)
-	return nil
+
+	panicOnErr(integration.Publish())
 }
 ```
 
@@ -379,23 +421,27 @@ Build, format the source code, and execute the integration, and then check the o
 
 ```json
 {
-	"name": "com.myorganization.redis",
-	"protocol_version": "1",
-	"integration_version": "0.1.0",
-	"metrics": [
-		{
-			"event_type": "MyorgRedisSample",
-			"net.connectionsReceivedPerSecond": 2,
-			"query.instantaneousOpsPerSecond": 3
-		}
-	],
-	"inventory": {},
-	"events": []
-}
+ 	"name": "com.myorganization.redis",
+ 	"protocol_version": "2",
+ 	"integration_version": "0.1.0",
+ 	"data": [{
+ 		"entity": {
+ 			"name": "instance-1",
+ 			"type": "custom"
+ 		},
+ 		"metrics": [{
+ 			"event_type": "MyorgRedisSample",
+ 			"net.connectionsReceivedPerSecond": 2,
+ 			"query.instantaneousOpsPerSecond": 3
+ 		}],
+ 		"inventory": {},
+ 		"events": []
+ 	}]
+ }
 ```
 The calculations for a given metric source type are handled by `SetMetric`; the only information you need to provide is the desired source type. Besides RATE and GAUGE type, there is a DELTA type, which is similar to RATE, but it is calculated as the difference between samples, not as a rate change, and the ATTRIBUTE type, which is used for string values.
+[Here](toolset/integration.md#metrics) you can find the definition of the different source type.
 
-<!-- In the future add here a link with official definition of the source type -->
 
 This method of fetching data, shown above is not very efficient. You will want to fetch a set of data all at once, but this example just shows how to use the `SetMetric` function and the source types.
 
@@ -492,16 +538,16 @@ If you do not see your metric data in New Relic Insights, please check [configur
 
 
 ### Fetching Inventory data
-The `populateInventory` function is used to fetch inventory data:
+This snippet shows where you can add inventory data:
 ```go
-func populateInventory(inventory sdk.Inventory) error {
-	// Insert here the logic of your integration to get the inventory data
-	// Ex: inventory.SetItem("softwareVersion", "value", "1.0.1")
-	// --
-	return nil
+// Add Inventory item
+if args.All() || args.Inventory {
+    // Insert here the logic of your integration to get the inventory data
+	// err = e1.SetInventoryItem("instance", "version", "3.0.1")
+    //panicOnErr(err)
 }
 ```
-Notice that in the code above we use the `Inventory` type from the SDK package for inventory data. The `SetItem` method stores a value into the inventory data structure. The first argument is the name of the inventory item, and the other two are a field name and the inventory data value.
+Notice that in the code above we use the `SetInventoryItem` method stores a value into the inventory data structure. The first argument is the name of the inventory item, and the other two are a field name and the inventory data value.
 
 Let's assume that we want to collect configuration information for Redis. For example, let's say we'd like to capture the value of the `dbfilename` parameter. The command
 ```bash
@@ -515,19 +561,21 @@ gives the following result
 
 To parse this output and create the proper inventory data structure, modify the `populateInventory` function:
 ```go
-func populateInventory(inventory sdk.Inventory) error {
+// ...
+// code for creating the integration and entity omitted
+// ...
+if args.All() || args.Inventory {
 	cmd := exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET dbfilename")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return err
-	}
-
-	splittedLine := strings.Split(string(output), "\n")
-	if splittedLine[0] == "dbfilename" {
-		inventory.SetItem(splittedLine[0], "value", splittedLine[1])
-	}
-
-	return nil
+    output, err := cmd.CombinedOutput()
+    if err != nil {
+        return err
+    }
+    
+    splittedLine := strings.Split(string(output), "\n")
+    if splittedLine[0] == "dbfilename" {
+    	err = e1.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
+    	panicOnErr(err)
+    }
 }
 ```
 
@@ -538,17 +586,23 @@ $ ./bin/myorg-redis -pretty -inventory
 we receive
 ```json
 {
-	"name": "com.myorganization.redis",
-	"protocol_version": "1",
-	"integration_version": "0.1.0",
-	"metrics": [],
-	"inventory": {
-		"dbfilename": {
-			"value": "dump.rdb"
-		}
-	},
-	"events": []
-}
+ 	"name": "com.myorganization.redis",
+ 	"protocol_version": "2",
+ 	"integration_version": "0.1.0",
+ 	"data": [{
+ 		"entity": {
+ 			"name": "instance-1",
+ 			"type": "custom"
+ 		},
+ 		"metrics": [],
+ 		"inventory": {
+        	"dbfilename": {
+        		"value": "dump.rdb"
+        	}
+        },
+ 		"events": []
+ 	}]
+ }
 ```
 
 Let's extend our `populateInventory` function in order to collect the bind configuration parameter from Redis. By executing
@@ -563,28 +617,31 @@ we get
 
 To add this to our integration we can update the `populateInventory` function:
 ```go
-func populateInventory(inventory sdk.Inventory) error {
+// ...
+// code for creating the integration and entity omitted
+// ...
+if args.All() || args.Inventory {
 	cmd := exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET dbfilename")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return err
-	}
-	splittedLine := strings.Split(string(output), "\n")
-	if splittedLine[0] == "dbfilename" {
-		inventory.SetItem(splittedLine[0], "value", splittedLine[1])
-	}
-
-	cmd = exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET bind")
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		return err
-	}
-	splittedLine = strings.Split(string(output), "\n")
-	if splittedLine[0] == "bind" {
-		inventory.SetItem(splittedLine[0], "value", splittedLine[1])
-	}
-
-	return nil
+    output, err := cmd.CombinedOutput()
+    if err != nil {
+        return err
+    }
+    splittedLine := strings.Split(string(output), "\n")
+    if splittedLine[0] == "dbfilename" {
+    	err = e1.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
+    	panicOnErr(err)
+    }
+    
+    cmd = exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET bind")
+    output, err = cmd.CombinedOutput()
+    if err != nil {
+        return err
+    }
+    splittedLine = strings.Split(string(output), "\n")
+    if splittedLine[0] == "bind" {
+        inventory.SetItem(splittedLine[0], "value", splittedLine[1])
+    }
+    
 }
 ```
 Finally, build, format the source code and execute the integration to fetch all inventory and metric data.
@@ -595,24 +652,24 @@ $ ./bin/myorg-redis -pretty
 ```json
 {
 	"name": "com.myorganization.redis",
-	"protocol_version": "1",
+	"protocol_version": "2",
 	"integration_version": "0.1.0",
-	"metrics": [
-		{
-			"event_type": "MyorgRedisSample",
-			"net.connectionsReceivedPerSecond": 0.5,
-			"query.instantaneousOpsPerSecond": 1
-		}
-	],
-	"inventory": {
-		"bind": {
-			"value": "127.0.0.1"
+	"data": [{
+		"entity": {
+			"name": "instance-1",
+			"type": "custom"
 		},
-		"dbfilename": {
-			"value": "dump.rdb"
-		}
-	},
-	"events": []
+		"metrics": [],
+		"inventory": {
+			"bind": {
+				"value": "127.0.0.1"
+			},
+			"dbfilename": {
+				"value": "dump.rdb"
+			}
+		},
+		"events": []
+	}]
 }
 ```
 
