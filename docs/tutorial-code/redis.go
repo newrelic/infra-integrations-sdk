@@ -38,6 +38,16 @@ func queryRedisInfo(query string) (float64, error) {
 	return strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
 }
 
+func queryRedisConfig(query string) (string, string) {
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("redis-cli CONFIG GET %s", query))
+
+	output, err := cmd.CombinedOutput()
+	panicOnErr(err)
+
+	splittedLine := strings.Split(string(output), "\n")
+	return splittedLine[0], splittedLine[1]
+}
+
 func main() {
 	// Create Integration
 	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
@@ -49,15 +59,7 @@ func main() {
 
 	// Add Event
 	if args.All() || args.Events {
-		cmd := exec.Command("/bin/sh", "-c", "redis-cli info | grep uptime_in_seconds:")
-		output, err := cmd.CombinedOutput()
-		panicOnErr(err)
-
-		splittedLine := strings.Split(string(output), ":")
-		if len(splittedLine) != 2 {
-			panic(fmt.Errorf("Cannot split the output line"))
-		}
-		uptime, err := strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
+		uptime, err := queryRedisInfo("uptime_in_seconds:")
 		panicOnErr(err)
 		if uptime < 60 {
 			err = entity.AddEvent(event.NewNotification("Redis Server recently started"))
@@ -66,31 +68,18 @@ func main() {
 		if uptime < 60 {
 			err = entity.AddEvent(event.New("Redis Server recently started", "redis-server"))
 		}
-
+		panicOnErr(err)
 	}
 
 	// Add Inventory item
 	if args.All() || args.Inventory {
-		cmd := exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET dbfilename")
-		output, err := cmd.CombinedOutput()
+		key, value := queryRedisConfig("dbfilename")
+		err = entity.SetInventoryItem(key, "value", value)
 		panicOnErr(err)
 
-		splittedLine := strings.Split(string(output), "\n")
-		if splittedLine[0] == "dbfilename" {
-			err = entity.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
-			panicOnErr(err)
-		}
-
-		cmd = exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET bind")
-		output, err = cmd.CombinedOutput()
+		key, value = queryRedisConfig("bind")
+		err = entity.SetInventoryItem(key, "value", value)
 		panicOnErr(err)
-
-		splittedLine = strings.Split(string(output), "\n")
-		if splittedLine[0] == "bind" {
-			err = entity.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
-			panicOnErr(err)
-		}
-
 	}
 
 	// Add Metric

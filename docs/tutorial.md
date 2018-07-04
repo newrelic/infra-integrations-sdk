@@ -362,7 +362,7 @@ total_connections_received:111
 
 This provides information about the total number of connections accepted by the server. This is an ever-growing value which might be reset. In a case like this it is more useful to store the change rate instead of the as-is value. We use the RATE type and the SDK will automatically compute the change rate.
 
-Modify the `populateMetrics` function to process the metric data using the RATE type:
+Modify the `setMetric` third argument to process the metric data using the RATE type:
 
 ```go
 
@@ -400,7 +400,7 @@ Build, format the source code, and execute the integration, and then check the o
 			"metrics": [
 				{
 					"event_type": "MyorgRedisSample",
-					"net.connectionsReceivedPerSecond": 4,
+					"net.connectionsReceivedPerSecond": 0.5,
 					"query.instantaneousOpsPerSecond": 2
 				}
 			],
@@ -530,22 +530,30 @@ gives the following result
 2) "dump.rdb"
 ```
 
-To parse this output and create the proper inventory data structure, modify the `populateInventory` function:
+To parse this output and create the proper inventory data structure, use the `queryRedisConfig` function:
 ```go
 // ...
 // code for creating the integration and entity omitted
 // ...
-if args.All() || args.Inventory {
-    cmd := exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET dbfilename")
-    output, err := cmd.CombinedOutput()
-    panicOnErr(err)
+func queryRedisConfig(query string) (string, string) {
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("redis-cli CONFIG GET %s", query))
 
-    splittedLine := strings.Split(string(output), "\n")
-    if splittedLine[0] == "dbfilename" {
-        err = entity.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
-        panicOnErr(err)
-    }
+	output, err := cmd.CombinedOutput()
+	panicOnErr(err)
+
+	splittedLine := strings.Split(string(output), "\n")
+	return splittedLine[0], splittedLine[1]
 }
+
+
+	// Add Inventory item
+	if args.All() || args.Inventory {
+		key, value := queryRedisConfig("dbfilename")
+		err = entity.SetInventoryItem(key, "value", value)
+		panicOnErr(err)
+
+	}
+
 ```
 
 After building, formatting the source code and executing the integration (with just inventory data)
@@ -586,29 +594,20 @@ To add this to our integration we can update the `populateInventory` function:
 ```go
 // ...
 // code for creating the integration and entity omitted
+// function code to query redis config omitted
 // ...
-if args.All() || args.Inventory {
-    cmd := exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET dbfilename")
-    output, err := cmd.CombinedOutput()
-    panicOnErr(err)
-    
-    splittedLine := strings.Split(string(output), "\n")
-    if splittedLine[0] == "dbfilename" {
-        err = entity.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
-        panicOnErr(err)
-    }
 
-    cmd = exec.Command("/bin/sh", "-c", "redis-cli CONFIG GET bind")
-    output, err = cmd.CombinedOutput()
-    panicOnErr(err)
-    
-    splittedLine = strings.Split(string(output), "\n")
-    if splittedLine[0] == "bind" {
-        err = entity.SetInventoryItem(splittedLine[0], "value", splittedLine[1])
-        panicOnErr(err)
-    }
-    
-}
+	// Add Inventory item
+	if args.All() || args.Inventory {
+		key, value := queryRedisConfig("dbfilename")
+		err = entity.SetInventoryItem(key, "value", value)
+		panicOnErr(err)
+
+		key, value = queryRedisConfig("bind")
+		err = entity.SetInventoryItem(key, "value", value)
+		panicOnErr(err)
+	}
+
 ```
 Finally, build, format the source code and execute the integration to fetch all inventory and metric data.
 ```bash
@@ -777,20 +776,11 @@ We assume that when the uptime is less than 60 seconds, the Redis service has re
 
 ```go
 if args.All() || args.Events {
-    cmd := exec.Command("/bin/sh", "-c", "redis-cli info | grep uptime_in_seconds:")
-    output, err := cmd.CombinedOutput()
-    panicOnErr(err)
-
-    splittedLine := strings.Split(string(output), ":")
-    if len(splittedLine) != 2 {
-        panic(fmt.Errorf("Cannot split the output line"))
-    }
-    uptime, err := strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
+    uptime, err := queryRedisInfo("uptime_in_seconds:")
     panicOnErr(err)
     if uptime < 60 {
         err = entity.AddEvent(event.NewNotification("Redis Server recently started"))
     }
-
     panicOnErr(err)
 }
 ```
@@ -799,25 +789,54 @@ Then, update `main()` function including `populateEvents` function.
 
 ```go
 func main() {
-	integration, err := sdk.NewIntegration(integrationName, integrationVersion, &args)
-	fatalIfErr(err)
+	// Create Integration
+	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
+	panicOnErr(err)
 
-	if args.All() || args.Inventory {
-		fatalIfErr(populateInventory(integration.Inventory))
-	}
+	// Create Entity, entities name must be unique
+	entity := i.LocalEntity()
+	panicOnErr(err)
 
-	if args.All() || args.Metrics {
-		ms := integration.NewMetricSet("RedisSample")
-		fatalIfErr(populateMetrics(ms))
-	}
-
+	// Add Event
 	if args.All() || args.Events {
-		err := populateEvents(integration)
-		if err != nil {
-			log.Debug("adding event failed, got: %s", err)
+		uptime, err := queryRedisInfo("uptime_in_seconds:")
+		panicOnErr(err)
+		if uptime < 60 {
+			err = entity.AddEvent(event.NewNotification("Redis Server recently started"))
 		}
+		panicOnErr(err)
+		if uptime < 60 {
+			err = entity.AddEvent(event.New("Redis Server recently started", "redis-server"))
+		}
+		panicOnErr(err)
 	}
-	fatalIfErr(integration.Publish())
+
+	// Add Inventory item
+	if args.All() || args.Inventory {
+		key, value := queryRedisConfig("dbfilename")
+		err = entity.SetInventoryItem(key, "value", value)
+		panicOnErr(err)
+
+		key, value = queryRedisConfig("bind")
+		err = entity.SetInventoryItem(key, "value", value)
+		panicOnErr(err)
+	}
+
+	// Add Metric
+	if args.All() || args.Metrics {
+		ms, err := entity.NewMetricSet("MyorgRedisSample")
+		panicOnErr(err)
+		metricValue, err := queryRedisInfo("instantaneous_ops_per_sec:")
+		panicOnErr(err)
+		err = ms.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
+		panicOnErr(err)
+		metricValue1, err := queryRedisInfo("total_connections_received:")
+		panicOnErr(err)
+		err = ms.SetMetric("net.connectionsReceivedPerSecond", metricValue1, metric.RATE)
+		panicOnErr(err)
+	}
+
+	panicOnErr(i.Publish())
 }
 ```
 
@@ -871,25 +890,17 @@ the `newNotification` method we will use the `Event` constructor and set the cat
 
 ```go
 if args.All() || args.Events {
-    cmd := exec.Command("/bin/sh", "-c", "redis-cli info | grep uptime_in_seconds:")
-    output, err := cmd.CombinedOutput()
-    panicOnErr(err)
-
-    splittedLine := strings.Split(string(output), ":")
-    if len(splittedLine) != 2 {
-        panic(fmt.Errorf("Cannot split the output line"))
-    }
-    uptime, err := strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
-    panicOnErr(err)
-    if uptime < 60 {
-        err = entity.AddEvent(event.NewNotification("Redis Server recently started"))
-    }
-    panicOnErr(err)
-    if uptime < 60 {
-        err = entity.AddEvent(event.New("Redis Server recently started", "redis-server"))
-    }
-
-}
+		uptime, err := queryRedisInfo("uptime_in_seconds:")
+		panicOnErr(err)
+		if uptime < 60 {
+			err = entity.AddEvent(event.NewNotification("Redis Server recently started"))
+		}
+		panicOnErr(err)
+		if uptime < 60 {
+			err = entity.AddEvent(event.New("Redis Server recently started", "redis-server"))
+		}
+		panicOnErr(err)
+	}
 ```
 
 After formating the source code, building and executing the integration with the command:
