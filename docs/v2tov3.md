@@ -186,15 +186,16 @@ Or in the case of **remote** entities:
 Besides all of the changes mentioned above these are some terms that you can look for in your integration code and the `v3`
  version of them.
 
-| v2                      | v3                              |
-| ----------------------- | ------------------------------- |
-| sdk.NewIntegration()    | integration.New()               |
-| args.All                | args.All()                      |
-| sdk.Inventory           | inventory.Inventory             |
-| make(sdk.Inventory)     | *inventory.New()                |
-| inventory["foo"]["bar"] | inventory.Items()["foo"]["bar"] |
-| len(inventory)          | len(inventory.Items())          |
-| metric.MetricSet        | metric.Set                      |
+
+| v2                        | v3                                |
+| ------------------------- | --------------------------------- |
+| `sdk.NewIntegration()`    | `integration.New()`               |
+| `args.All`                | `args.All()`                      |
+| `sdk.Inventory`           | `inventory.Inventory`             |
+| `make(sdk.Inventory)`     | `*inventory.New()`                |
+| `inventory["foo"]["bar"]` | `inventory.Items()["foo"]["bar"]` |
+| `len(inventory)`          | `len(inventory.Items())`          |
+| `metric.MetricSet`        | `metric.Set`                      |
 
 
 ## References
