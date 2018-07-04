@@ -73,15 +73,19 @@ In later versions the host reporting is called **local entity**, and it's option
 
 For more information on the definition of a remote entity, please see the following document on [local vs remote entites](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/entity-definition.md).
 
+
+
+## Upgrading from SDK v2 to v3
+
+https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/v2tov3.md
+
 #### SDK & agent-protocol compatibility 
 
 SDK v1 and v2 use *protocol-v1*.
 
 SDK v3 use *protocol-v2*.
-
-## Upgrading from SDK v2 to v3
  
-https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/v2tov3.md
+
 
 ## Tools
 
