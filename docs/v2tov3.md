@@ -171,7 +171,7 @@ integration.NewMetricSet("ApacheSample")
 Instead it should be like this:
  
  ```bash
- integration, err := integration.New(integrationName, integrationVersion)
+ integration, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
  e := integration.LocalEntity() # Local or remote entity it depends in the use case
  e.NewMetricSet("TestSample")
  ```
