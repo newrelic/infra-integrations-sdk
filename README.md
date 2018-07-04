@@ -137,6 +137,11 @@ the `NR_JMX_TOOL` environment variable to point to the location of the nrjmx
 executable. If the `NR_JMX_TOOL` variable is not set, the SDK will use
 `/usr/bin/nrjmx` by default.
 
+### HTTP support
+
+GoSDK v3 provides a helper HTTP package to create secure HTTPS clients that require loading credentials from a Certificate Authority Bundle (stored in a file or in a directory).You can read more [here](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/http.md).
+
+
 ## Contributing Code
 
 We welcome code contributions (in the form of pull requests) from our user
