@@ -7,17 +7,17 @@ Tutorial for multiple entities for Redis.
 If you are reading this tutorial means that you are familiar with the SDK and the term [multiple(or remote) entities](toolset/integration.md#entity).
 Please if you're not go to the simpler [single/local entity tutorial](tutorial.md).
 
-## Context
+## Multiple Entities
 
 We've added support for **multiple entities** in order to be able to cover use cases like this:
 
-Imagine you are running multiple instances of redis and you want to be able to monitor them from a custom integration. With 
-the sdk v2 you will need to install an infra-agent and that custom integration in each redis instance so they'll get different 
+You are running multiple instances of redis and you want to monitor them using a custom integration. With 
+the sdk v2 you will need to install an infra-agent and the custom integration in each redis instance so they'll get different 
 entity Ids. That could be possible if you have each instance in a separated host but what will happen if you are running more
 than one instance by host?
 
 With SDK v2 you won't be able to do that since they will share the same entity ID and you won't be able to distinguish them when running
-a query in our [insights service](https://insights.newrelic.com/).
+a query in [insights service](https://insights.newrelic.com/).
 
 ## Overview
 
@@ -110,6 +110,7 @@ Flags:
   -n, --company-name string       Company name (required)
   -c, --company-prefix string     Company prefix identifier (required)
   -p, --destination-path string   Destination path for initialized integration (default "./")
+  -e, --entity-type string        Type of entity to generate: [remote,local] (required) (default "remote")
   -h, --help                      help for init
 
 Global Flags:
@@ -149,25 +150,29 @@ $ cd $GOPATH/src/myorg-integrations/
 ```
 **Step2:** Initialize the integration
 ```bash
-$ nr-integrations-builder init redis --company-prefix "myorg" --company-name "myorganization" [-e remote]
+$ nr-integrations-builder init redis-multi --company-prefix "myorg" --company-name "myorganization" [-e remote]
 ```
 **Step 3:** Build the executable file and test that the integration was created properly
 ```bash
 $ make
-$ ./bin/myorg-redis -pretty
+$ ./bin/myorg-redis-multi -pretty
 ```
 The following JSON payload will be printed to stdout:
 ```json
 {
-	"name": "com.myorganization.redis",
+	"name": "com.myorganization.redis-multi",
 	"protocol_version": "2",
 	"integration_version": "0.1.0",
 	"data": [
 		{
+			"entity": {
+				"name": "instance-1",
+				"type": "custom"
+			},
 			"metrics": [
 				{
 					"event_type": "CustomSample",
-					"some-data": 4000
+					"some-data": 1000
 				}
 			],
 			"inventory": {
@@ -181,6 +186,24 @@ The following JSON payload will be printed to stdout:
 					"category": "status"
 				}
 			]
+		},
+		{
+			"entity": {
+				"name": "instance-2",
+				"type": "custom"
+			},
+			"metrics": [
+				{
+					"event_type": "CustomSample",
+					"some-data": 2000
+				}
+			],
+			"inventory": {
+				"instance": {
+					"version": "3.0.4"
+				}
+			},
+			"events": []
 		}
 	]
 }
@@ -196,26 +219,44 @@ the mandatory _event_type_ field), and an empty structure for [inventory](https:
 
 The SDK package contains a function called `integration.New`, which initializes a new instance of integration data. If you run the following simplified `main` function that calls `integration.New`:
 ```go
+// the code for populating Inventory and Metrics omitted
 func main() {
-    i, err := integration.New(integrationName, integrationVersion)
-    fatalIfErr(err)
-    
-    // Create Entity, entities name must be unique
-    entity := i.LocalEntity()
-    
-    // the code for populating Inventory and Metrics omitted
-    
-    panicOnErr(i.Publish())
+	// Create Integration
+	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
+	panicOnErr(err)
+
+	// Create Entity, entities name must be unique
+	e1, err := i.Entity("instance-1", "redis")
+	panicOnErr(err)
+
+	// Create another Entity
+	e2, err := i.Entity("instance-2", "redis")
+	panicOnErr(err)
+
+	panicOnErr(i.Publish())
 }
 ```
 you will receive the following output:
 ```json
 {
-	"name": "com.myorganization.redis",
+	"name": "com.myorganization.redis-multi",
 	"protocol_version": "2",
 	"integration_version": "0.1.0",
 	"data": [
 		{
+			"entity": {
+				"name": "instance-1",
+				"type": "redis"
+			},
+			"metrics": [],
+			"inventory": {},
+			"events": []
+		},
+		{
+			"entity": {
+				"name": "instance-2",
+				"type": "redis"
+			},
 			"metrics": [],
 			"inventory": {},
 			"events": []
@@ -239,16 +280,26 @@ func main() {
 	panicOnErr(err)
 
 	// Create Entity, entities name must be unique
-	entity := i.LocalEntity()
+	e1, err := i.Entity("instance-1", "custom")
 	panicOnErr(err)
 	// the code for populating Inventory omitted
 
 	if args.All() || args.Metrics {
-		ms, err := entity.NewMetricSet("MyorgRedisSample")
-		panicOnErr(err)
-		err = ms.SetMetric("some-data", 1000, metric.GAUGE)
-		panicOnErr(err)
-	}
+        m1, err := e1.NewMetricSet("CustomSample")
+        panicOnErr(err)
+        err = m1.SetMetric("some-data", 1000, metric.GAUGE)
+        panicOnErr(err)
+    }
+    // Create another Entity
+	e2, err := i.Entity("instance-2", "custom")
+	panicOnErr(err)
+    
+	if args.All() || args.Metrics {
+        m2, err := e2.NewMetricSet("CustomSample")
+        panicOnErr(err)
+        err = m2.SetMetric("some-data", 2000, metric.GAUGE)
+        panicOnErr(err)
+    }
 
 	panicOnErr(i.Publish())
 }
@@ -258,15 +309,33 @@ In order to define the metric value, we will use the function `SetMetric` from t
 After building, formatting the source code and executing the integration the following output is returned:
 ```json
 {
-	"name": "com.myorganization.redis",
+	"name": "com.myorganization.redis-multi",
 	"protocol_version": "2",
 	"integration_version": "0.1.0",
 	"data": [
 		{
+			"entity": {
+				"name": "instance-1",
+				"type": "custom"
+			},
 			"metrics": [
 				{
-					"event_type": "MyorgRedisSample",
+					"event_type": "CustomSample",
 					"some-data": 1000
+				}
+			],
+			"inventory": {},
+			"events": []
+		},
+		{
+			"entity": {
+				"name": "instance-2",
+				"type": "custom"
+			},
+			"metrics": [
+				{
+					"event_type": "CustomSample",
+					"some-data": 2000
 				}
 			],
 			"inventory": {},
@@ -296,8 +365,9 @@ source type in these cases. For metric names, it is recommended that you use a p
 them (check [the currently used prefixes](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/file-specifications/integration-executable-file-specifications#metric-data)), innerCamelCase naming format, and specify the measurement unit using a unit suffix, i.e. PerSecond. In this case, for the metric data key, use `query.instantaneousOpsPerSecond`:
 
 ```go
-func queryRedisInfo(query string) (float64, error) {
-	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("redis-cli info | grep %s" , query))
+// the code for populating Inventory omitted
+func queryGaugeRedisInfo(query string, port int) (float64, error) {
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("redis-cli -p %d info | grep %s", port, query))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return 0, err
@@ -310,25 +380,38 @@ func queryRedisInfo(query string) (float64, error) {
 }
 
 func main() {
-	i, err := integration.New(integrationName, integrationVersion)
+	// Create Integration
+	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
 	panicOnErr(err)
 
 	// Create Entity, entities name must be unique
-	entity := entity := i.LocalEntity()
+	e1, err := i.Entity("instance-1", "redis")
 	panicOnErr(err)
-	// the code for populating Inventory omitted
-if args.All() || args.Metrics {
-		ms, err := entity.NewMetricSet("MyorgRedisSample")
+	// Add Metric
+	if args.All() || args.Metrics {
+		m1, err := e1.NewMetricSet("MyorgRedisSample")
 		panicOnErr(err)
-		metricValue, err := queryRedisInfo("instantaneous_ops_per_sec:")
+		metricValue, err := queryGaugeRedisInfo("instantaneous_ops_per_sec:", instanceOnePort)
 		panicOnErr(err)
-		err = ms.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
+		err = m1.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
 		panicOnErr(err)
 	}
 
-	panicOnErr(integration.Publish())
-}
+	// Create another Entity
+	e2, err := i.Entity("instance-2", "redis")
+	panicOnErr(err)
 
+	if args.All() || args.Metrics {
+		m2, err := e2.NewMetricSet("MyorgRedisSample")
+		panicOnErr(err)
+		metricValue, err := queryGaugeRedisInfo("instantaneous_ops_per_sec:", instanceTwoPort)
+		panicOnErr(err)
+		err = m2.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
+		panicOnErr(err)
+	}
+
+	panicOnErr(i.Publish())
+}
 ```
 
 In order to continue to build the source, you'll need to add the needed packages to the import statement at the top of the program:
@@ -350,15 +433,33 @@ After building, formatting the source code, and executing the integration, you s
 
 ```json
 {
-	"name": "com.myorganization.redis",
+	"name": "com.myorganization.redis-multi",
 	"protocol_version": "2",
 	"integration_version": "0.1.0",
 	"data": [
 		{
+			"entity": {
+				"name": "instance-1",
+				"type": "redis"
+			},
 			"metrics": [
 				{
 					"event_type": "MyorgRedisSample",
-					"query.instantaneousOpsPerSecond": 4
+					"query.instantaneousOpsPerSecond": 2
+				}
+			],
+			"inventory": {},
+			"events": []
+		},
+		{
+			"entity": {
+				"name": "instance-2",
+				"type": "redis"
+			},
+			"metrics": [
+				{
+					"event_type": "MyorgRedisSample",
+					"query.instantaneousOpsPerSecond": 1
 				}
 			],
 			"inventory": {},
@@ -389,22 +490,19 @@ Modify the `setMetric` third argument to process the metric data using the RATE 
 func main() {
     // ...
     // code for creating the integration and entity omitted
+    // code for creating metric set in the second instance omitted
     // ...
-	
-	if args.All() || args.Metrics {
-    		ms, err := entity.NewMetricSet("MyorgRedisSample")
-    		panicOnErr(err)
-    		metricValue, err := queryRedisInfo("instantaneous_ops_per_sec:")
-    		panicOnErr(err)
-    		err = ms.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
-    		panicOnErr(err)
-    		metricValue1, err := queryRedisInfo("total_connections_received:")
-    		panicOnErr(err)
-    		err = ms.SetMetric("net.connectionsReceivedPerSecond", metricValue1, metric.RATE)
-    		panicOnErr(err)
+    // Add Metric
+    if args.All() || args.Metrics {
+        m1, err := e1.NewMetricSet("MyorgRedisSample")
+        panicOnErr(err)
+        metricValue, err := queryGaugeRedisInfo("instantaneous_ops_per_sec:", instanceOnePort)
+        panicOnErr(err)
+        err = m1.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
+        panicOnErr(err)
     }
 
-	panicOnErr(integration.Publish())
+    panicOnErr(integration.Publish())
 }
 ```
 
@@ -412,16 +510,19 @@ Build, format the source code, and execute the integration, and then check the o
 
 ```json
 {
-	"name": "com.myorganization.redis",
+	"name": "com.myorganization.redis-multi",
 	"protocol_version": "2",
 	"integration_version": "0.1.0",
 	"data": [
 		{
+			"entity": {
+				"name": "instance-1",
+				"type": "redis"
+			},
 			"metrics": [
 				{
 					"event_type": "MyorgRedisSample",
-					"net.connectionsReceivedPerSecond": 0.5,
-					"query.instantaneousOpsPerSecond": 2
+					"query.instantaneousOpsPerSecond": 6
 				}
 			],
 			"inventory": {},
@@ -540,40 +641,44 @@ if args.All() || args.Inventory {
 ```
 Notice that in the code above we use the `SetInventoryItem` method stores a value into the inventory data structure. The first argument is the name of the inventory item, and the other two are a field name and the inventory data value.
 
-Let's assume that we want to collect configuration information for Redis. For example, let's say we'd like to capture the value of the `dbfilename` parameter. The command
+Let's assume that we want to collect information for Redis. For example, let's say we'd like to capture the value of the `redis_version` parameter. The command
 ```bash
-redis-cli CONFIG GET dbfilename
+redis-cli info |grep redis_version
 ```
 gives the following result
 ```
-1) "dbfilename"
-2) "dump.rdb"
+redis_version:4.0.10
 ```
 
-To parse this output and create the proper inventory data structure, use the `queryRedisConfig` function:
+To parse this output and create the proper inventory data structure, use the `queryAttrRedisInfo` function:
 ```go
-// ...
-// code for creating the integration and entity omitted
-// ...
-func queryRedisConfig(query string) (string, string) {
-	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("redis-cli CONFIG GET %s", query))
 
+func queryAttrRedisInfo(query string, port int) (string, string) {
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("redis-cli -p %d info | grep %s", port, query))
 	output, err := cmd.CombinedOutput()
-	panicOnErr(err)
-
-	splittedLine := strings.Split(string(output), "\n")
-	return splittedLine[0], splittedLine[1]
+	if err != nil {
+		return "", ""
+	}
+	splittedLine := strings.Split(string(output), ":")
+	if len(splittedLine) != 2 {
+		return "", ""
+	}
+	return strings.TrimSpace(splittedLine[0]), strings.TrimSpace(splittedLine[1])
 }
 
-
+func main(){
+    // ...
+    // code for creating the integration and entity omitted
+    // ...
 	// Add Inventory item
 	if args.All() || args.Inventory {
-		key, value := queryRedisConfig("dbfilename")
-		err = entity.SetInventoryItem(key, "value", value)
-		panicOnErr(err)
-
-	}
-
+    		key, value := queryAttrRedisInfo("redis_version", instanceOnePort)
+    		if key != "" {
+    			err = e1.SetInventoryItem(key, "value", value)
+    		}
+    		panicOnErr(err)
+    }
+}
 ```
 
 After building, formatting the source code and executing the integration (with just inventory data)
@@ -583,77 +688,32 @@ $ ./bin/myorg-redis -pretty -inventory
 we receive
 ```json
 {
-	"name": "com.myorganization.redis",
+	"name": "com.myorganization.redis-multi",
 	"protocol_version": "2",
 	"integration_version": "0.1.0",
 	"data": [
 		{
+			"entity": {
+				"name": "instance-1",
+				"type": "redis"
+			},
 			"metrics": [],
 			"inventory": {
-				"dbfilename": {
-					"value": "dump.rdb"
+				"redis_version": {
+					"value": "4.0.10"
 				}
 			},
 			"events": []
-		}
-	]
-}
-```
-
-Lets get some more config data and insert it to the inventory using `getRedisConfig()` function. By executing
-```bash
-redis-cli CONFIG GET bind
-```
-we get
-```
-1) "bind"
-2) "127.0.0.1"
-```
-
-To add this to our integration we can use the `queryRedisConfig` function and add the items using `SetInventoryItem`:
-```go
-// ...
-// code for creating the integration and entity omitted
-// function code to query redis config omitted
-// ...
-
-	// Add Inventory item
-	if args.All() || args.Inventory {
-		key, value := queryRedisConfig("dbfilename")
-		err = entity.SetInventoryItem(key, "value", value)
-		panicOnErr(err)
-
-		key, value = queryRedisConfig("bind")
-		err = entity.SetInventoryItem(key, "value", value)
-		panicOnErr(err)
-	}
-
-```
-Finally, build, format the source code and execute the integration to fetch all inventory and metric data.
-```bash
-$ go fmt src/redis.go
-$ ./bin/myorg-redis -pretty
-```
-```json
-{
-	"name": "com.myorganization.redis",
-	"protocol_version": "2",
-	"integration_version": "0.1.0",
-	"data": [
+		},
 		{
-			"metrics": [
-				{
-					"event_type": "MyorgRedisSample",
-					"net.connectionsReceivedPerSecond": 0.625,
-					"query.instantaneousOpsPerSecond": 1
-				}
-			],
+			"entity": {
+				"name": "instance-2",
+				"type": "redis"
+			},
+			"metrics": [],
 			"inventory": {
-				"bind": {
-					"value": "127.0.0.1"
-				},
-				"dbfilename": {
-					"value": "dump.rdb"
+				"redis_version": {
+					"value": "3.2.12"
 				}
 			},
 			"events": []
@@ -661,113 +721,6 @@ $ ./bin/myorg-redis -pretty
 	]
 }
 ```
-
-### Configuration of the integration (for inventory)
-In the [definition file](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/file-specifications/integration-definition-file-specifications), `myorg-redis-definition.yml`, we want to increase the `interval` value for the inventory. This is because the changes in the inventory data are not as frequent as in metrics data.
-
-[Definition file](#Definition-file) will contain the `inventory` section:
-```yml
-  inventory:
-    command:
-      - ./bin/myorg-redis
-      - --inventory
-    prefix: config/myorg-redis
-    interval: 60
-```
-`myorg-redis-definition.yml` contains a `prefix` parameter that defines the source of the inventory data and can be used as a filter to see your inventory data on the Infrastructure [Inventory page](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/infrastructure-ui-pages/infrastructure-inventory-page-search-your-entire-infrastructure).
-The `prefix` is customizable, typically of the form category/integration-name. You can select maximum two levels (i.e. if you use three levels: `config/myorg-redis/custom`, you won't be able to view your inventory data.)
-
-Next, let's look at the [config file](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/file-specifications/integration-configuration-file-specifications):
-```yml
-integration_name: com.myorganization.redis
-
-instances:
-  - name: redis-server-metrics
-    command: metrics
-    labels:
-      env: production
-      role: cache
-
-  - name: <OTHER INSTANCE IDENTIFIER>
-    command: inventory
-    arguments:
-      arg1: <ARG_VALUE>
-    labels:
-      key1: <LABEL_VALUE>
-```
-
-Specify the name of the instance and add two arguments: `hostname` and `port`. Make sure that you use YAML's indentation correctly.
-```yml
-integration_name: com.myorganization.redis
-
-instances:
-  - name: redis-server-metrics
-    command: metrics
-    labels:
-      env: production
-      role: cache
-
-  - name: redis-server-inventory
-    command: inventory
-    arguments:
-      hostname: localhost
-      port: 6379
-    labels:
-      env: production
-      role: cache
-```
-The arguments are made available to an integration as a set of environment variables. It's necessary to modify the `argumentList` type. This is what it looks like before the change:
-```go
-type argumentList struct {
-	sdkArgs.DefaultArgumentList
-}
-```
-And after the required change:
-```go
-type argumentList struct {
-	sdkArgs.DefaultArgumentList
-	Hostname string `default:"localhost" help:"Hostname or IP where Redis server is running."`
-	Port     int    `default:"6379" help:"Port on which Redis server is listening."`
-}
-```
-
-Arguments must have the first letter capitalised when defined in the code(ex: **H**ostname), but they cannot use any capital letter when used in the config file.
-Any multi-word argument should be used in CamelCase in the code(ex: **LabelName**) and must be used as snake_case in config files(ex: **label_name**).
-In code:
-```go
-type argumentList struct {
-	sdkArgs.DefaultArgumentList
-	LabelName string `default:"localhost" help:"Hostname or IP where Redis server is running."`
-}
-```
-In config file:
-```yaml
-  - name: example
-    command: example-command
-    arguments:
-      label_name: "example-name"
-```
-
-DefaultArgumentList can't be used directly. 
-It must be used embedded into another structure even if there are no extra arguments. As shown below:
-
-```go
-type argumentList struct {
-		sdk_args.DefaultArgumentList
-	}
-``` 
-
-To finish the inventory configuration place the executable and the definition file in `/var/db/newrelic-infra/custom-integrations/`
-
-```bash
-$ sudo cp $GOPATH/src/myorg-integrations/redis/myorg-redis-definition.yml /var/db/newrelic-infra/custom-integrations/myorg-redis-definition.yaml
-$ sudo cp -R $GOPATH/src/myorg-integrations/redis/bin /var/db/newrelic-infra/custom-integrations/
-```
-Place the integration config file in `/etc/newrelic-infra/integrations.d/`
-```bash
-$ sudo cp $GOPATH/src/myorg-integrations/redis/myorg-redis-config.yml /etc/newrelic-infra/integrations.d/myorg-redis-config.yaml
-```
-When all the above steps are done, restart the agent.
 
 ### View inventory data in Infrastructure
 Inventory data can be viewed in New Relic Infrastructure on the [Inventory page](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/infrastructure-ui-pages/infrastructure-inventory-page-search-your-entire-infrastructure). Filter by prefix `config/myorg-redis` (which was specified in the definition file) and you will see the inventory data collected by the redis integration and labels that you specified in [the config file](tutorial-code/myorg-redis-config.yml).

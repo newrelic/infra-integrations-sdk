@@ -296,23 +296,23 @@ func queryRedisInfo(query string) (float64, error) {
 }
 
 func main() {
-	i, err := integration.New(integrationName, integrationVersion)
-	panicOnErr(err)
+    i, err := integration.New(integrationName, integrationVersion)
+    panicOnErr(err)
+    
+    // Create Entity, entities name must be unique
+    entity := entity := i.LocalEntity()
+    panicOnErr(err)
+    // the code for populating Inventory omitted
+    if args.All() || args.Metrics {
+        ms, err := entity.NewMetricSet("MyorgRedisSample")
+        panicOnErr(err)
+        metricValue, err := queryRedisInfo("instantaneous_ops_per_sec:")
+        panicOnErr(err)
+        err = ms.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
+        panicOnErr(err)
+    }
 
-	// Create Entity, entities name must be unique
-	entity := entity := i.LocalEntity()
-	panicOnErr(err)
-	// the code for populating Inventory omitted
-if args.All() || args.Metrics {
-		ms, err := entity.NewMetricSet("MyorgRedisSample")
-		panicOnErr(err)
-		metricValue, err := queryRedisInfo("instantaneous_ops_per_sec:")
-		panicOnErr(err)
-		err = ms.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
-		panicOnErr(err)
-	}
-
-	panicOnErr(integration.Publish())
+    panicOnErr(integration.Publish())
 }
 
 ```
@@ -321,14 +321,14 @@ In order to continue to build the source, you'll need to add the needed packages
 
 ```go
 import (
-	"fmt"
-	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/log"
+    "fmt"
+    sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
+    "github.com/newrelic/infra-integrations-sdk/log"
     "github.com/newrelic/infra-integrations-sdk/data/metric"
     "github.com/newrelic/infra-integrations-sdk/integration"
-	"os/exec"
-	"strconv"
-	"strings"
+    "os/exec"
+    "strconv"
+    "strings"
 )
 ```
 
@@ -551,15 +551,17 @@ func queryRedisConfig(query string) (string, string) {
 	return splittedLine[0], splittedLine[1]
 }
 
-
+func main() {
+	// ...
+    // code for creating the integration and entity omitted
+    // ...
 	// Add Inventory item
 	if args.All() || args.Inventory {
 		key, value := queryRedisConfig("dbfilename")
 		err = entity.SetInventoryItem(key, "value", value)
 		panicOnErr(err)
-
 	}
-
+}
 ```
 
 After building, formatting the source code and executing the integration (with just inventory data)
