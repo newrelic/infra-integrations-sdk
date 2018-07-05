@@ -96,6 +96,7 @@ Flags:
   -n, --company-name string       Company name (required)
   -c, --company-prefix string     Company prefix identifier (required)
   -p, --destination-path string   Destination path for initialized integration (default "./")
+  -e, --entity-type string        Type of entity to generate: [remote,local] (required) (default "remote")
   -h, --help                      help for init
 
 Global Flags:
