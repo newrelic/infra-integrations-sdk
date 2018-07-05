@@ -1,9 +1,5 @@
 # Tutorial multiple entities
 
-
-<!--- 
-Tutorial for multiple entities for Redis. 
--->
 If you are reading this tutorial means that you are familiar with the SDK and the term [multiple(or remote) entities](toolset/integration.md#entity).
 Please if you're not go to the simpler [single/local entity tutorial](tutorial.md).
 
@@ -628,6 +624,9 @@ When the integration and the Infrastructure agent are communicating correctly, y
 
 Below are example NRQL queries for the `MyorgRedisSample` event type.
 
+<!--- 
+TODO: Add screenshot of the results of the queries for remote entities. 
+-->
 ```
 NRQL> SELECT average(`net.connectionsReceivedPerSecond`) FROM MyorgRedisSample TIMESERIES
 NRQL> SELECT average(`query.instantaneousOpsPerSecond`) FROM MyorgRedisSample TIMESERIES
@@ -636,8 +635,6 @@ NRQL> SELECT average(`query.instantaneousOpsPerSecond`) FROM MyorgRedisSample TI
 For more about creating NRQL queries, see [Introduction to NRQL](https://docs.newrelic.com/docs/insights/nrql-new-relic-query-language/using-nrql/introduction-nrql). For more on where to find integration data in New Relic products, see [Find and use integration data](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/use-integration-data/find-use-infrastructure-integration-data).
 
 If you do not see your metric data in New Relic Insights, please check [configuration of the Infrastructure agent](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/configuration/configure-infrastructure-agent).
-
-
 
 ### Fetching Inventory data
 This snippet shows where you can add inventory data:
@@ -735,7 +732,7 @@ we receive
 ### View inventory data in Infrastructure
 Inventory data can be viewed in New Relic Infrastructure on the [Inventory page](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/infrastructure-ui-pages/infrastructure-inventory-page-search-your-entire-infrastructure). Filter by prefix `config/myorg-redis` (which was specified in the definition file) and you will see the inventory data collected by the redis integration and labels that you specified in [the config file](tutorial-code/myorg-redis-config.yml).
 
-![Redis inventory](images/redis_inventory_view.png)
+![Redis inventory](images/redis_inventory_view_multiple.png)
 
 
 See more about how inventory data shows up in the New Relic UI in [Find integration inventory data](https://docs.newrelic.com/docs/find-use-infrastructure-integration-data#inventory-data).
@@ -759,10 +756,10 @@ We assume that when the uptime is less than 60 seconds, the Redis service has re
 
 ```go
 if args.All() || args.Events {
-    uptime, err := queryRedisInfo("uptime_in_seconds:")
+    uptime, err := queryGaugeRedisInfo("uptime_in_seconds:")
     panicOnErr(err)
     if uptime < 60 {
-        err = entity.AddEvent(event.NewNotification("Redis Server recently started"))
+        err = e1.AddEvent(event.NewNotification("Redis Server recently started"))
     }
     panicOnErr(err)
 }
@@ -772,55 +769,45 @@ Then, update `main()` function including the snippet above that add events.
 
 ```go
 func main() {
-	// Create Integration
-	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
-	panicOnErr(err)
-
-	// Create Entity, entities name must be unique
-	entity := i.LocalEntity()
-	panicOnErr(err)
-
-	// Add Event
-	if args.All() || args.Events {
-		uptime, err := queryRedisInfo("uptime_in_seconds:")
-		panicOnErr(err)
-		if uptime < 60 {
-			err = entity.AddEvent(event.NewNotification("Redis Server recently started"))
-		}
-		panicOnErr(err)
-		if uptime < 60 {
-			err = entity.AddEvent(event.New("Redis Server recently started", "redis-server"))
-		}
-		panicOnErr(err)
-	}
-
-	// Add Inventory item
-	if args.All() || args.Inventory {
-		key, value := queryRedisConfig("dbfilename")
-		err = entity.SetInventoryItem(key, "value", value)
-		panicOnErr(err)
-
-		key, value = queryRedisConfig("bind")
-		err = entity.SetInventoryItem(key, "value", value)
-		panicOnErr(err)
-	}
-
-	// Add Metric
-	if args.All() || args.Metrics {
-		ms, err := entity.NewMetricSet("MyorgRedisSample")
-		panicOnErr(err)
-		metricValue, err := queryRedisInfo("instantaneous_ops_per_sec:")
-		panicOnErr(err)
-		err = ms.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
-		panicOnErr(err)
-		metricValue1, err := queryRedisInfo("total_connections_received:")
-		panicOnErr(err)
-		err = ms.SetMetric("net.connectionsReceivedPerSecond", metricValue1, metric.RATE)
-		panicOnErr(err)
-	}
-
-	panicOnErr(i.Publish())
-}
+ 	// Create Integration
+ 	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
+ 	panicOnErr(err)
+ 
+ 	// Create Entity, entities name must be unique
+ 	e1, err := i.Entity("instance-1", "redis")
+ 	panicOnErr(err)
+ 	// Add event when redis starts
+ 	if args.All() || args.Events {
+ 		uptime, err := queryGaugeRedisInfo("uptime_in_seconds:", instanceOnePort)
+ 		panicOnErr(err)
+ 		if uptime < 60 {
+ 			err = e1.AddEvent(event.NewNotification("Redis Server recently started"))
+ 		}
+ 		panicOnErr(err)
+ 	}
+ 
+ 	// Add Inventory item
+ 	if args.All() || args.Inventory {
+ 		key, value := queryAttrRedisInfo("redis_version", instanceOnePort)
+ 		if key != "" {
+ 			err = e1.SetInventoryItem(key, "value", value)
+ 		}
+ 		panicOnErr(err)
+ 	}
+ 
+ 	// Add Metric
+ 	if args.All() || args.Metrics {
+ 		m1, err := e1.NewMetricSet("MyorgRedisSample")
+ 		panicOnErr(err)
+ 		metricValue, err := queryGaugeRedisInfo("instantaneous_ops_per_sec:", instanceOnePort)
+ 		panicOnErr(err)
+ 		err = m1.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
+ 		panicOnErr(err)
+ 	}
+ 	// code for second entity omitted.
+ 
+ 	panicOnErr(i.Publish())
+ }
 ```
 
 Format the source code, build and execute the integration. In order to fetch only events data, use `-events` flag. 
@@ -834,11 +821,29 @@ If Redis server was recently started, you will receive the following output:
 
 ```json
 {
-	"name": "com.myorganization.redis",
+	"name": "com.myorganization.redis-multi",
 	"protocol_version": "2",
 	"integration_version": "0.1.0",
 	"data": [
 		{
+			"entity": {
+				"name": "instance-1",
+				"type": "redis"
+			},
+			"metrics": [],
+			"inventory": {},
+			"events": [
+				{
+					"summary": "Redis Server recently started",
+					"category": "notifications"
+				}
+			]
+		},
+		{
+			"entity": {
+				"name": "instance-2",
+				"type": "redis"
+			},
 			"metrics": [],
 			"inventory": {},
 			"events": [
@@ -854,11 +859,24 @@ If Redis server was recently started, you will receive the following output:
 Otherwise, `events` list will be empty:
 ```json
 {
-	"name": "com.myorganization.redis",
+	"name": "com.myorganization.redis-multi",
 	"protocol_version": "2",
 	"integration_version": "0.1.0",
 	"data": [
 		{
+			"entity": {
+				"name": "instance-1",
+				"type": "redis"
+			},
+			"metrics": [],
+			"inventory": {},
+			"events": []
+		},
+		{
+			"entity": {
+				"name": "instance-2",
+				"type": "redis"
+			},
 			"metrics": [],
 			"inventory": {},
 			"events": []
@@ -876,11 +894,11 @@ if args.All() || args.Events {
 		uptime, err := queryRedisInfo("uptime_in_seconds:")
 		panicOnErr(err)
 		if uptime < 60 {
-			err = entity.AddEvent(event.NewNotification("Redis Server recently started"))
+			err = e1.AddEvent(event.NewNotification("Redis Server recently started"))
 		}
 		panicOnErr(err)
 		if uptime < 60 {
-			err = entity.AddEvent(event.New("Redis Server recently started", "redis-server"))
+			err = e1.AddEvent(event.New("Redis Server recently started", "redis-server"))
 		}
 		panicOnErr(err)
 	}
@@ -894,24 +912,51 @@ check that the integration was created properly (this output assume that your Re
 
 ```json
 {
-	"name": "com.myorganization.redis",
+	"name": "com.myorganization.redis-multi",
 	"protocol_version": "2",
 	"integration_version": "0.1.0",
 	"data": [
 		{
+			"entity": {
+				"name": "instance-1",
+				"type": "redis"
+			},
 			"metrics": [
 				{
 					"event_type": "MyorgRedisSample",
-					"net.connectionsReceivedPerSecond": 0.8333333333333334,
-					"query.instantaneousOpsPerSecond": 2
+					"query.instantaneousOpsPerSecond": 0
 				}
 			],
 			"inventory": {
-				"bind": {
-					"value": "127.0.0.1"
+				"redis_version": {
+					"value": "4.0.10"
+				}
+			},
+			"events": [
+				{
+					"summary": "Redis Server recently started",
+					"category": "notifications"
 				},
-				"dbfilename": {
-					"value": "dump.rdb"
+				{
+					"summary": "Redis Server recently started",
+					"category": "redis-server"
+				}
+			]
+		},
+		{
+			"entity": {
+				"name": "instance-2",
+				"type": "redis"
+			},
+			"metrics": [
+				{
+					"event_type": "MyorgRedisSample",
+					"query.instantaneousOpsPerSecond": 0
+				}
+			],
+			"inventory": {
+				"redis_version": {
+					"value": "3.2.12"
 				}
 			},
 			"events": [
