@@ -1,7 +1,7 @@
 # Tutorial
 
 ## Important note:
-In this new version we've added support for [multiple entities](toolset/integration.md#entity). If you are familiar with this the sdk and this term please 
+In `v3` support for [multiple entities](toolset/integration.md#entity) has been added. If you are familiar with this the sdk and this term please 
 go to [tutorial for multiple entities](tutorial_multiple_entities.md). If not better keep reading since this tutorial will be
 easier to understand.
  
@@ -96,6 +96,7 @@ Flags:
   -n, --company-name string       Company name (required)
   -c, --company-prefix string     Company prefix identifier (required)
   -p, --destination-path string   Destination path for initialized integration (default "./")
+  -e, --entity-type string        Type of entity to generate: [remote,local] (required) (default "remote")
   -h, --help                      help for init
 
 Global Flags:
@@ -300,7 +301,7 @@ func main() {
     panicOnErr(err)
     
     // Create Entity, entities name must be unique
-    entity := entity := i.LocalEntity()
+    entity := i.LocalEntity()
     panicOnErr(err)
     // the code for populating Inventory omitted
     if args.All() || args.Metrics {
@@ -311,7 +312,7 @@ func main() {
         err = ms.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
         panicOnErr(err)
     }
-
+    
     panicOnErr(integration.Publish())
 }
 
@@ -377,17 +378,17 @@ func main() {
     // code for creating the integration and entity omitted
     // ...
 	
-	if args.All() || args.Metrics {
-    		ms, err := entity.NewMetricSet("MyorgRedisSample")
-    		panicOnErr(err)
-    		metricValue, err := queryRedisInfo("instantaneous_ops_per_sec:")
-    		panicOnErr(err)
-    		err = ms.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
-    		panicOnErr(err)
-    		metricValue1, err := queryRedisInfo("total_connections_received:")
-    		panicOnErr(err)
-    		err = ms.SetMetric("net.connectionsReceivedPerSecond", metricValue1, metric.RATE)
-    		panicOnErr(err)
+    if args.All() || args.Metrics {
+        ms, err := entity.NewMetricSet("MyorgRedisSample")
+        panicOnErr(err)
+        metricValue, err := queryRedisInfo("instantaneous_ops_per_sec:")
+        panicOnErr(err)
+        err = ms.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
+        panicOnErr(err)
+        metricValue1, err := queryRedisInfo("total_connections_received:")
+        panicOnErr(err)
+        err = ms.SetMetric("net.connectionsReceivedPerSecond", metricValue1, metric.RATE)
+        panicOnErr(err)
     }
 
 	panicOnErr(integration.Publish())
@@ -538,9 +539,6 @@ gives the following result
 
 To parse this output and create the proper inventory data structure, use the `queryRedisConfig` function:
 ```go
-// ...
-// code for creating the integration and entity omitted
-// ...
 func queryRedisConfig(query string) (string, string) {
 	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("redis-cli CONFIG GET %s", query))
 
@@ -550,9 +548,8 @@ func queryRedisConfig(query string) (string, string) {
 	splittedLine := strings.Split(string(output), "\n")
 	return splittedLine[0], splittedLine[1]
 }
-
 func main() {
-	// ...
+    // ...
     // code for creating the integration and entity omitted
     // ...
 	// Add Inventory item
@@ -600,11 +597,10 @@ we get
 
 To add this to our integration we can use the `queryRedisConfig` function and add the items using `SetInventoryItem`:
 ```go
-// ...
-// code for creating the integration and entity omitted
-// function code to query redis config omitted
-// ...
-
+func main() {
+    // ...
+    // code for creating the integration and entity omitted
+    // ...
 	// Add Inventory item
 	if args.All() || args.Inventory {
 		key, value := queryRedisConfig("dbfilename")
@@ -615,7 +611,7 @@ To add this to our integration we can use the `queryRedisConfig` function and ad
 		err = entity.SetInventoryItem(key, "value", value)
 		panicOnErr(err)
 	}
-
+}
 ```
 Finally, build, format the source code and execute the integration to fetch all inventory and metric data.
 ```bash
@@ -783,13 +779,19 @@ uptime_in_seconds:54782
 We assume that when the uptime is less than 60 seconds, the Redis service has recently started. We will call the `redis-cli info | grep uptime_in_seconds:` command and then create a notification event if the uptime value is smaller than a defined limit. To do so, we will use the type of event `event.NewNotification`, which is a event with the default `notifications` category for an integration object. It accepts the `string` argument, which is a summary message, i.e. `"Redis Server recently started"`.
 
 ```go
-if args.All() || args.Events {
-    uptime, err := queryRedisInfo("uptime_in_seconds:")
-    panicOnErr(err)
-    if uptime < 60 {
-        err = entity.AddEvent(event.NewNotification("Redis Server recently started"))
+func main() {
+    // ...
+    // code for creating the integration and entity omitted
+    // code for populating Inventory and Metrics omitted
+    // ...
+    if args.All() || args.Events {
+        uptime, err := queryRedisInfo("uptime_in_seconds:")
+        panicOnErr(err)
+        if uptime < 60 {
+            err = entity.AddEvent(event.NewNotification("Redis Server recently started"))
+        }
+        panicOnErr(err)
     }
-    panicOnErr(err)
 }
 ```
 
@@ -897,18 +899,24 @@ Now, let's assume that we would like to create an event with a different categor
 the `newNotification` method we will use the `Event` constructor and set the category to `redis-server`.  
 
 ```go
-if args.All() || args.Events {
-		uptime, err := queryRedisInfo("uptime_in_seconds:")
-		panicOnErr(err)
-		if uptime < 60 {
-			err = entity.AddEvent(event.NewNotification("Redis Server recently started"))
-		}
-		panicOnErr(err)
-		if uptime < 60 {
-			err = entity.AddEvent(event.New("Redis Server recently started", "redis-server"))
-		}
-		panicOnErr(err)
-	}
+func main() {
+    // ...
+    // code for creating the integration and entity omitted
+    // code for creating the integration and entity omitted
+    // ...
+    if args.All() || args.Events {
+        uptime, err := queryRedisInfo("uptime_in_seconds:")
+        panicOnErr(err)
+        if uptime < 60 {
+            err = entity.AddEvent(event.NewNotification("Redis Server recently started"))
+        }
+        panicOnErr(err)
+        if uptime < 60 {
+            err = entity.AddEvent(event.New("Redis Server recently started", "redis-server"))
+        }
+        panicOnErr(err)
+    }
+}
 ```
 
 After formating the source code, building and executing the integration with the command:
