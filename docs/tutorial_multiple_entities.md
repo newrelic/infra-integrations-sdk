@@ -639,12 +639,19 @@ If you do not see your metric data in New Relic Insights, please check [configur
 ### Fetching Inventory data
 This snippet shows where you can add inventory data:
 ```go
-// Add Inventory item
-if args.All() || args.Inventory {
-    // Insert here the logic of your integration to get the inventory data
-	// err = entity.SetInventoryItem("instance", "version", "3.0.1")
-    //panicOnErr(err)
+func main(){
+    // ...
+    // code for creating the integration and entity omitted
+    // code for populating Inventory and Metrics omitted
+    // ...
+    // Add Inventory item
+    if args.All() || args.Inventory {
+        // Insert here the logic of your integration to get the inventory data
+    	// err = entity.SetInventoryItem("instance", "version", "3.0.1")
+        //panicOnErr(err)
+    }
 }
+
 ```
 Notice that in the code above we use the `SetInventoryItem` method stores a value into the inventory data structure. The first argument is the name of the inventory item, and the other two are a field name and the inventory data value.
 
@@ -755,14 +762,21 @@ uptime_in_seconds:54782
 We assume that when the uptime is less than 60 seconds, the Redis service has recently started. We will call the `redis-cli info | grep uptime_in_seconds:` command and then create a notification event if the uptime value is smaller than a defined limit. To do so, we will use the type of event `event.NewNotification`, which is a event with the default `notifications` category for an integration object. It accepts the `string` argument, which is a summary message, i.e. `"Redis Server recently started"`.
 
 ```go
-if args.All() || args.Events {
-    uptime, err := queryGaugeRedisInfo("uptime_in_seconds:")
-    panicOnErr(err)
-    if uptime < 60 {
-        err = e1.AddEvent(event.NewNotification("Redis Server recently started"))
+func main(){
+    // ...
+    // code for creating the integration and entity omitted
+    // code for populating Inventory and Metrics omitted
+    // ...
+    if args.All() || args.Events {
+        uptime, err := queryGaugeRedisInfo("uptime_in_seconds:")
+        panicOnErr(err)
+        if uptime < 60 {
+            err = e1.AddEvent(event.NewNotification("Redis Server recently started"))
+        }
+        panicOnErr(err)
     }
-    panicOnErr(err)
 }
+
 ```
 
 Then, update `main()` function including the snippet above that add events.
@@ -890,18 +904,24 @@ Now, let's assume that we would like to create an event with a different categor
 the `newNotification` method we will use the `Event` constructor and set the category to `redis-server`.  
 
 ```go
-if args.All() || args.Events {
-		uptime, err := queryRedisInfo("uptime_in_seconds:")
-		panicOnErr(err)
-		if uptime < 60 {
-			err = e1.AddEvent(event.NewNotification("Redis Server recently started"))
-		}
-		panicOnErr(err)
-		if uptime < 60 {
-			err = e1.AddEvent(event.New("Redis Server recently started", "redis-server"))
-		}
-		panicOnErr(err)
-	}
+func main(){
+    // ...
+    // code for creating the integration and entity omitted
+    // code for populating Inventory and Metrics omitted
+    // ...
+    if args.All() || args.Events {
+        uptime, err := queryRedisInfo("uptime_in_seconds:")
+        panicOnErr(err)
+        if uptime < 60 {
+            err = e1.AddEvent(event.NewNotification("Redis Server recently started"))
+        }
+        panicOnErr(err)
+        if uptime < 60 {
+            err = e1.AddEvent(event.New("Redis Server recently started", "redis-server"))
+        }
+        panicOnErr(err)
+    }
+}
 ```
 
 After formating the source code, building and executing the integration with the command:
