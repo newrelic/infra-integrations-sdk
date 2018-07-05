@@ -301,7 +301,7 @@ func main() {
     panicOnErr(err)
     
     // Create Entity, entities name must be unique
-    entity := entity := i.LocalEntity()
+    entity := i.LocalEntity()
     panicOnErr(err)
     // the code for populating Inventory omitted
     if args.All() || args.Metrics {
