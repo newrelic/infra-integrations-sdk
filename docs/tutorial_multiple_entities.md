@@ -19,6 +19,8 @@ than one instance by host?
 With SDK v2 you won't be able to do that since they will share the same entity ID and you won't be able to distinguish them when running
 a query in [insights service](https://insights.newrelic.com/).
 
+In order to be able to setup this scenario we provide a `docker-compose.yml` in [here](tutorial-code/multiple-entities/docker-compose.yml).
+
 ## Overview
 
 This tutorial will guide you through the process of developing a custom integration for New Relic Infrastructure in the Go language. To simplify the process, New Relic provides the following tools:
@@ -59,6 +61,8 @@ To successfully complete this tutorial you must:
 * Have access to a [supported Linux OS](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/getting-started/compatibility-requirements-new-relic-infrastructure#operating-systems)
 * Install [Go](https://golang.org/doc/install)
 * Install [Redis](https://redis.io/topics/quickstart)
+* Install [Docker](https://docs.docker.com/install/)
+* Install [Docker-compose](https://docs.docker.com/compose/install/)
 * Install the [New Relic Infrastructure Agent](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/installation/install-infrastructure-linux)
 
 ## Building the structure of the integration
@@ -265,9 +269,15 @@ you will receive the following output:
 }
 ```
 
-The complete files for the Redis integration can be found in [tutorial-code](tutorial-code).
+The complete files for the Redis integration can be found in [tutorial-code](tutorial-code/multiple-entities). As the [docker-compose](tutorial-code/multiple-entities/docker-compose.yml)
+to setup two redis instances with different versions. To set it up run:
+
+```bash
+docker-compose up -d
+```
 
 ### Fetching metric data
+
 Let's start by defining the metric data. `Metric.Set` is the basic structure for storing metrics. The `NewMetricSet` function returns a new instance of Metric.Set with its sample attached to the integration data.
 
 Next, if you think it's necessary, modify the argument for `NewMetricSet` in the

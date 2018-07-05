@@ -19,8 +19,8 @@ type argumentList struct {
 const (
 	integrationName    = "com.myorganization.redis-multi"
 	integrationVersion = "0.1.0"
-	instanceOnePort    = 6379
-	instanceTwoPort    = 16379
+	instanceOnePort    = 16379
+	instanceTwoPort    = 26379
 )
 
 var (
