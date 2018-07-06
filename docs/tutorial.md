@@ -525,7 +525,7 @@ if args.All() || args.Inventory {
     //panicOnErr(err)
 }
 ```
-Notice that in the code above we use the `SetInventoryItem` method stores a value into the inventory data structure. The first argument is the name of the inventory item, and the other two are a field name and the inventory data value.
+Notice that in the code above we use the `SetInventoryItem` method store a value into the inventory data structure. The first argument is the name of the inventory item, and the other two are a field name and the inventory data value.
 
 Let's assume that we want to collect configuration information for Redis. For example, let's say we'd like to capture the value of the `dbfilename` parameter. The command
 ```bash
@@ -777,7 +777,7 @@ you will receive (value will vary):
 uptime_in_seconds:54782
 ```
 
-We assume that when the uptime is less than 60 seconds, the Redis service has recently started. We will call the `redis-cli info | grep uptime_in_seconds:` command and then create a notification event if the uptime value is smaller than a defined limit. To do so, we will use the type of event `event.NewNotification`, which is a event with the default `notifications` category for an integration object. It accepts the `string` argument, which is a summary message, i.e. `"Redis Server recently started"`.
+We assume that when the uptime is less than 60 seconds, the Redis service has recently started. We will call the `redis-cli info | grep uptime_in_seconds:` command and then create a notification event if the uptime value is smaller than a defined limit. To do so, we will use the type of event `event.NewNotification`, which is an event with the default `notifications` category for an integration object. It accepts the `string` argument, which is a summary message, i.e. `"Redis Server recently started"`.
 
 ```go
 func main() {
@@ -814,10 +814,6 @@ func main() {
 		panicOnErr(err)
 		if uptime < 60 {
 			err = entity.AddEvent(event.NewNotification("Redis Server recently started"))
-		}
-		panicOnErr(err)
-		if uptime < 60 {
-			err = entity.AddEvent(event.New("Redis Server recently started", "redis-server"))
 		}
 		panicOnErr(err)
 	}
