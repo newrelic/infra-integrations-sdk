@@ -7,4 +7,5 @@ of the GoSDK v3.
 
 * [Changes from GoSDK v2 to GoSDK v3](v2tov3.md)
 * [GoSDK v3 toolset documentation index](toolset/README.md)
-* [GoSDK v2 step-by-step tutorial](tutorial.md) (outdated, to be replaced)
+* [GoSDK v3 step-by-step tutorial](tutorial.md)
+* [GoSDK v3 with multiple/remote entities step-by-step tutorial](tutorial_multiple_entities.md)
