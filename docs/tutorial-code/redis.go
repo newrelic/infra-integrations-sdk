@@ -52,8 +52,7 @@ func main() {
 	// Create Integration
 	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
 	panicOnErr(err)
-
-	// Create Entity, entities name must be unique
+	
 	entity := i.LocalEntity()
 	panicOnErr(err)
 
