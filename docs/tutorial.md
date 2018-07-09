@@ -212,7 +212,7 @@ you will receive the following output:
 }
 ```
 
-The complete files for the Redis integration can be found in [tutorial-code](tutorial-code).
+The complete files for the Redis integration can be found in [tutorial-code](tutorial-code/single-entity).
 
 ### Fetching metric data
 Let's start by defining the metric data. `Metric.Set` is the basic structure for storing metrics. The `NewMetricSet` function returns a new instance of Metric.Set with its sample attached to the integration data.
@@ -567,7 +567,6 @@ func main() {
 		key, value := queryRedisConfig("dbfilename")
 		err = entity.SetInventoryItem(key, "value", value)
 		panicOnErr(err)
-
 	}
 }
 ```

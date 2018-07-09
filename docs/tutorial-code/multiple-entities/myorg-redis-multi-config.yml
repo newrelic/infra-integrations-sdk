@@ -1,0 +1,21 @@
+integration_name: com.myorganization.redis-multi
+
+instances:
+  - name: redis-metrics
+    command: metrics
+    labels:
+      env: production
+      role: cache
+
+  - name: redis-inventory
+    command: inventory
+    labels:
+      env: production
+      role: cache
+
+  - name: redis-events
+    command: events
+    labels:
+      env: production
+      role: cache      
+
