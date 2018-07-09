@@ -1,6 +1,6 @@
 name: com.myorganization.redis
 description: Reports status and metrics for redis service
-protocol_version: 1
+protocol_version: 2
 os: linux
 
 commands:
