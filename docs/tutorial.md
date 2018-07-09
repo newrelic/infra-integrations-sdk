@@ -188,7 +188,6 @@ func main() {
     i, err := integration.New(integrationName, integrationVersion)
     fatalIfErr(err)
     
-    // Create Entity, entities name must be unique
     entity := i.LocalEntity()
     
     // the code for populating Inventory and Metrics omitted
@@ -226,7 +225,6 @@ func main() {
 	i, err := integration.New(integrationName, integrationVersion)
 	panicOnErr(err)
 
-	// Create Entity, entities name must be unique
 	entity := i.LocalEntity()
 	panicOnErr(err)
 	// the code for populating Inventory omitted
@@ -301,7 +299,6 @@ func main() {
     i, err := integration.New(integrationName, integrationVersion)
     panicOnErr(err)
     
-    // Create Entity, entities name must be unique
     entity := i.LocalEntity()
     panicOnErr(err)
     // the code for populating Inventory omitted
@@ -813,7 +810,6 @@ func main() {
 	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
 	panicOnErr(err)
 
-	// Create Entity, entities name must be unique
 	entity := i.LocalEntity()
 	panicOnErr(err)
 
