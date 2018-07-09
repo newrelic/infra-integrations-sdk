@@ -283,7 +283,7 @@ them (check [the currently used prefixes](https://docs.newrelic.com/docs/infrast
 
 ```go
 func queryRedisInfo(query string) (float64, error) {
-	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("redis-cli info | grep %s" , query))
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("redis-cli -h %s -p %d info | grep %s", args.Hostname, args.Port, query))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return 0, err
@@ -547,7 +547,7 @@ gives the following result
 To parse this output and create the proper inventory data structure, use the `queryRedisConfig` function:
 ```go
 func queryRedisConfig(query string) (string, string) {
-	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("redis-cli CONFIG GET %s", query))
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("redis-cli CONFIG GET %s", args.Hostname, args.Port, query))
 
 	output, err := cmd.CombinedOutput()
 	panicOnErr(err)
