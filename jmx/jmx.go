@@ -36,8 +36,7 @@ var (
 )
 
 const (
-	jmxLineBuffer   = 4 * 1024 * 1024 // Max 4MB per line. If single lines are outputting more JSON than that, we likely need smaller-scoped JMX queries
-	queryLineBuffer = 64 * 1024
+	jmxLineBuffer = 4 * 1024 * 1024 // Max 4MB per line. If single lines are outputting more JSON than that, we likely need smaller-scoped JMX queries
 )
 
 func getCommand(hostname, port, username, password string) []string {
@@ -162,7 +161,7 @@ func Query(objectPattern string, timeout int) (map[string]interface{}, error) {
 	defer flushWarnings()
 	ctx, cancelFn := context.WithCancel(context.Background())
 
-	lineCh := make(chan []byte, queryLineBuffer)
+	lineCh := make(chan []byte)
 	queryErrors := make(chan error)
 	outTimeout := time.Duration(timeout) * time.Millisecond
 	// Send the query async to the underlying process so we can timeout it
