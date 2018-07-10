@@ -98,7 +98,7 @@ func Open(hostname, port, username, password string) error {
 	go func() {
 		if err = cmd.Wait(); err != nil {
 			stdErr, _ := ioutil.ReadAll(cmdError)
-			cmdErr <- fmt.Errorf("JMX tool exited with error: %s (%s)", err, string(stdErr))
+			cmdErr <- fmt.Errorf("JMX tool exited with error: %s [state: %s] (%s)", err, cmd.ProcessState, string(stdErr))
 		}
 		done.Done()
 
@@ -161,7 +161,7 @@ func Query(objectPattern string, timeout int) (map[string]interface{}, error) {
 	defer flushWarnings()
 	ctx, cancelFn := context.WithCancel(context.Background())
 
-	lineCh := make(chan []byte, jmxLineBuffer*2)
+	lineCh := make(chan []byte)
 	queryErrors := make(chan error)
 	outTimeout := time.Duration(timeout) * time.Millisecond
 	// Send the query async to the underlying process so we can timeout it
