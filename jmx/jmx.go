@@ -121,10 +121,10 @@ func Close() {
 	}
 
 	cancel()
-	_ = cmdIn.Close()
-	_ = cmdError.Close()
 
 	done.Wait()
+	_ = cmdIn.Close()
+	_ = cmdError.Close()
 }
 
 func doQuery(ctx context.Context, out chan []byte, errorChan chan error, queryString []byte) {
