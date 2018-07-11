@@ -71,16 +71,13 @@ func (e *Entity) isLocalEntity() bool {
 }
 
 // NewMetricSet returns a new instance of Set with its sample attached to the integration.
-func (e *Entity) NewMetricSet(eventType string, nameSpacingAttributes ...metric.Attribute) (s *metric.Set, err error) {
-	s, err = metric.NewSet(eventType, e.storer, nameSpacingAttributes...)
-	if err != nil {
-		return
-	}
+func (e *Entity) NewMetricSet(eventType string, nameSpacingAttributes ...metric.Attribute) *metric.Set {
+	s := metric.NewSet(eventType, e.storer, nameSpacingAttributes...)
 
 	e.lock.Lock()
 	defer e.lock.Unlock()
 	e.Metrics = append(e.Metrics, s)
-	return
+	return s
 }
 
 // AddEvent method adds a new Event.
