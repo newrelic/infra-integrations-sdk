@@ -86,8 +86,7 @@ func main() {
 
 	// Add Metric
 	if args.All() || args.Metrics {
-		m1, err := e1.NewMetricSet("MyorgRedisSample")
-		panicOnErr(err)
+		m1 := e1.NewMetricSet("MyorgRedisSample")
 		metricValue, err := queryGaugeRedisInfo("instantaneous_ops_per_sec:", instanceOnePort)
 		panicOnErr(err)
 		err = m1.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
@@ -122,8 +121,7 @@ func main() {
 	}
 
 	if args.All() || args.Metrics {
-		m2, err := e2.NewMetricSet("MyorgRedisSample")
-		panicOnErr(err)
+		m2 := e2.NewMetricSet("MyorgRedisSample")
 		metricValue, err := queryGaugeRedisInfo("instantaneous_ops_per_sec:", instanceTwoPort)
 		panicOnErr(err)
 		err = m2.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)

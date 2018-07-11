@@ -238,8 +238,7 @@ func TestIntegration_Publish(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ms, err := e.NewMetricSet("EventTypeForEntityOne")
-	assert.NoError(t, err)
+	ms := e.NewMetricSet("EventTypeForEntityOne")
 	ms.SetMetric("metricOne", 99, metric.GAUGE)
 	ms.SetMetric("metricTwo", 88, metric.GAUGE)
 	ms.SetMetric("metricThree", "test", metric.ATTRIBUTE)
@@ -256,8 +255,7 @@ func TestIntegration_Publish(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ms, err = e.NewMetricSet("EventTypeForEntityTwo")
-	assert.NoError(t, err)
+	ms = e.NewMetricSet("EventTypeForEntityTwo")
 	ms.SetMetric("metricOne", 99, metric.GAUGE)
 	ms.SetMetric("metricTwo", 88, metric.GAUGE)
 	ms.SetMetric("metricThree", "test", metric.ATTRIBUTE)
@@ -269,8 +267,7 @@ func TestIntegration_Publish(t *testing.T) {
 
 	assert.NoError(t, e.SetInventoryItem("inv", "key", "value"))
 
-	ms, err = e.NewMetricSet("EventTypeForEntityThree")
-	assert.NoError(t, err)
+	ms = e.NewMetricSet("EventTypeForEntityThree")
 	ms.SetMetric("metricOne", 99, metric.GAUGE)
 	ms.SetMetric("metricTwo", 88, metric.GAUGE)
 	ms.SetMetric("metricThree", "test", metric.ATTRIBUTE)

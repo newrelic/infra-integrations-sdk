@@ -83,8 +83,7 @@ func main() {
 
 	// Add Metric
 	if args.All() || args.Metrics {
-		ms, err := entity.NewMetricSet("MyorgRedisSample")
-		panicOnErr(err)
+		ms := entity.NewMetricSet("MyorgRedisSample")
 		metricValue, err := queryRedisInfo("instantaneous_ops_per_sec:")
 		panicOnErr(err)
 		err = ms.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
