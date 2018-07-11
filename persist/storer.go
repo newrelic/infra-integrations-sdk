@@ -61,8 +61,6 @@ type jsonEntry struct {
 // fileStore is a Storer implementation that uses the file system as persistence backend, storing
 // the objects as JSON.
 // This requires that any object that has to be stored is Marshallable and Unmarshallable.
-// TODO: make this implementation read all the cached values at the same time and persist them at the same time after
-// invoking a Persist() or Save() function. This will improve performance while minimizing disk usage.
 type fileStore struct {
 	inMemoryStore
 	path string

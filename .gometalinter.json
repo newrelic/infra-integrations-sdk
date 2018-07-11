@@ -3,4 +3,3 @@
   "Vendor": false,
   "Exclude": ["docs/..."]
 }
-// todo: empty "Exclude" section
