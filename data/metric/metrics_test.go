@@ -36,8 +36,7 @@ var rateAndDeltaTests = []struct {
 func TestSet_SetMetricGauge(t *testing.T) {
 	persist.SetNow(growingTime)
 
-	ms, err := NewSet("some-event-type", nil)
-	assert.NoError(t, err)
+	ms := NewSet("some-event-type", nil)
 
 	assert.NoError(t, ms.SetMetric("key", 10, GAUGE))
 
@@ -47,8 +46,7 @@ func TestSet_SetMetricGauge(t *testing.T) {
 func TestSet_SetMetricAttribute(t *testing.T) {
 	persist.SetNow(growingTime)
 
-	ms, err := NewSet("some-event-type", nil)
-	assert.NoError(t, err)
+	ms := NewSet("some-event-type", nil)
 
 	ms.SetMetric("key", "some-attribute", ATTRIBUTE)
 
@@ -63,8 +61,7 @@ func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 	for _, sourceType := range []SourceType{DELTA, RATE} {
 		persist.SetNow(growingTime)
 
-		ms, err := NewSet("some-event-type", storer, Attr("k", "v"))
-		assert.NoError(t, err)
+		ms := NewSet("some-event-type", storer, Attr("k", "v"))
 
 		for _, tt := range rateAndDeltaTests {
 			// user should not store different types under the same key
@@ -90,8 +87,7 @@ func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 func TestSet_SetMetricAllowsNegativeDeltas(t *testing.T) {
 	persist.SetNow(growingTime)
 
-	ms, err := NewSet("some-event-type", persist.NewInMemoryStore(), Attr("k", "v"))
-	assert.NoError(t, err)
+	ms := NewSet("some-event-type", persist.NewInMemoryStore(), Attr("k", "v"))
 
 	assert.NoError(t, ms.SetMetric("d", 5, DELTA))
 	assert.NoError(t, ms.SetMetric("d", 2, DELTA))
@@ -99,10 +95,9 @@ func TestSet_SetMetricAllowsNegativeDeltas(t *testing.T) {
 }
 
 func TestSet_SetMetric_NilStorer(t *testing.T) {
-	ms, err := NewSet("some-event-type", nil)
-	assert.NoError(t, err)
+	ms := NewSet("some-event-type", nil)
 
-	err = ms.SetMetric("foo", 1, RATE)
+	err := ms.SetMetric("foo", 1, RATE)
 	assert.Error(t, err, "integrations built with no-store can't use DELTAs and RATEs")
 
 	err = ms.SetMetric("foo", 1, DELTA)
@@ -110,10 +105,9 @@ func TestSet_SetMetric_NilStorer(t *testing.T) {
 }
 
 func TestSet_SetMetric_IncorrectMetricType(t *testing.T) {
-	ms, err := NewSet("some-event-type", persist.NewInMemoryStore())
-	assert.NoError(t, err)
+	ms := NewSet("some-event-type", persist.NewInMemoryStore())
 
-	err = ms.SetMetric("foo", "bar", RATE)
+	err := ms.SetMetric("foo", "bar", RATE)
 	assert.Error(t, err, "non-numeric source type for rate/delta metric foo")
 
 	err = ms.SetMetric("foo", "bar", DELTA)
@@ -131,8 +125,7 @@ func TestSet_SetMetric_IncorrectMetricType(t *testing.T) {
 }
 
 func TestSet_MarshalJSON(t *testing.T) {
-	ms, err := NewSet("some-event-type", persist.NewInMemoryStore(), Attr("k", "v"))
-	assert.NoError(t, err)
+	ms := NewSet("some-event-type", persist.NewInMemoryStore(), Attr("k", "v"))
 
 	ms.SetMetric("foo", 1, RATE)
 	ms.SetMetric("bar", 1, DELTA)
@@ -156,8 +149,7 @@ func TestNewSet_FileStore_StoresBetweenRuns(t *testing.T) {
 	s, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
 	assert.NoError(t, err)
 
-	set1, err := NewSet("type", s, Attr("k", "v"))
-	assert.NoError(t, err)
+	set1 := NewSet("type", s, Attr("k", "v"))
 
 	assert.NoError(t, set1.SetMetric("foo", 1, DELTA))
 
@@ -166,8 +158,7 @@ func TestNewSet_FileStore_StoresBetweenRuns(t *testing.T) {
 	s2, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
 	assert.NoError(t, err)
 
-	set2, err := NewSet("type", s2, Attr("k", "v"))
-	assert.NoError(t, err)
+	set2 := NewSet("type", s2, Attr("k", "v"))
 
 	assert.NoError(t, set2.SetMetric("foo", 3, DELTA))
 
@@ -183,14 +174,13 @@ func TestNewSet_Attr_AddsAttributes(t *testing.T) {
 	storeWrite, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
 	assert.NoError(t, err)
 
-	set, err := NewSet(
+	set := NewSet(
 		"type",
 		storeWrite,
 		Attr("pod", "pod-a"),
 		Attr("node", "node-a"),
 	)
 
-	assert.NoError(t, err)
 	assert.Equal(t, "pod-a", set.Metrics["pod"])
 	assert.Equal(t, "node-a", set.Metrics["node"])
 }
@@ -204,12 +194,9 @@ func TestNewSet_Attr_SolvesCacheCollision(t *testing.T) {
 	storeWrite, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
 	assert.NoError(t, err)
 
-	ms1, err := NewSet("type", storeWrite, Attr("pod", "pod-a"))
-	assert.NoError(t, err)
-	ms2, err := NewSet("type", storeWrite, Attr("pod", "pod-a"))
-	assert.NoError(t, err)
-	ms3, err := NewSet("type", storeWrite, Attr("pod", "pod-b"))
-	assert.NoError(t, err)
+	ms1 := NewSet("type", storeWrite, Attr("pod", "pod-a"))
+	ms2 := NewSet("type", storeWrite, Attr("pod", "pod-a"))
+	ms3 := NewSet("type", storeWrite, Attr("pod", "pod-b"))
 
 	assert.NoError(t, ms1.SetMetric("field", 1, DELTA))
 	assert.NoError(t, ms2.SetMetric("field", 2, DELTA))
@@ -221,8 +208,7 @@ func TestNewSet_Attr_SolvesCacheCollision(t *testing.T) {
 	storeRead, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
 	assert.NoError(t, err)
 
-	msRead, err := NewSet("type", storeRead, Attr("pod", "pod-a"))
-	assert.NoError(t, err)
+	msRead := NewSet("type", storeRead, Attr("pod", "pod-a"))
 
 	// write is required to make data available for read
 	assert.NoError(t, msRead.SetMetric("field", 10, DELTA))
@@ -231,30 +217,27 @@ func TestNewSet_Attr_SolvesCacheCollision(t *testing.T) {
 }
 
 func TestSet_namespace(t *testing.T) {
-	s, err := NewSet("type", persist.NewInMemoryStore(), Attr("k", "v"))
-	assert.NoError(t, err)
+	s := NewSet("type", persist.NewInMemoryStore(), Attr("k", "v"))
 
 	assert.Equal(t, fmt.Sprintf("k==v::foo"), s.namespace("foo"))
 
 	// several attributed are supported
-	s, err = NewSet(
+	s = NewSet(
 		"type",
 		persist.NewInMemoryStore(),
 		Attr("k1", "v1"),
 		Attr("k2", "v2"),
 	)
-	assert.NoError(t, err)
 
 	assert.Equal(t, fmt.Sprintf("k1==v1::k2==v2::foo"), s.namespace("foo"))
 
 	// provided attributes order does not matter
-	s, err = NewSet(
+	s = NewSet(
 		"type",
 		persist.NewInMemoryStore(),
 		Attr("k2", "v2"),
 		Attr("k1", "v1"),
 	)
-	assert.NoError(t, err)
 
 	assert.Equal(t, fmt.Sprintf("k1==v1::k2==v2::foo"), s.namespace("foo"))
 }
