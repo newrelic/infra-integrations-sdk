@@ -1,6 +1,7 @@
 package log
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -33,7 +34,7 @@ func NewStdErr(debug bool) Logger {
 // New creates a logger using the provided writer. The 'debug' argument enables Debug (verbose) output
 func New(debug bool, w io.Writer) Logger {
 	return &defaultLogger{
-		logger: log.New(w, "", 0),
+		logger: log.New(w, "", log.Lmicroseconds),
 		debug:  debug,
 	}
 }
@@ -61,10 +62,7 @@ func (l *defaultLogger) Warnf(format string, args ...interface{}) {
 }
 
 func (l *defaultLogger) prefixPrint(prefix string, format string, args ...interface{}) {
-	prev := log.Prefix()
-	log.SetPrefix(prefix)
-	l.logger.Printf(format, args...)
-	log.SetPrefix(prev)
+	l.logger.Printf(fmt.Sprintf("[%s] %s", prefix, format), args...)
 }
 
 // Global logger instance to provide easy access and retro-compatibility.
