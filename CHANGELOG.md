@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 3.0.1
+
+### Added
+- Toolset documentation
+- Tutorial using remote entities
+- FAQ
+- Maximum inventory key length validation
+- Attributes required
+- JMX concurrency support
+
+### Fixed
+- Rate & delta names collision on the Store
+- Negative rate & delta values
+- Prefix on the logger
+
+### Changed
+- Improved documentation
+- Arguments `All` attribute to dynamic method `All()`
+- NewSet does not return error
+- NewSet allows Attributes to uniquely identify metric sets
+
+### Removed
+- 
+
 ## 3.0.0-beta
 
 ### Added
