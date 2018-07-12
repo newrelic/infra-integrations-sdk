@@ -97,9 +97,9 @@ cpu, err := myHost.NewMetricSet("CpuSample")
 cpu.SetMetric("cpuPercent", 75.0, metric.GAUGE)
 
 disk, err := myHost.NewMetricSet("DiskSample")
-cpu.SetMetric("readsPerSecond", 12, metric.RATE)
-cpu.SetMetric("readBytes", 134, metric.DELTA)
-cpu.SetMetric("diskStatus", "OK!", metric.ATTRIBUTE)
+disk.SetMetric("readsPerSecond", 12, metric.RATE)
+disk.SetMetric("readBytes", 134, metric.DELTA)
+disk.SetMetric("diskStatus", "OK!", metric.ATTRIBUTE)
 ```
 
 The above example creates two metric sets for a same entity. The `NewMetricSet` function accepts the name of the
