@@ -170,9 +170,12 @@ New Relic, Inc.
     * In order to see inventory data follow [these intructions](https://github.com/newrelic/infra-integrations-sdk/blob/faqs/docs/tutorial.md#view-inventory-data-in-infrastructure).
     
     
-- **Are there more SDK in other languages?**
+- **Are there other SDKs in other languages?**
 
     * No, we plan to have more in the future though.
+- **Do you have examples of integrations written in other languages?
+
+    * Yes, you can find them at this [link](https://github.com/newrelic/infra-integrations/tree/master/doc/examples).
 
 - **Can I reuse my Nagios checks?**
 
