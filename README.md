@@ -173,7 +173,7 @@ New Relic, Inc.
 - **Are there other SDKs in other languages?**
 
     * No, we plan to have more in the future though.
-- **Do you have examples of integrations written in other languages?
+- **Do you have examples of integrations written in other languages?**
 
     * Yes, you can find them at this [link](https://github.com/newrelic/infra-integrations/tree/master/doc/examples).
 
