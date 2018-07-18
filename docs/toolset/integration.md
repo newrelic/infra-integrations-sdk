@@ -95,11 +95,18 @@ myHost := payload.LocalEntity()
 
 cpu, err := myHost.NewMetricSet("CpuSample")
 cpu.SetMetric("cpuPercent", 75.0, metric.GAUGE)
+```
 
-disk, err := myHost.NewMetricSet("DiskSample")
+RATE and DELTAs requires to belong to at least 1 attribute. As they are persisted on disk this attribute is used to "namespace" the metrics on the set so they don't collide with others with the same name.
+
+So `NewMetricSet` provides an optional list of `metric.Attribute` arguments. There's a constructor function that comes handy to create one: `metric.Attr`.
+
+If no `Attribute` is provided, an `error` value will be returned when adding a RATE or DELTA to the metric-set.
+
+```go
+disk, err := myHost.NewMetricSet("DiskSample", metric.Attr("diskStatus", "OK"))
 disk.SetMetric("readsPerSecond", 12, metric.RATE)
 disk.SetMetric("readBytes", 134, metric.DELTA)
-disk.SetMetric("diskStatus", "OK!", metric.ATTRIBUTE)
 ```
 
 The above example creates two metric sets for a same entity. The `NewMetricSet` function accepts the name of the
