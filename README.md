@@ -42,7 +42,7 @@ environment and familiarize yourself with the golang language.
 You can download the SDK code to your GOPATH with the following command:
 
 ```bash
-$ go get github.com/newrelic/infra-integrations-sdk
+$ go get github.com/newrelic/infra-integrations-sdk/...
 ```
 
 And then you can read the [SDK comprehensive documentation](docs/README.md) to know all the packages and functions
