@@ -121,10 +121,14 @@ func Close() {
 	}
 
 	cancel()
-	_ = cmdIn.Close()
-	_ = cmdError.Close()
 
 	done.Wait()
+	closeCmdIO()
+}
+
+func closeCmdIO() {
+	_ = cmdIn.Close()
+	_ = cmdError.Close()
 }
 
 func doQuery(ctx context.Context, out chan []byte, errorChan chan error, queryString []byte) {
@@ -171,12 +175,12 @@ func Query(objectPattern string, timeout int) (map[string]interface{}, error) {
 }
 
 // receiveResult checks for channels to receive result from nrjmx command.
-func receiveResult(lineCh chan []byte, queryErrors chan error, cancelFn context.CancelFunc, objectPattern string, timeout time.Duration) (result map[string]interface{}, err error) {
+func receiveResult(lineCh chan []byte, queryErrors chan error, queryCancel context.CancelFunc, objectPattern string, timeout time.Duration) (result map[string]interface{}, err error) {
 	select {
 	case line := <-lineCh:
 		if line == nil {
-			cancelFn()
-			Close()
+			queryCancel()
+			closeCmdIO()
 			return nil, fmt.Errorf("got empty result for query: %s", objectPattern)
 		}
 		if err := json.Unmarshal(line, &result); err != nil {
@@ -192,8 +196,8 @@ func receiveResult(lineCh chan []byte, queryErrors chan error, cancelFn context.
 		return nil, err
 	case <-time.After(timeout):
 		// In case of timeout, we want to close the command to avoid mixing up results coming up latter
-		cancelFn()
-		Close()
+		queryCancel()
+		closeCmdIO()
 		return nil, fmt.Errorf("timeout while waiting for query: %s", objectPattern)
 	}
 	return result, nil
