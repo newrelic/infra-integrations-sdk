@@ -200,7 +200,7 @@ func receiveResult(lineCh chan []byte, queryErrors chan error, cancelFn context.
 }
 
 func flushWarnings() {
-	for w := range warnings {
-		_, _ = os.Stderr.WriteString(string(w) + "\n")
+	for _, w := range warnings {
+		_, _ = os.Stderr.WriteString(w + "\n")
 	}
 }
