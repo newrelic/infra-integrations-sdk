@@ -198,6 +198,11 @@ func (ms Set) MarshalJSON() ([]byte, error) {
 	return json.Marshal(ms.Metrics)
 }
 
+// UnmarshalJSON unmarshals a raw metric set with type map[string]interface{} to Set struct
+func (ms *Set) UnmarshalJSON(b []byte) error {
+	return json.Unmarshal(b, &ms.Metrics)
+}
+
 // Required for Go < v.18, as these do not include sort.Slice
 
 // Attributes list of attributes
