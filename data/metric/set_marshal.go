@@ -17,14 +17,13 @@ const (
 )
 
 func (ms *Set) MarshalMetrics(data interface{}) error {
-	t := reflect.TypeOf(data)
 	r := reflect.ValueOf(data)
 	value := reflect.Indirect(r)
 
 	if value.Kind() != reflect.Struct {
 		return errors.New("metric: can only directly unmarshal structs")
 	}
-	return marshalStruct(t, value, ms)
+	return marshalStruct(value.Type(), value, ms)
 }
 
 // marshalValue takes in a struct field and does a kind switch on it to determine further
@@ -35,7 +34,7 @@ func marshalValue(f reflect.StructField, v reflect.Value, ms *Set) error {
 		return marshalStruct(v.Type(), v, ms)
 	case reflect.Ptr:
 		if v.IsNil() {
-			return fmt.Errorf("metric: Marshal(nil %s)", f.Type.String())
+			return nil
 		}
 
 		return marshalValue(f, v.Elem(), ms)
