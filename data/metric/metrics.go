@@ -21,6 +21,7 @@ type Attribute struct {
 	Value string
 }
 
+// If any more SourceTypes are added update parseSourceType in infra-integrations-sdk/data/metric/set_marshal.go
 const (
 	// GAUGE is a value that may increase and decrease. It is stored as-is.
 	GAUGE SourceType = iota

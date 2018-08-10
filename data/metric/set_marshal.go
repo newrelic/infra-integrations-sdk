@@ -16,8 +16,45 @@ const (
 	sourceTypeTag = "source_type"
 )
 
-func (ms *Set) MarshalMetrics(data interface{}) error {
-	r := reflect.ValueOf(data)
+// MarshalMetrics creates metrics for primitive values of v.
+//
+// MarshalMetrics traverses the value of v recursively.
+// Once a non-struct or non-pointer value is reached that has
+// the accepted tags, SetMetric is then called with the field's value.
+//
+// Pointers are dereferenced until a base value is found or nil.
+// If nil, the field is skipped regardless of if it had the appropriate
+// struct field tags.
+//
+// Needed struct field tags are "metric_name" and "source_type". The value of
+// "metric_name" will be the name argument to SetMetric. The value
+// of "source_type" the is case insensitively matched against values below to a SourceType
+// and passed as the sourceType argument to SetMetric.
+// If the value does not match one of the values below an error will be returned.
+//   - gauge
+//   - rate
+//   - delta
+//   - attribute
+//
+// If one of the required tags is missing an error will be returned.
+// If both are missing SetMetric will not be called for the given field.
+//
+// Examples of struct field tags:
+//   type Data struct {
+//   	Gauge     int     `metric_name:"metric.gauge" source_type:"Gauge"`
+//   	Attribute string  `metric_name:"metric.attribute" source_type:"attribute"`
+//   	Rate      float64 `metric_name:"metric.rate" source_type:"RATE"`
+//    	Delta     float64 `metric_name:"metric.delta" source_type:"delta"`
+//   }
+//
+// Any non-struct/non-pointer value that has the correct struct field tags
+// will be passed to SetMetric. If the value causes an error to be returned
+// from SetMetric this will be bubbled up and returned by MarshalMetrics.
+//
+// If a cyclic data structure is passed in this will result in
+// infinite recursion.
+func (ms *Set) MarshalMetrics(v interface{}) error {
+	r := reflect.ValueOf(v)
 	value := reflect.Indirect(r)
 
 	if value.Kind() != reflect.Struct {
