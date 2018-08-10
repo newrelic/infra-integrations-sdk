@@ -40,11 +40,16 @@ func TestSet_MarshalMetricsComplexStruct(t *testing.T) {
 		Map   map[string]bool
 	}
 
+	type InterfaceStruct struct {
+		Metric int `metric_name:"metric.interface" source_type:"gauge"`
+	}
+
 	complexStruct := &struct {
-		Gauge     int    `metric_name:"metric.gauge" source_type:"gauge"`
-		Attribute string `metric_name:"metric.attribute" source_type:"attribute"`
-		Nested    *NestedStruct
-		Slice     []string
+		Gauge           int    `metric_name:"metric.gauge" source_type:"gauge"`
+		Attribute       string `metric_name:"metric.attribute" source_type:"attribute"`
+		Nested          *NestedStruct
+		Slice           []string
+		NestedInterface interface{}
 	}{
 		10,
 		"some-attribute",
@@ -54,6 +59,9 @@ func TestSet_MarshalMetricsComplexStruct(t *testing.T) {
 			map[string]bool{"one": true},
 		},
 		[]string{"one", "two", "three"},
+		&InterfaceStruct{
+			40,
+		},
 	}
 
 	err := ms.MarshalMetrics(complexStruct)
@@ -62,6 +70,7 @@ func TestSet_MarshalMetricsComplexStruct(t *testing.T) {
 	assert.Equal(t, float64(10), ms.Metrics["metric.gauge"])
 	assert.Equal(t, complexStruct.Attribute, ms.Metrics["metric.attribute"])
 	assert.Equal(t, float64(0), ms.Metrics["metric.delta"])
+	assert.Equal(t, float64(40), ms.Metrics["metric.interface"])
 }
 
 func TestSet_MarshalMetricsNonStruct(t *testing.T) {

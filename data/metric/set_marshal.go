@@ -28,7 +28,7 @@ const (
 //
 // Needed struct field tags are "metric_name" and "source_type". The value of
 // "metric_name" will be the name argument to SetMetric. The value
-// of "source_type" the is case insensitively matched against values below to a SourceType
+// of "source_type" is case insensitively matched against values below to a SourceType
 // and passed as the sourceType argument to SetMetric.
 // If the value does not match one of the values below an error will be returned.
 //   - gauge
@@ -41,10 +41,10 @@ const (
 //
 // Examples of struct field tags:
 //   type Data struct {
-//   	Gauge     int     `metric_name:"metric.gauge" source_type:"Gauge"`
-//   	Attribute string  `metric_name:"metric.attribute" source_type:"attribute"`
-//   	Rate      float64 `metric_name:"metric.rate" source_type:"RATE"`
-//    	Delta     float64 `metric_name:"metric.delta" source_type:"delta"`
+//      Gauge     int     `metric_name:"metric.gauge" source_type:"Gauge"`
+//      Attribute string  `metric_name:"metric.attribute" source_type:"attribute"`
+//      Rate      float64 `metric_name:"metric.rate" source_type:"RATE"`
+//      Delta     float64 `metric_name:"metric.delta" source_type:"delta"`
 //   }
 //
 // Any non-struct/non-pointer value that has the correct struct field tags
@@ -69,6 +69,8 @@ func marshalValue(f reflect.StructField, v reflect.Value, ms *Set) error {
 	switch v.Kind() {
 	case reflect.Struct:
 		return marshalStruct(v.Type(), v, ms)
+	case reflect.Interface:
+		fallthrough
 	case reflect.Ptr:
 		// If the pointer is nil we don't process it
 		// regardless of if it had the correct struct field tags
