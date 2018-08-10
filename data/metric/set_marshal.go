@@ -70,6 +70,8 @@ func marshalValue(f reflect.StructField, v reflect.Value, ms *Set) error {
 	case reflect.Struct:
 		return marshalStruct(v.Type(), v, ms)
 	case reflect.Ptr:
+		// If the pointer is nil we don't process it
+		// regardless of if it had the correct struct field tags
 		if v.IsNil() {
 			return nil
 		}
@@ -96,7 +98,7 @@ func marshalStruct(t reflect.Type, v reflect.Value, ms *Set) error {
 // marshalField marshals a struct field into a metric if both metric tags
 // are present.
 func marshalField(f reflect.StructField, v reflect.Value, ms *Set) error {
-	// Get struct tag values
+	// Get struct field tag values
 	metricName, hasMetricName := f.Tag.Lookup(metricNameTag)
 	sourceTypeString, hasSourceType := f.Tag.Lookup(sourceTypeTag)
 
