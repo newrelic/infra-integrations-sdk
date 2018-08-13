@@ -119,6 +119,8 @@ func TestJmxTimeoutQuery(t *testing.T) {
 }
 
 func TestJmxNoTimeoutQuery(t *testing.T) {
+	t.Skip("unreliable CI test")
+
 	defer Close()
 
 	if err := openWait("", "", "", "", openAttempts); err != nil {
@@ -131,6 +133,8 @@ func TestJmxNoTimeoutQuery(t *testing.T) {
 }
 
 func TestJmxTimeoutBigQuery(t *testing.T) {
+	t.Skip("unreliable CI test")
+
 	defer Close()
 
 	if err := openWait("", "", "", "", openAttempts); err != nil {
