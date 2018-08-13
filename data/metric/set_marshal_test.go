@@ -8,8 +8,6 @@ import (
 )
 
 func TestSet_MarshalMetricsSimpleStruct(t *testing.T) {
-	ms := NewSet("some-event-type", persist.NewInMemoryStore(), Attr("k", "v"))
-
 	simpleStruct := struct {
 		Gauge     int     `metric_name:"metric.gauge" source_type:"gauge"`
 		Attribute string  `metric_name:"metric.attribute" source_type:"attribute"`
@@ -22,9 +20,10 @@ func TestSet_MarshalMetricsSimpleStruct(t *testing.T) {
 		float64(30),
 	}
 
+	ms := newTestSet()
 	err := ms.MarshalMetrics(simpleStruct)
-	assert.NoError(t, err, "marshal error")
 
+	assert.NoError(t, err, "marshal error")
 	assert.Equal(t, float64(10), ms.Metrics["metric.gauge"])
 	assert.Equal(t, simpleStruct.Attribute, ms.Metrics["metric.attribute"])
 	assert.Equal(t, float64(0), ms.Metrics["metric.rate"])
@@ -32,8 +31,6 @@ func TestSet_MarshalMetricsSimpleStruct(t *testing.T) {
 }
 
 func TestSet_MarshalMetricsComplexStruct(t *testing.T) {
-	ms := NewSet("some-event-type", persist.NewInMemoryStore(), Attr("k", "v"))
-
 	type NestedStruct struct {
 		Rate  *float64 `metric_name:"metric.rate" source_type:"rate"`
 		Delta float64  `metric_name:"metric.delta" source_type:"delta"`
@@ -64,27 +61,39 @@ func TestSet_MarshalMetricsComplexStruct(t *testing.T) {
 		},
 	}
 
-	err := ms.MarshalMetrics(complexStruct)
-	assert.NoError(t, err, "marshal error")
+	expectedMarshall := map[string]interface{}{
+		"event_type":       "some-event-type", // added by newTestSet()
+		"k":                "v",               // added by newTestSet()
+		"metric.gauge":     10.,
+		"metric.attribute": "some-attribute",
+		"metric.delta":     0.,
+		"metric.interface": 40.,
+		//"metric.rate" is nil
+		// Map has no tags
+		// Slice has no tags
+	}
 
-	assert.Equal(t, float64(10), ms.Metrics["metric.gauge"])
-	assert.Equal(t, complexStruct.Attribute, ms.Metrics["metric.attribute"])
-	assert.Equal(t, float64(0), ms.Metrics["metric.delta"])
-	assert.Equal(t, float64(40), ms.Metrics["metric.interface"])
+	ms := newTestSet()
+	assert.NoError(t, ms.MarshalMetrics(complexStruct), "marshal error")
+
+	assert.Len(t, ms.Metrics, len(expectedMarshall))
+	for expectedName, expectedValue := range expectedMarshall {
+		v, ok := ms.Metrics[expectedName]
+		assert.True(t, ok, "lacking metric: %s", expectedName)
+		assert.Equal(t, expectedValue, v, "unexpected metric value %v", expectedValue)
+	}
 }
 
 func TestSet_MarshalMetricsNonStruct(t *testing.T) {
-	ms := NewSet("some-event-type", persist.NewInMemoryStore(), Attr("k", "v"))
+	err := newTestSet().MarshalMetrics(1)
 
-	err := ms.MarshalMetrics(1)
 	assert.Error(t, err, "MarshalMetrics must take in a struct or struct pointer")
 }
 
-func TestSet_MarshalMetricsMissingTags(t *testing.T) {
+func TestSet_MarshalMetricsMissingOrInvalidTags(t *testing.T) {
 	testCases := []struct {
 		name  string
 		input interface{}
-		ms    *Set
 	}{
 		{
 			"Missing metric_name",
@@ -93,7 +102,6 @@ func TestSet_MarshalMetricsMissingTags(t *testing.T) {
 			}{
 				10,
 			},
-			NewSet("some-event-type", persist.NewInMemoryStore(), Attr("k", "v")),
 		},
 		{
 			"Missing source_type",
@@ -102,25 +110,23 @@ func TestSet_MarshalMetricsMissingTags(t *testing.T) {
 			}{
 				10,
 			},
-			NewSet("some-event-type", persist.NewInMemoryStore(), Attr("k", "v")),
+		},
+		{
+			"Invalid source_type",
+			struct {
+				Gauge int `metric_name:"metric.gauge" source_type:"INVALID"`
+			}{
+				10,
+			},
 		},
 	}
 
 	for _, tc := range testCases {
-		err := tc.ms.MarshalMetrics(tc.input)
-		assert.Error(t, err, "field must have both metric_name and source_type if it wished to be marshaled")
+		err := newTestSet().MarshalMetrics(tc.input)
+		assert.Error(t, err, tc.name)
 	}
 }
 
-func TestSet_MarshalMetricsBadSourceType(t *testing.T) {
-	ms := NewSet("some-event-type", persist.NewInMemoryStore(), Attr("k", "v"))
-
-	simpleStruct := struct {
-		Gauge int `metric_name:"metric.gauge" source_type:"nope"`
-	}{
-		10,
-	}
-
-	err := ms.MarshalMetrics(simpleStruct)
-	assert.Error(t, err, "source_type must be a valid value")
+func newTestSet() *Set {
+	return NewSet("some-event-type", persist.NewInMemoryStore(), Attr("k", "v"))
 }
