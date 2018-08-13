@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 )
 
 const (
@@ -112,7 +111,7 @@ func marshalField(f reflect.StructField, v reflect.Value, ms *Set) error {
 	}
 
 	// Convert source_type tag to a value
-	sourceType, err := parseSourceType(sourceTypeString)
+	sourceType, err := SourceTypeForName(sourceTypeString)
 	if err != nil {
 		return err
 	}
@@ -120,21 +119,4 @@ func marshalField(f reflect.StructField, v reflect.Value, ms *Set) error {
 	// Sets the metric, passing a good deal of additional error handling onto this function as
 	// it already handles type checking per sourceType.
 	return ms.SetMetric(metricName, v.Interface(), sourceType)
-}
-
-// parseSourceType does a case insensitive conversion from a string
-// to a SourceType. An error will be returned if no valid SourceType matched.
-func parseSourceType(sourceTypeTag string) (SourceType, error) {
-	switch strings.ToLower(sourceTypeTag) {
-	case "attribute":
-		return ATTRIBUTE, nil
-	case "rate":
-		return RATE, nil
-	case "delta":
-		return DELTA, nil
-	case "gauge":
-		return GAUGE, nil
-	default:
-		return 0, fmt.Errorf("metric: Unknown source_type %s", sourceTypeTag)
-	}
 }
