@@ -141,6 +141,26 @@ func TestSet_MarshalJSON(t *testing.T) {
 	)
 }
 
+func TestSet_UnmarshalJSON(t *testing.T) {
+	raw := []byte(`{"bar":0,"baz":1,"event_type":"some-event-type","foo":0,"k":"v","quux":"bar"}`)
+
+	var ms Set
+	err := ms.UnmarshalJSON(raw)
+	assert.NoError(t, err)
+
+	assert.Equal(t,
+		ms.Metrics,
+		map[string]interface{}{
+			"bar":        0.,
+			"baz":        1.,
+			"event_type": "some-event-type",
+			"foo":        0.,
+			"k":          "v",
+			"quux":       "bar",
+		},
+	)
+}
+
 func TestNewSet_FileStore_StoresBetweenRuns(t *testing.T) {
 	persist.SetNow(growingTime)
 
