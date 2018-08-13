@@ -10,27 +10,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-// SourceType defines the kind of data source. Based on this SourceType, metric
-// package performs some calculations with it. Check below the description for
-// each one.
-type SourceType int
-
 // Attribute represents an attribute metric in key-value pair format.
 type Attribute struct {
 	Key   string
 	Value string
 }
-
-const (
-	// GAUGE is a value that may increase and decrease. It is stored as-is.
-	GAUGE SourceType = iota
-	// RATE is an ever-growing value which might be reset. The package calculates the change rate.
-	RATE SourceType = iota
-	// DELTA is an ever-growing value which might be reset. The package calculates the difference between samples.
-	DELTA SourceType = iota
-	// ATTRIBUTE is any string value
-	ATTRIBUTE SourceType = iota
-)
 
 const (
 	// nsSeparator is the metric namespace separator
