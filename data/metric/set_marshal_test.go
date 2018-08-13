@@ -20,14 +20,24 @@ func TestSet_MarshalMetricsSimpleStruct(t *testing.T) {
 		float64(30),
 	}
 
-	ms := newTestSet()
-	err := ms.MarshalMetrics(simpleStruct)
+	expectedMarshall := map[string]interface{}{
+		"event_type":       "some-event-type", // added by newTestSet()
+		"k":                "v",               // added by newTestSet()
+		"metric.gauge":     10.,
+		"metric.rate":      0.,
+		"metric.attribute": "some-attribute",
+		"metric.delta":     0.,
+	}
 
-	assert.NoError(t, err, "marshal error")
-	assert.Equal(t, float64(10), ms.Metrics["metric.gauge"])
-	assert.Equal(t, simpleStruct.Attribute, ms.Metrics["metric.attribute"])
-	assert.Equal(t, float64(0), ms.Metrics["metric.rate"])
-	assert.Equal(t, float64(0), ms.Metrics["metric.delta"])
+	ms := newTestSet()
+	assert.NoError(t, ms.MarshalMetrics(simpleStruct))
+
+	assert.Len(t, ms.Metrics, len(expectedMarshall))
+	for expectedName, expectedValue := range expectedMarshall {
+		v, ok := ms.Metrics[expectedName]
+		assert.True(t, ok, "lacking metric: %s", expectedName)
+		assert.Equal(t, expectedValue, v, "unexpected metric value %v", expectedValue)
+	}
 }
 
 func TestSet_MarshalMetricsComplexStruct(t *testing.T) {
