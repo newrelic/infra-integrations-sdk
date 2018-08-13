@@ -31,13 +31,7 @@ func TestSet_MarshalMetricsSimpleStruct(t *testing.T) {
 
 	ms := newTestSet()
 	assert.NoError(t, ms.MarshalMetrics(simpleStruct))
-
-	assert.Len(t, ms.Metrics, len(expectedMarshall))
-	for expectedName, expectedValue := range expectedMarshall {
-		v, ok := ms.Metrics[expectedName]
-		assert.True(t, ok, "lacking metric: %s", expectedName)
-		assert.Equal(t, expectedValue, v, "unexpected metric value %v", expectedValue)
-	}
+	assertEqualsMetrics(t, expectedMarshall, ms.Metrics)
 }
 
 func TestSet_MarshalMetricsComplexStruct(t *testing.T) {
@@ -85,13 +79,7 @@ func TestSet_MarshalMetricsComplexStruct(t *testing.T) {
 
 	ms := newTestSet()
 	assert.NoError(t, ms.MarshalMetrics(complexStruct), "marshal error")
-
-	assert.Len(t, ms.Metrics, len(expectedMarshall))
-	for expectedName, expectedValue := range expectedMarshall {
-		v, ok := ms.Metrics[expectedName]
-		assert.True(t, ok, "lacking metric: %s", expectedName)
-		assert.Equal(t, expectedValue, v, "unexpected metric value %v", expectedValue)
-	}
+	assertEqualsMetrics(t, expectedMarshall, ms.Metrics)
 }
 
 func TestSet_MarshalMetricsNonStruct(t *testing.T) {
@@ -139,4 +127,13 @@ func TestSet_MarshalMetricsMissingOrInvalidTags(t *testing.T) {
 
 func newTestSet() *Set {
 	return NewSet("some-event-type", persist.NewInMemoryStore(), Attr("k", "v"))
+}
+
+func assertEqualsMetrics(t *testing.T, expected map[string]interface{}, got map[string]interface{}) {
+	assert.Len(t, got, len(expected))
+	for expectedName, expectedValue := range expected {
+		v, ok := got[expectedName]
+		assert.True(t, ok, "lacking metric: %s", expectedName)
+		assert.Equal(t, expectedValue, v, "unexpected metric value %v", expectedValue)
+	}
 }
