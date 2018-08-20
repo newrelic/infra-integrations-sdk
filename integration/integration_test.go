@@ -209,7 +209,7 @@ func TestIntegration_Publish(t *testing.T) {
 					`"events":[{"summary":"evnt1sum","category":"evnt1cat"},{"summary":"evnt2sum","category":"evnt2cat"}]},` +
 					`{"entity":{"name":"EntityTwo","type":"test"},"metrics":[{"event_type":"EventTypeForEntityTwo","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},` +
 					`"events":[]},` +
-					`{"metrics":[{"event_type":"EventTypeForEntityThree","metricOne":99,"metricThree":"test","metricTwo":88}],
+					`{"metrics":[{"event_type":"EventTypeForEntityThree","metricBool":true,"metricOne":99,"metricThree":"test","metricTwo":88}],
 						"inventory":{"inv":{"key":"val"}},` +
 					`"events":[{"summary":"evnt3sum","category":"evnt3cat"}]}]}`)
 			expectedOutput := new(Integration)
@@ -229,41 +229,34 @@ func TestIntegration_Publish(t *testing.T) {
 	}
 
 	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(w))
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	e, err := i.Entity("EntityOne", "test")
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	ms := e.NewMetricSet("EventTypeForEntityOne")
-	ms.SetMetric("metricOne", 99, metric.GAUGE)
-	ms.SetMetric("metricTwo", 88, metric.GAUGE)
-	ms.SetMetric("metricThree", "test", metric.ATTRIBUTE)
+	assert.NoError(t, ms.SetMetric("metricBool", true, metric.GAUGE))
+	assert.NoError(t, ms.SetMetric("metricOne", 99, metric.GAUGE))
+	assert.NoError(t, ms.SetMetric("metricTwo", 88, metric.GAUGE))
+	assert.NoError(t, ms.SetMetric("metricThree", "test", metric.ATTRIBUTE))
 
-	e.AddEvent(event.New("evnt1sum", "evnt1cat"))
-	e.AddEvent(event.New("evnt2sum", "evnt2cat"))
+	assert.NoError(t, e.AddEvent(event.New("evnt1sum", "evnt1cat")))
+	assert.NoError(t, e.AddEvent(event.New("evnt2sum", "evnt2cat")))
 
 	assert.NoError(t, e.SetInventoryItem("key1", "field1", 123))
 	assert.NoError(t, e.SetInventoryItem("key1", "field2", "hello"))
 	assert.NoError(t, e.SetInventoryItem("key2", "field3", "world"))
 
 	e, err = i.Entity("EntityTwo", "test")
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	ms = e.NewMetricSet("EventTypeForEntityTwo")
-	ms.SetMetric("metricOne", 99, metric.GAUGE)
-	ms.SetMetric("metricTwo", 88, metric.GAUGE)
-	ms.SetMetric("metricThree", "test", metric.ATTRIBUTE)
+	assert.NoError(t, ms.SetMetric("metricOne", 99, metric.GAUGE))
+	assert.NoError(t, ms.SetMetric("metricTwo", 88, metric.GAUGE))
+	assert.NoError(t, ms.SetMetric("metricThree", "test", metric.ATTRIBUTE))
 
 	e, err = i.Entity("", "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	assert.NoError(t, e.SetInventoryItem("inv", "key", "value"))
 
@@ -272,9 +265,9 @@ func TestIntegration_Publish(t *testing.T) {
 	ms.SetMetric("metricTwo", 88, metric.GAUGE)
 	ms.SetMetric("metricThree", "test", metric.ATTRIBUTE)
 
-	e.AddEvent(event.New("evnt3sum", "evnt3cat"))
+	assert.NoError(t, e.AddEvent(event.New("evnt3sum", "evnt3cat")))
 
-	i.Publish()
+	assert.NoError(t, i.Publish())
 }
 
 func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {

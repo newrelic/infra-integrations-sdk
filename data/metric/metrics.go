@@ -111,6 +111,13 @@ func (ms *Set) setSetAttribute(name string, value string) {
 }
 
 func castToFloat(value interface{}) (float64, error) {
+	if b, ok := value.(bool); ok {
+		if b {
+			return 1, nil
+		}
+		return 0, nil
+	}
+
 	return strconv.ParseFloat(fmt.Sprintf("%v", value), 64)
 }
 

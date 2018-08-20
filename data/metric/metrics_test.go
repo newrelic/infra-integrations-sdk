@@ -242,6 +242,33 @@ func TestSet_namespace(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf("k1==v1::k2==v2::foo"), s.namespace("foo"))
 }
 
+func Test_castToFloat(t *testing.T) {
+	testCases := []struct {
+		input  interface{}
+		output float64
+		error  bool
+	}{
+		{true, 1., false},
+		{false, 0, false},
+		{1, 1., false},
+		{2, 2., false},
+		{1.5, 1.5, false},
+		{"true", 0, true},
+		{"false", 0, true},
+	}
+
+	for _, tc := range testCases {
+		r, err := castToFloat(tc.input)
+
+		if tc.error {
+			assert.Error(t, err)
+		} else {
+			assert.NoError(t, err)
+			assert.Equal(t, tc.output, r)
+		}
+	}
+}
+
 func tempFile() string {
 	dir, err := ioutil.TempDir("", "file_store")
 	if err != nil {
