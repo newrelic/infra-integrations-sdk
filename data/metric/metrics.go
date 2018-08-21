@@ -111,6 +111,13 @@ func (ms *Set) setSetAttribute(name string, value string) {
 }
 
 func castToFloat(value interface{}) (float64, error) {
+	if b, ok := value.(bool); ok {
+		if b {
+			return 1, nil
+		}
+		return 0, nil
+	}
+
 	return strconv.ParseFloat(fmt.Sprintf("%v", value), 64)
 }
 
@@ -178,8 +185,13 @@ func (a *Attribute) Namespace() string {
 }
 
 // MarshalJSON adapts the internal structure of the metrics Set to the payload that is compliant with the protocol
-func (ms Set) MarshalJSON() ([]byte, error) {
+func (ms *Set) MarshalJSON() ([]byte, error) {
 	return json.Marshal(ms.Metrics)
+}
+
+// UnmarshalJSON unserializes protocol compliant JSON metrics into the metric set.
+func (ms *Set) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &ms.Metrics)
 }
 
 // Required for Go < v.18, as these do not include sort.Slice
