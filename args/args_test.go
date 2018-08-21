@@ -234,16 +234,40 @@ func TestGetDefaultArgsWithoutDefaults(t *testing.T) {
 	assertEqualArgs(t, sdk_args.DefaultArgumentList{}, *sdk_args.GetDefaultArgs(&argumentListWithoutDefaults{}))
 }
 
-func TestDefaultArgumentList_All(t *testing.T) {
-	defaults := sdk_args.DefaultArgumentList{}
-	withMetrics := sdk_args.DefaultArgumentList{Metrics: true}
-	withInventory := sdk_args.DefaultArgumentList{Inventory: true}
-	withEvents := sdk_args.DefaultArgumentList{Events: true}
+// Vars to test getters
+var (
+	defaultArgs              = sdk_args.DefaultArgumentList{}
+	defaultArgsWithMetrics   = sdk_args.DefaultArgumentList{Metrics: true}
+	defaultArgsWithInventory = sdk_args.DefaultArgumentList{Inventory: true}
+	defaultArgsWithEvents    = sdk_args.DefaultArgumentList{Events: true}
+)
 
-	assert.True(t, defaults.All())
-	assert.False(t, withMetrics.All())
-	assert.False(t, withInventory.All())
-	assert.False(t, withEvents.All())
+func TestDefaultArgumentList_All(t *testing.T) {
+	assert.True(t, defaultArgs.All())
+	assert.False(t, defaultArgsWithMetrics.All())
+	assert.False(t, defaultArgsWithInventory.All())
+	assert.False(t, defaultArgsWithEvents.All())
+}
+
+func TestDefaultArgumentList_HasMetrics(t *testing.T) {
+	assert.True(t, defaultArgs.HasMetrics())
+	assert.True(t, defaultArgsWithMetrics.HasMetrics())
+	assert.False(t, defaultArgsWithInventory.HasMetrics())
+	assert.False(t, defaultArgsWithEvents.HasMetrics())
+}
+
+func TestDefaultArgumentList_HasEvents(t *testing.T) {
+	assert.True(t, defaultArgs.HasEvents())
+	assert.False(t, defaultArgsWithMetrics.HasEvents())
+	assert.False(t, defaultArgsWithInventory.HasEvents())
+	assert.True(t, defaultArgsWithEvents.HasEvents())
+}
+
+func TestDefaultArgumentList_HasInventory(t *testing.T) {
+	assert.True(t, defaultArgs.HasInventory())
+	assert.False(t, defaultArgsWithMetrics.HasInventory())
+	assert.True(t, defaultArgsWithInventory.HasInventory())
+	assert.False(t, defaultArgsWithEvents.HasInventory())
 }
 
 func assertEqualArgs(t *testing.T, expected interface{}, args interface{}) {

@@ -26,6 +26,21 @@ func (d *DefaultArgumentList) All() bool {
 	return !d.Inventory && !d.Metrics && !d.Events
 }
 
+// HasMetrics returns if metrics should be published
+func (d *DefaultArgumentList) HasMetrics() bool {
+	return d.Metrics || d.All()
+}
+
+// HasEvents returns if events should be published
+func (d *DefaultArgumentList) HasEvents() bool {
+	return d.Events || d.All()
+}
+
+// HasInventory returns if inventory should be published
+func (d *DefaultArgumentList) HasInventory() bool {
+	return d.Inventory || d.All()
+}
+
 // HTTPClientArgumentList are meant to be used as flags from a custom integrations. With this you could
 // send this arguments from the command line.
 type HTTPClientArgumentList struct {

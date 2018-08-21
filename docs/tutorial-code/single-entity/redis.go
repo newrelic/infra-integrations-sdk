@@ -52,7 +52,7 @@ func main() {
 	// Create Integration
 	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
 	panicOnErr(err)
-	
+
 	entity := i.LocalEntity()
 	panicOnErr(err)
 
