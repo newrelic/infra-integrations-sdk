@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 3.[TO-BE-DEFINED]
+
+### Added
+- Boolean support for *Gauge* metrics via `setMetric`
+- Adds `json.Unmarsall` support to `metric.Set`
+
+### Fixed
+- Fixes Integration.Publish test
+
 ## 3.0.1
 
 ### Added
