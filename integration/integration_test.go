@@ -2,13 +2,11 @@ package integration
 
 import (
 	"bytes"
-	"encoding/json"
 	"flag"
-	"os"
-	"reflect"
-	"testing"
-
 	"io/ioutil"
+	"os"
+	"strings"
+	"testing"
 
 	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/data/event"
@@ -201,30 +199,64 @@ func TestNonVerboseLog(t *testing.T) {
 
 func TestIntegration_Publish(t *testing.T) {
 	w := testWriter{
-		func(p []byte) {
-			expectedOutputRaw := []byte(
-				`{"name":"TestIntegration","protocol_version":"2","integration_version":"1.0","data":[` +
-					`{"entity":{"name":"EntityOne","type":"test"},"metrics":[{"event_type":"EventTypeForEntityOne","metricOne":99,"metricThree":"test","metricTwo":88}],
-					     "inventory":{"key1":{"field1":123,"field2":"hello"},"key2":{"field3":"world"}},` +
-					`"events":[{"summary":"evnt1sum","category":"evnt1cat"},{"summary":"evnt2sum","category":"evnt2cat"}]},` +
-					`{"entity":{"name":"EntityTwo","type":"test"},"metrics":[{"event_type":"EventTypeForEntityTwo","metricOne":99,"metricThree":"test","metricTwo":88}],"inventory":{},` +
-					`"events":[]},` +
-					`{"metrics":[{"event_type":"EventTypeForEntityThree","metricBool":true,"metricOne":99,"metricThree":"test","metricTwo":88}],
-						"inventory":{"inv":{"key":"val"}},` +
-					`"events":[{"summary":"evnt3sum","category":"evnt3cat"}]}]}`)
-			expectedOutput := new(Integration)
-			err := json.Unmarshal(expectedOutputRaw, expectedOutput)
-			assert.NoError(t, err, "error unmarshaling expected output raw test data sample")
+		func(integrationBytes []byte) {
+			expectedOutputRaw := []byte(`
+			{
+			  "name": "TestIntegration",
+			  "protocol_version": "2",
+			  "integration_version": "1.0",
+			  "data": [
+				{
+				  "entity": {
+					"name": "EntityOne",
+					"type": "test"
+				  },
+				  "metrics": [
+					{
+					  "event_type": "EventTypeForEntityOne",
+					  "metricBool": 1,
+					  "metricOne": 1,
+					  "metricTwo": "test"
+					}
+				  ],
+				  "inventory": {},
+				  "events": [
+					{
+					  "summary": "evnt1sum",
+					  "category": "evnt1cat"
+					},
+					{
+					  "summary": "evnt2sum",
+					  "category": "evnt2cat"
+					}
+				  ]
+				},
+				{
+				  "entity": {
+					"name": "EntityTwo",
+					"type": "test"
+				  },
+				  "metrics": [
+					{
+					  "event_type": "EventTypeForEntityTwo",
+					  "metricOne": 2
+					}
+				  ],
+				  "inventory": {},
+				  "events": []
+				},
+				{
+				  "metrics": [],
+                  "inventory":{
+			        "inv":{"key":"val"}
+                  },
+				  "events": []
+				}
+			  ]
+			}`)
 
-			integration := new(Integration)
-			err = json.Unmarshal(p, integration)
-			if err != nil {
-				assert.NoError(t, err, "error unmarshaling integration output")
-			}
-
-			if !reflect.DeepEqual(expectedOutput, integration) {
-				t.Errorf("output does not match the expectations.\nGot:\n%v\nExpected:\n%v", string(p), string(expectedOutputRaw))
-			}
+			// awful but cannot compare with json.Unmarshal as it's not supported by Integration
+			assert.Equal(t, stripBlanks(expectedOutputRaw), stripBlanks(integrationBytes))
 		},
 	}
 
@@ -233,41 +265,33 @@ func TestIntegration_Publish(t *testing.T) {
 
 	e, err := i.Entity("EntityOne", "test")
 	assert.NoError(t, err)
-
 	ms := e.NewMetricSet("EventTypeForEntityOne")
+	assert.NoError(t, ms.SetMetric("metricOne", 1, metric.GAUGE))
+	assert.NoError(t, ms.SetMetric("metricTwo", "test", metric.ATTRIBUTE))
 	assert.NoError(t, ms.SetMetric("metricBool", true, metric.GAUGE))
-	assert.NoError(t, ms.SetMetric("metricOne", 99, metric.GAUGE))
-	assert.NoError(t, ms.SetMetric("metricTwo", 88, metric.GAUGE))
-	assert.NoError(t, ms.SetMetric("metricThree", "test", metric.ATTRIBUTE))
 
 	assert.NoError(t, e.AddEvent(event.New("evnt1sum", "evnt1cat")))
 	assert.NoError(t, e.AddEvent(event.New("evnt2sum", "evnt2cat")))
 
-	assert.NoError(t, e.SetInventoryItem("key1", "field1", 123))
-	assert.NoError(t, e.SetInventoryItem("key1", "field2", "hello"))
-	assert.NoError(t, e.SetInventoryItem("key2", "field3", "world"))
-
-	e, err = i.Entity("EntityTwo", "test")
+	e2, err := i.Entity("EntityTwo", "test")
 	assert.NoError(t, err)
+	ms = e2.NewMetricSet("EventTypeForEntityTwo")
+	assert.NoError(t, ms.SetMetric("metricOne", 2, metric.GAUGE))
 
-	ms = e.NewMetricSet("EventTypeForEntityTwo")
-	assert.NoError(t, ms.SetMetric("metricOne", 99, metric.GAUGE))
-	assert.NoError(t, ms.SetMetric("metricTwo", 88, metric.GAUGE))
-	assert.NoError(t, ms.SetMetric("metricThree", "test", metric.ATTRIBUTE))
-
-	e, err = i.Entity("", "")
-	assert.NoError(t, err)
-
-	assert.NoError(t, e.SetInventoryItem("inv", "key", "value"))
-
-	ms = e.NewMetricSet("EventTypeForEntityThree")
-	ms.SetMetric("metricOne", 99, metric.GAUGE)
-	ms.SetMetric("metricTwo", 88, metric.GAUGE)
-	ms.SetMetric("metricThree", "test", metric.ATTRIBUTE)
-
-	assert.NoError(t, e.AddEvent(event.New("evnt3sum", "evnt3cat")))
+	e3 := i.LocalEntity()
+	assert.NoError(t, e3.SetInventoryItem("inv", "key", "val"))
 
 	assert.NoError(t, i.Publish())
+}
+
+func stripBlanks(b []byte) string {
+	return strings.Replace(
+		strings.Replace(
+			strings.Replace(
+				string(b),
+				" ", "", -1),
+			"\n", "", -1),
+		"\t", "", -1)
 }
 
 func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
