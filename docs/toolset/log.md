@@ -33,7 +33,7 @@ so their implemented loggers can be used out of the box.
 
 ### Verbose mode
 
-You can enable *verbose* mode so `DEBUG` level logs are printed vai `SetupLogging(verbose bool)`.
+You can enable *verbose* mode so `DEBUG` level logs are printed by `SetupLogging(verbose bool)`.
 
 Otherwise only `INFO`, `WARN` and `ERROR` messages will be logged.
 
