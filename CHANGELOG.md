@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Boolean support for *Gauge* metrics via `setMetric`
 - Adds `json.Unmarsall` support to `metric.Set`
+- Getters (HasMetrics, HasEvents, HasInventory) to the `args` package 
+to avoid calling `All() || Metrics`
 
 ### Fixed
 - Fixes Integration.Publish test
