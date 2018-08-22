@@ -1,7 +1,22 @@
-# Internal logging
+# Logging
 
-To avoid depending on third-party logging solutions, the SDK provides a very simple `Logger` interface allows injecting
-any logger implementation that fulfills the interface:
+
+To avoid depending on third-party logging solutions, the SDK provides a simple `log` package with the common log-levels.
+
+It can be used by calling functions directly:
+
+```go
+func Debug(format string, args ...interface{})
+func Info(format string, args ...interface{}) 
+func Warn(format string, args ...interface{})
+func Error(format string, args ...interface{})
+```
+
+> The string and arguments are passed in C-like printf format (as in [fmt.Printf](https://godoc.org/fmt#Printf)).
+
+> By default `integration.New` will bootstrap a `Logger` writing to `stderr` and will attach it to the global instance used by the above package functions.
+
+Or a new `Logger` can be provided to the `Integration` fulfulling the interface:
 
 ```go
 type Logger interface {
@@ -12,11 +27,20 @@ type Logger interface {
 }
 ```
 
-, where the `-f` suffix means that the string and arguments are passed in C-like printf format
-(as in [fmt.Printf](https://godoc.org/fmt#Printf)).
-
 Some popular logging solutions (e.g. [Logrus](https://github.com/sirupsen/logrus)) already implement the above interface,
 so their implemented loggers can be used out of the box.
+
+
+### Verbose mode
+
+You can enable *verbose* mode so `DEBUG` level logs are printed by `SetupLogging(verbose bool)`.
+
+Otherwise only `INFO`, `WARN` and `ERROR` messages will be logged.
+
+
+### Customization
+
+You can get/set the integration logger via: `yourIntegration.Logger()` and `
 
 If you don't want to add more dependencies, the SDK provides two functions to instantiate bundled, simple loggers:
 [NewStdErr](https://godoc.org/github.com/newrelic/infra-integrations-sdk/log#New), which creates a log whose output
