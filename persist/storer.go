@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/newrelic/infra-integrations-sdk/log"
@@ -49,7 +50,8 @@ type Storer interface {
 // In-memory implementation of the storer
 type inMemoryStore struct {
 	cachedData map[string]jsonEntry
-	Data       map[string][]byte
+	data       map[string][]byte
+	locker     sync.Locker
 }
 
 // Holder for any entry in the JSON storage
@@ -89,7 +91,8 @@ func DefaultPath(integrationName string) string {
 func NewInMemoryStore() Storer {
 	return &inMemoryStore{
 		cachedData: make(map[string]jsonEntry),
-		Data:       make(map[string][]byte),
+		data:       make(map[string][]byte),
+		locker:     &sync.Mutex{},
 	}
 }
 
@@ -127,6 +130,8 @@ func NewFileStore(storagePath string, ilog log.Logger, ttl time.Duration) (Store
 }
 
 func (j *fileStore) Save() error {
+	j.inMemoryStore.locker.Lock()
+	defer j.inMemoryStore.locker.Unlock()
 	// An in-memory implementation does nothing
 	err := j.flushCache()
 	if err != nil {
@@ -148,6 +153,8 @@ func (j *inMemoryStore) Save() error {
 // Set stores a value for a given key. Implementors must save also the time when it was stored.
 // This implementation adds a restriction to the key name: it must be a valid file name (without extension).
 func (j inMemoryStore) Set(key string, value interface{}) int64 {
+	j.locker.Lock()
+	defer j.locker.Unlock()
 	ts := now().Unix()
 	j.cachedData[key] = jsonEntry{
 		Timestamp: ts,
@@ -160,6 +167,8 @@ func (j inMemoryStore) Set(key string, value interface{}) int64 {
 // second argument
 // This implementation adds a restriction to the key name: it must be a valid file name (without extension).
 func (j inMemoryStore) Get(key string, valuePtr interface{}) (int64, error) {
+	j.locker.Lock()
+	defer j.locker.Unlock()
 	rv := reflect.ValueOf(valuePtr)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return 0, errors.New("destination argument must be a pointer")
@@ -169,7 +178,7 @@ func (j inMemoryStore) Get(key string, valuePtr interface{}) (int64, error) {
 
 	// If the entry is not cached, it may be stored as a JSON (as loaded from disk), and we unmarshall it
 	if !ok {
-		bytes, ok := j.Data[key]
+		bytes, ok := j.data[key]
 		if !ok {
 			return 0, ErrNotFound
 		}
@@ -196,7 +205,7 @@ func (j *inMemoryStore) flushCache() error {
 		if err != nil {
 			return err
 		}
-		j.Data[k] = bytes
+		j.data[k] = bytes
 	}
 	j.cachedData = make(map[string]jsonEntry)
 	return nil
@@ -218,6 +227,6 @@ func (j *fileStore) loadFromDisk() error {
 // any error.
 func (j inMemoryStore) Delete(key string) error {
 	delete(j.cachedData, key)
-	delete(j.Data, key)
+	delete(j.data, key)
 	return nil
 }
