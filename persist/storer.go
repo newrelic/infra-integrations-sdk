@@ -50,7 +50,7 @@ type Storer interface {
 // In-memory implementation of the storer
 type inMemoryStore struct {
 	cachedData map[string]jsonEntry
-	data       map[string][]byte
+	Data       map[string][]byte
 	locker     sync.Locker
 }
 
@@ -91,7 +91,7 @@ func DefaultPath(integrationName string) string {
 func NewInMemoryStore() Storer {
 	return &inMemoryStore{
 		cachedData: make(map[string]jsonEntry),
-		data:       make(map[string][]byte),
+		Data:       make(map[string][]byte),
 		locker:     &sync.Mutex{},
 	}
 }
@@ -178,7 +178,7 @@ func (j inMemoryStore) Get(key string, valuePtr interface{}) (int64, error) {
 
 	// If the entry is not cached, it may be stored as a JSON (as loaded from disk), and we unmarshall it
 	if !ok {
-		bytes, ok := j.data[key]
+		bytes, ok := j.Data[key]
 		if !ok {
 			return 0, ErrNotFound
 		}
@@ -205,7 +205,7 @@ func (j *inMemoryStore) flushCache() error {
 		if err != nil {
 			return err
 		}
-		j.data[k] = bytes
+		j.Data[k] = bytes
 	}
 	j.cachedData = make(map[string]jsonEntry)
 	return nil
@@ -227,6 +227,6 @@ func (j *fileStore) loadFromDisk() error {
 // any error.
 func (j inMemoryStore) Delete(key string) error {
 	delete(j.cachedData, key)
-	delete(j.data, key)
+	delete(j.Data, key)
 	return nil
 }
