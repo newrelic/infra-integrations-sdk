@@ -18,6 +18,8 @@ type Entity struct {
 	Events    []*event.Event       `json:"events"`
 	storer    persist.Storer
 	lock      sync.Locker
+	// CustomAttributes []metric.Attribute `json:"custom_attributes,omitempty"`
+	customAttributes []metric.Attribute
 }
 
 // EntityMetadata stores entity Metadata
@@ -72,7 +74,12 @@ func (e *Entity) isLocalEntity() bool {
 
 // NewMetricSet returns a new instance of Set with its sample attached to the integration.
 func (e *Entity) NewMetricSet(eventType string, nameSpacingAttributes ...metric.Attribute) *metric.Set {
+
 	s := metric.NewSet(eventType, e.storer, nameSpacingAttributes...)
+
+	if len(e.customAttributes) > 0 {
+		metric.AddCustomAttributes(s, e.customAttributes)
+	}
 
 	e.lock.Lock()
 	defer e.lock.Unlock()
@@ -97,4 +104,9 @@ func (e *Entity) SetInventoryItem(key string, field string, value interface{}) e
 	e.lock.Lock()
 	defer e.lock.Unlock()
 	return e.Inventory.SetItem(key, field, value)
+}
+
+func (e *Entity) setCustomAttribute(key string, value string) {
+	attribute := metric.Attribute{key, value}
+	e.customAttributes = append(e.customAttributes, attribute)
 }

@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"strings"
 	"sync"
 
 	"github.com/newrelic/infra-integrations-sdk/args"
@@ -119,6 +120,18 @@ func (i *Integration) Entity(name, namespace string) (e *Entity, err error) {
 	e, err = newEntity(name, namespace, i.storer)
 	if err != nil {
 		return nil, err
+	}
+
+	defaultArgs := args.GetDefaultArgs(i.args)
+
+	if defaultArgs.CustomAttributes {
+		for _, element := range os.Environ() {
+			variable := strings.Split(element, "=")
+			prefix := fmt.Sprintf("NRI_%s_", strings.ToUpper(i.Name))
+			if strings.HasPrefix(variable[0], prefix) {
+				e.setCustomAttribute(strings.TrimPrefix(variable[0], prefix), variable[1])
+			}
+		}
 	}
 
 	i.Entities = append(i.Entities, e)

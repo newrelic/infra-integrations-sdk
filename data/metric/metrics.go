@@ -57,6 +57,13 @@ func NewSet(eventType string, storer persist.Storer, attributes ...Attribute) (s
 	return
 }
 
+// AddCustomAttributes add customAttributes to MetricSet
+func AddCustomAttributes(metricSet *Set, customAttributes []Attribute) {
+	for _, attr := range customAttributes {
+		metricSet.setSetAttribute(attr.Key, attr.Value)
+	}
+}
+
 // Attr creates an attribute aimed to namespace a metric-set.
 func Attr(key string, value string) Attribute {
 	return Attribute{
