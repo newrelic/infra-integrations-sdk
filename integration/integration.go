@@ -124,7 +124,7 @@ func (i *Integration) Entity(name, namespace string) (e *Entity, err error) {
 
 	defaultArgs := args.GetDefaultArgs(i.args)
 
-	if defaultArgs.CustomAttributes {
+	if defaultArgs.Metadata {
 		for _, element := range os.Environ() {
 			variable := strings.Split(element, "=")
 			prefix := fmt.Sprintf("NRI_%s_", strings.ToUpper(i.Name))

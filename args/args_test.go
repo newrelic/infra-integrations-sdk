@@ -129,6 +129,19 @@ func TestCliArgsOverrideEnvironmentArgs(t *testing.T) {
 	assert.True(t, args.Verbose)
 }
 
+func TestMetadataFlag(t *testing.T) {
+	os.Args = []string{
+		"cmd",
+		"-metadata",
+	}
+
+	clearFlagSet()
+	var args sdk_args.DefaultArgumentList
+	assert.NoError(t, sdk_args.SetupArgs(&args))
+
+	assert.True(t, args.Metadata)
+}
+
 func TestSetupArgsErrors(t *testing.T) {
 	type argumentList struct {
 		Verbose bool `default:"badbool" help:"Print more information to logs."`
