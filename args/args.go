@@ -14,11 +14,12 @@ import (
 // DefaultArgumentList includes the minimal set of necessary arguments for an integration.
 // If all data flags (Inventory, Metrics and Events) are false, all of them are published.
 type DefaultArgumentList struct {
-	Verbose   bool `default:"false" help:"Print more information to logs."`
-	Pretty    bool `default:"false" help:"Print pretty formatted JSON."`
-	Metrics   bool `default:"false" help:"Publish metrics data."`
-	Inventory bool `default:"false" help:"Publish inventory data."`
-	Events    bool `default:"false" help:"Publish events data."`
+	Verbose          bool `default:"false" help:"Print more information to logs."`
+	Pretty           bool `default:"false" help:"Print pretty formatted JSON."`
+	Metrics          bool `default:"false" help:"Publish metrics data."`
+	Inventory        bool `default:"false" help:"Publish inventory data."`
+	Events           bool `default:"false" help:"Publish events data."`
+	CustomAttributes bool `default:"false" help:"Decorate Samples with Custom Attributes."`
 }
 
 // All returns if all data should be published
