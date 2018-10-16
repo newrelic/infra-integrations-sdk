@@ -71,9 +71,9 @@ func NewCache() (*Cache, error) {
 		log.Warn(fmt.Sprintf("Cache file (%s) cannot be open for reading.", cachePath))
 		return cache, nil
 	}
-	json.Unmarshal(file, &cache)
+	err = json.Unmarshal(file, &cache)
 
-	return cache, nil
+	return cache, err
 }
 
 // Save marshalls and stores the data a Cache is holding into disk as a JSON

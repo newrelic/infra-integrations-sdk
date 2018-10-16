@@ -99,13 +99,16 @@ func Close() {
 		return
 	}
 
-	cmdIn.Close()
+	_ = cmdIn.Close()
 	cancel()
 	done.Wait()
 }
 
 func doQuery(out chan []byte, errorChan chan error, queryString []byte) {
-	cmdIn.Write(queryString)
+	_, err := cmdIn.Write(queryString)
+	if err != nil {
+		errorChan <- fmt.Errorf("error writing to command input: %v", err)
+	}
 
 	scanner := bufio.NewScanner(cmdOut)
 	scanner.Buffer([]byte{}, jmxLineBuffer) // Override default buffer to increase buffer size

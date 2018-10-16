@@ -26,7 +26,7 @@ func getArgsFromEnv() func(f *flag.Flag) {
 	return func(f *flag.Flag) {
 		envName := strings.ToUpper(f.Name)
 		if os.Getenv(envName) != "" {
-			f.Value.Set(os.Getenv(envName))
+			_ = f.Value.Set(os.Getenv(envName))
 		}
 	}
 }

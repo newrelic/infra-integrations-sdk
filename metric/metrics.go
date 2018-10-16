@@ -29,7 +29,7 @@ type MetricSet map[string]interface{}
 // NewMetricSet returns a new MetricSet instance.
 func NewMetricSet(eventType string) MetricSet {
 	ms := MetricSet{}
-	ms.SetMetric("event_type", eventType, ATTRIBUTE)
+	_ = ms.SetMetric("event_type", eventType, ATTRIBUTE)
 	return ms
 }
 
