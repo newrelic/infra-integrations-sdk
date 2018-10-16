@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/newrelic/infra-integrations-sdk/cache"
-	"github.com/newrelic/infra-integrations-sdk/metric"
+	"gopkg.in/newrelic/infra-integrations-sdk.v2/cache"
+	"gopkg.in/newrelic/infra-integrations-sdk.v2/metric"
 )
 
 type FakeData struct {

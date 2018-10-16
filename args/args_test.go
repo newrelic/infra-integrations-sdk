@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
+	sdk_args "gopkg.in/newrelic/infra-integrations-sdk.v2/args"
 )
 
 func TestSetupArgsDefault(t *testing.T) {

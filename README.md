@@ -65,7 +65,7 @@ You can find the latest API documentation generated from the source code in
 
 We welcome code contributions (in the form of pull requests) from our user
 community.  Before submitting a pull request please review
-[these guidelines](https://github.com/newrelic/infra-integrations-sdk/blob/master/CONTRIBUTING.md).
+[these guidelines](https://gopkg.in/newrelic/infra-integrations-sdk.v2/blob/master/CONTRIBUTING.md).
 
 Following these helps us efficiently review and incorporate your contribution
 and avoid breaking your code with future changes to the agent.

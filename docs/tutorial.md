@@ -3,7 +3,7 @@
 ## Overview
 This tutorial will guide you through the process of developing a custom integration for New Relic Infrastructure in the Go language. To simplify the process, New Relic provides the following tools:
 * [nr-integrations-builder](https://github.com/newrelic/nr-integrations-builder): command line tool that generates an integration "scaffold", with basic integration files in the correct directory structure.
-* [Integration Golang SDK](https://github.com/newrelic/infra-integrations-sdk/): a Golang package containing a set of useful functions and types for creating metrics and inventory data structure.
+* [Integration Golang SDK](https://gopkg.in/newrelic/infra-integrations-sdk.v2/): a Golang package containing a set of useful functions and types for creating metrics and inventory data structure.
 
 For a simple overview of what Infrastructure integrations are and how they work, see the [Intro to the Integrations SDK](https://docs.newrelic.com/docs/infrastructure/integrations-sdk/get-started/intro-infrastructure-integrations-sdk).
 
@@ -284,10 +284,10 @@ In order to continue to build the source, you'll need to add the needed packages
 ```go
 import (
 	"fmt"
-	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/log"
-	"github.com/newrelic/infra-integrations-sdk/metric"
-	"github.com/newrelic/infra-integrations-sdk/sdk"
+	sdkArgs "gopkg.in/newrelic/infra-integrations-sdk.v2/args"
+	"gopkg.in/newrelic/infra-integrations-sdk.v2/log"
+	"gopkg.in/newrelic/infra-integrations-sdk.v2/metric"
+	"gopkg.in/newrelic/infra-integrations-sdk.v2/sdk"
 	"os/exec"
 	"strconv"
 	"strings"

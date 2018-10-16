@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/newrelic/infra-integrations-sdk/cache"
+	"gopkg.in/newrelic/infra-integrations-sdk.v2/cache"
 )
 
 func TestDiskCache(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/newrelic/infra-integrations-sdk/cache"
+	"gopkg.in/newrelic/infra-integrations-sdk.v2/cache"
 )
 
 // SourceType defines the kind of data source. Based on this SourceType, metric

@@ -1,0 +1,5 @@
+{
+  "Enable": ["deadcode", "errcheck", "gofmt", "goimports"],
+  "Vendor": false,
+  "Exclude": ["docs/..."]
+}

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/newrelic/infra-integrations-sdk/jmx"
+	"gopkg.in/newrelic/infra-integrations-sdk.v2/jmx"
 )
 
 func TestMain(m *testing.M) {
