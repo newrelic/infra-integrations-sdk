@@ -16,22 +16,27 @@ func SetupLogging(verbose bool) {
 	}
 }
 
+// Debug log to debug log level
 func Debug(format string, args ...interface{}) {
 	logrus.Debugf(format, args...)
 }
 
+// Info log to info log level
 func Info(format string, args ...interface{}) {
 	logrus.Infof(format, args...)
 }
 
+// Warn log to warn log level
 func Warn(format string, args ...interface{}) {
 	logrus.Warnf(format, args...)
 }
 
+// Error log to error log level
 func Error(format string, args ...interface{}) {
 	logrus.Errorf(format, args...)
 }
 
+// Fatal log to fatal log level and exits
 func Fatal(err error) {
 	logrus.WithError(err).Fatal("can't continue")
 }
