@@ -6,7 +6,7 @@ deps:
 
 devdeps: deps
 	@echo "====> Install depedencies for development..."
-	go get -v github.com/golang/lint/golint
+	go get -v golang.org/x/lint/golint
 	go get -v github.com/axw/gocov/gocov
 	go get -v github.com/AlekSi/gocov-xml
 
