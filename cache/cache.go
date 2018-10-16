@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/newrelic/infra-integrations-sdk/log"
+	"gopkg.in/newrelic/infra-integrations-sdk.v2/log"
 )
 
 var now = time.Now

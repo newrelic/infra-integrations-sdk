@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/cache"
-	"github.com/newrelic/infra-integrations-sdk/log"
-	"github.com/newrelic/infra-integrations-sdk/metric"
+	"gopkg.in/newrelic/infra-integrations-sdk.v2/args"
+	"gopkg.in/newrelic/infra-integrations-sdk.v2/cache"
+	"gopkg.in/newrelic/infra-integrations-sdk.v2/log"
+	"gopkg.in/newrelic/infra-integrations-sdk.v2/metric"
 )
 
 type inventoryItem map[string]interface{}

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/sdk"
+	sdk_args "gopkg.in/newrelic/infra-integrations-sdk.v2/args"
+	"gopkg.in/newrelic/infra-integrations-sdk.v2/sdk"
 )
 
 func TestNewIntegrationData(t *testing.T) {
