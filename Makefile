@@ -6,15 +6,14 @@ deps:
 
 devdeps: deps
 	@echo "====> Install depedencies for development..."
-	go get -v golang.org/x/lint/golint
+	go get -v gopkg.in/alecthomas/gometalinter.v2
+	gometalinter.v2 --install > /dev/null
 	go get -v github.com/axw/gocov/gocov
 	go get -v github.com/AlekSi/gocov-xml
 
 test: devdeps
-	@echo "====> Running golint..."
-	golint ./...
-	@echo "====> Running gofmt..."
-	gofmt -l .
+	@echo "====> Running linters..."
+	@gometalinter.v2 --config=.gometalinter.json ./...
 	@echo "====> Running unit tests..."
 	gocov test ./... | gocov-xml > coverage.xml
 
