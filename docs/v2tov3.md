@@ -121,7 +121,7 @@ The `v2` JSON schema also adds the following fields for each entry in the `metri
 
 This section enumerates the main changes you have to keep in mind if you want to upgrade from GoSDK `v2.x` to `v3`.
 
-For a complete view of the GoSDK `v3`, please refer to [TODO: link API and tutorials here]()
+For a complete view of the GoSDK `v3` tools, please refer to [toolset](/docs/toolset)
 
 ### Data persistence
 
