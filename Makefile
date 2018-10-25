@@ -1,4 +1,4 @@
-GOTOOLS = github.com/golang/lint/golint \
+GOTOOLS = golang.org/x/lint/golint \
           gopkg.in/alecthomas/gometalinter.v2 \
           github.com/axw/gocov/gocov \
           github.com/AlekSi/gocov-xml \
