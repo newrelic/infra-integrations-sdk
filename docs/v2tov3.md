@@ -130,6 +130,11 @@ For a complete view of the GoSDK `v3` tools, please refer to [toolset](/docs/too
 * `persist.Storer` is an interface that accepts multiple implementations: in-memory, disk-backed, or any other
   implementation provided by the user.
 * The file location of the disk-backed `persist.Storer` can be configured.
+* `cache.Cache` used an environment variable called `NRIA_CACHE_PATH` as the 
+  directory for storing the cache, if this variable was not set a warning 
+  was raised and a temporal directory was used instead. With `persist.Storer`
+  the `NRIA_CACHE_PATH` is no longer used and the default behavior is storing
+  the files in a temporal directory.
 
 ### Logging
 
