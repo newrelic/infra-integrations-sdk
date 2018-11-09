@@ -21,6 +21,12 @@ func TestNewEntity(t *testing.T) {
 	assert.Equal(t, "type", e.Metadata.Namespace)
 }
 
+func TestEntitiesRequireNameAndType(t *testing.T) {
+	_, err := newEntity("", "", nil)
+
+	assert.Error(t, err)
+}
+
 func TestAddNotificationEvent(t *testing.T) {
 	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore())
 	if err != nil {
