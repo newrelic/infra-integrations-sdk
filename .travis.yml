@@ -1,8 +1,8 @@
 language: go
 
 go:
-  - 1.7.x
-  - 1.8.x
+#  - 1.7.x until we skip golint on this version
+#  - 1.8.x until we skip golint on this version
   - 1.9.x
   - 1.10.x
 
