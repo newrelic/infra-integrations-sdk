@@ -61,7 +61,7 @@ func TestDefaultIntegrationWritesToStdout(t *testing.T) {
 	f.Close()
 	payload, err := ioutil.ReadFile(f.Name())
 	assert.NoError(t, err)
-	assert.Equal(t, `{"name":"integration","protocol_version":"2","integration_version":"4.0","data":[]}`, string(payload))
+	assert.Equal(t, "{\"name\":\"integration\",\"protocol_version\":\"2\",\"integration_version\":\"4.0\",\"data\":[]}\n", string(payload))
 }
 
 func TestIntegration_DefaultEntity(t *testing.T) {
