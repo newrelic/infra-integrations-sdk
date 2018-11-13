@@ -154,7 +154,7 @@ func (i *Integration) Publish() error {
 	if err != nil {
 		return err
 	}
-
+	output = append(output, []byte{'\n'}...)
 	_, err = i.writer.Write(output)
 	defer i.Clear()
 
