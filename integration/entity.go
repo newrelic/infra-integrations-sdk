@@ -43,7 +43,7 @@ func newLocalEntity(storer persist.Storer) *Entity {
 // newEntity creates a new remote-entity.
 func newEntity(name, namespace string, storer persist.Storer) (*Entity, error) {
 	// If one of the attributes is defined, both Name and Namespace are needed.
-	if name == "" && namespace != "" || name != "" && namespace == "" {
+	if name == "" || namespace == "" {
 		return nil, errors.New("entity name and type are required when defining one")
 	}
 
