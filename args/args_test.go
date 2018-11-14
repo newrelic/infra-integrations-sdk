@@ -23,6 +23,7 @@ func TestSetupArgsDefault(t *testing.T) {
 	var args argumentList
 
 	os.Setenv("HOSTNAME", "")
+	defer os.Clearenv()
 	os.Args = []string{"cmd"}
 
 	clearFlagSet()
@@ -52,6 +53,7 @@ func TestSetupArgsCommandLine(t *testing.T) {
 	var args argumentList
 
 	os.Setenv("HOSTNAME", "")
+	defer os.Clearenv()
 	os.Args = []string{
 		"cmd",
 		"-verbose",
@@ -98,6 +100,7 @@ func TestSetupArgsEnvironment(t *testing.T) {
 	os.Setenv("HOSTNAME", "otherhost")
 	os.Setenv("PORT", "1234")
 	os.Setenv("CONFIG", "{\"arg1\": 2}")
+	defer os.Clearenv()
 	os.Args = []string{"cmd"}
 
 	clearFlagSet()
@@ -118,6 +121,7 @@ func TestCliArgsOverrideEnvironmentArgs(t *testing.T) {
 	}
 
 	os.Setenv("VERBOSE", "false")
+	defer os.Clearenv()
 	os.Args = []string{
 		"cmd",
 		"-verbose",
@@ -140,6 +144,58 @@ func TestMetadataFlag(t *testing.T) {
 	assert.NoError(t, sdk_args.SetupArgs(&args))
 
 	assert.True(t, args.Metadata)
+}
+
+func TestClusterFlagViaCli(t *testing.T) {
+	os.Args = []string{
+		"cmd",
+		"-nri_cluster=foo",
+	}
+
+	clearFlagSet()
+	var args sdk_args.DefaultArgumentList
+	assert.NoError(t, sdk_args.SetupArgs(&args))
+
+	assert.Equal(t, "foo", args.NriCluster)
+}
+
+func TestClusterFlagViaEnvVar(t *testing.T) {
+	var args sdk_args.DefaultArgumentList
+
+	os.Setenv("NRI_CLUSTER", "bar")
+	defer os.Clearenv()
+	os.Args = []string{"cmd"}
+	clearFlagSet()
+
+	assert.NoError(t, sdk_args.SetupArgs(&args))
+
+	assert.Equal(t, "bar", args.NriCluster)
+}
+
+func TestServiceFlagViaCli(t *testing.T) {
+	os.Args = []string{
+		"cmd",
+		"-nri_service=foo",
+	}
+
+	clearFlagSet()
+	var args sdk_args.DefaultArgumentList
+	assert.NoError(t, sdk_args.SetupArgs(&args))
+
+	assert.Equal(t, "foo", args.NriService)
+}
+
+func TestServiceFlagViaEnvVar(t *testing.T) {
+	var args sdk_args.DefaultArgumentList
+
+	os.Setenv("NRI_SERVICE", "bar")
+	defer os.Clearenv()
+	os.Args = []string{"cmd"}
+
+	clearFlagSet()
+	assert.NoError(t, sdk_args.SetupArgs(&args))
+
+	assert.Equal(t, "bar", args.NriService)
 }
 
 func TestSetupArgsErrors(t *testing.T) {

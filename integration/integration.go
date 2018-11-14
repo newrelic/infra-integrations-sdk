@@ -16,7 +16,17 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/persist"
 )
 
-const protocolVersion = "2"
+// Custom attribute keys:
+const (
+	CustomAttrPrefix  = "NRI_"
+	CustomAttrCluster = "NRI_CLUSTER"
+	CustomAttrService = "NRI_SERVICE"
+)
+
+// NR infrastructure agent protocol version
+const (
+	protocolVersion = "2"
+)
 
 // Integration defines the format of the output JSON that integrations will return for protocol 2.
 type Integration struct {
@@ -127,11 +137,18 @@ func (i *Integration) Entity(name, namespace string) (e *Entity, err error) {
 	if defaultArgs.Metadata {
 		for _, element := range os.Environ() {
 			variable := strings.Split(element, "=")
-			prefix := fmt.Sprintf("NRI_%s_", strings.ToUpper(i.Name))
+			prefix := fmt.Sprintf("%s%s_", CustomAttrPrefix, strings.ToUpper(i.Name))
 			if strings.HasPrefix(variable[0], prefix) {
 				e.setCustomAttribute(strings.TrimPrefix(variable[0], prefix), variable[1])
 			}
 		}
+	}
+
+	if defaultArgs.NriCluster != "" {
+		e.setCustomAttribute(CustomAttrCluster, defaultArgs.NriCluster)
+	}
+	if defaultArgs.NriService != "" {
+		e.setCustomAttribute(CustomAttrService, defaultArgs.NriService)
 	}
 
 	i.Entities = append(i.Entities, e)

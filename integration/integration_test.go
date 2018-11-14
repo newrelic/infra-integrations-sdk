@@ -73,11 +73,8 @@ func TestIntegration_DefaultEntity(t *testing.T) {
 }
 
 func TestDefaultArguments(t *testing.T) {
-	type argumentList struct {
-		sdk_args.DefaultArgumentList
-	}
+	al := sdk_args.DefaultArgumentList{}
 
-	var al argumentList
 	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
 	assert.NoError(t, err)
 
@@ -102,6 +99,33 @@ func TestDefaultArguments(t *testing.T) {
 	if al.Verbose {
 		t.Error()
 	}
+}
+
+func TestClusterAndServiceArgumentsAreAddedToMetadata(t *testing.T) {
+	al := sdk_args.DefaultArgumentList{}
+
+	os.Setenv("NRI_CLUSTER", "foo")
+	os.Setenv("NRI_SERVICE", "bar")
+	defer os.Clearenv()
+	os.Args = []string{"cmd"}
+	flag.CommandLine = flag.NewFlagSet("cmd", flag.ContinueOnError)
+
+	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
+	assert.NoError(t, err)
+
+	e, err := i.Entity("name", "ns")
+	assert.NoError(t, err)
+
+	assert.Equal(t, []metric.Attribute{
+		{
+			Key:   CustomAttrCluster,
+			Value: "foo",
+		},
+		{
+			Key:   CustomAttrService,
+			Value: "bar",
+		},
+	}, e.customAttributes)
 }
 
 func TestCustomArguments(t *testing.T) {
