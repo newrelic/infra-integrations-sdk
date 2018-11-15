@@ -19,8 +19,8 @@ import (
 // Custom attribute keys:
 const (
 	CustomAttrPrefix  = "NRI_"
-	CustomAttrCluster = "NRI_CLUSTER"
-	CustomAttrService = "NRI_SERVICE"
+	CustomAttrCluster = "cluster_name"
+	CustomAttrService = "service_name"
 )
 
 // NR infrastructure agent protocol version
