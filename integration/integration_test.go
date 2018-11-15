@@ -128,6 +128,23 @@ func TestClusterAndServiceArgumentsAreAddedToMetadata(t *testing.T) {
 	}, e.customAttributes)
 }
 
+func TestAddHostnameFlagDecoratesEntities(t *testing.T) {
+	al := sdk_args.DefaultArgumentList{}
+
+	os.Args = []string{"cmd", "-nri_add_hostname"}
+	flag.CommandLine = flag.NewFlagSet("cmd", flag.ContinueOnError)
+
+	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
+	assert.NoError(t, err)
+
+	assert.True(t, i.LocalEntity().AddHostname)
+
+	e, err := i.Entity("name", "ns")
+	assert.NoError(t, err)
+
+	assert.True(t, e.AddHostname)
+}
+
 func TestCustomArguments(t *testing.T) {
 	type argumentList struct {
 		sdk_args.DefaultArgumentList

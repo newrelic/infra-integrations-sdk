@@ -34,6 +34,7 @@ type Integration struct {
 	ProtocolVersion    string    `json:"protocol_version"`
 	IntegrationVersion string    `json:"integration_version"`
 	Entities           []*Entity `json:"data"`
+	addHostnameToMeta  bool
 	locker             sync.Locker
 	storer             persist.Storer
 	prettyOutput       bool
@@ -80,6 +81,7 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 	}
 	defaultArgs := args.GetDefaultArgs(i.args)
 	i.prettyOutput = defaultArgs.Pretty
+	i.addHostnameToMeta = defaultArgs.NriAddHostname
 
 	// Setting default values, if not set yet
 	if i.logger == nil {
@@ -108,7 +110,7 @@ func (i *Integration) LocalEntity() *Entity {
 		}
 	}
 
-	e := newLocalEntity(i.storer)
+	e := newLocalEntity(i.storer, i.addHostnameToMeta)
 
 	i.Entities = append(i.Entities, e)
 
@@ -127,7 +129,7 @@ func (i *Integration) Entity(name, namespace string) (e *Entity, err error) {
 		}
 	}
 
-	e, err = newEntity(name, namespace, i.storer)
+	e, err = newEntity(name, namespace, i.storer, i.addHostnameToMeta)
 	if err != nil {
 		return nil, err
 	}
