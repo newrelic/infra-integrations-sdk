@@ -4,16 +4,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## 3.[TO-BE-DEFINED]
+## 3.0.3
+
+### Changed
+
+- Replaces golint with gometalinter
+
+### Fixed
+
+- This release solves internal SDK dependency failures (targeting v2 via gopkg.in) as now master uses v3.
+- Fixed minor lint issues
+
+## 3.0.2
 
 ### Added
 - Boolean support for *Gauge* metrics via `setMetric`
 - Adds `json.Unmarsall` support to `metric.Set`
 - Getters (HasMetrics, HasEvents, HasInventory) to the `args` package 
 to avoid calling `All() || Metrics`
+- Toolset documentation
+- Tutorial using remote entities
+- FAQ
+- Maximum inventory key length validation
+- Attributes required
+- JMX concurrency support
+
 
 ### Fixed
-- Fixes Integration.Publish test
+- Rate & delta names collision on the Store
+- Negative rate & delta values
+- Prefix on the logger
+
+### Changed
+- Improved documentation
+- Arguments `All` attribute to dynamic method `All()`
+- NewSet does not return error
+- NewSet allows Attributes to uniquely identify metric sets
 
 ## 3.0.1
 
