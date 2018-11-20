@@ -15,3 +15,10 @@ For Example:
 An engineer installs the infrastructure agent on host1 and configures the out-of-the-box mysql integration to monitor a MySQL server running on host2. Host1 would be an entity as far as the Infrastructure entity is concerned and the MySQL servers on Host2 would be a “remote entity”.
  
 An engineer installs the infrastructure agent on host1 and configures the out-of-the-box kubernetes integration and collects metrics and inventory about the whole cluster, replica sets, pods and nodes.
+
+### Metadata decoration
+
+Entity metrics could be decorated with metadata.
+
+At the moment integrations can only decorate their entities metrics with `hostname`, `clusterName` and `serviceName`.
+These are all optional decoration values provided via [args](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/args.md)
