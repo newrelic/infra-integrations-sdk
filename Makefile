@@ -1,7 +1,16 @@
-GOTOOLS = golang.org/x/lint/golint \
-          gopkg.in/alecthomas/gometalinter.v2 \
+GO_VERSION = $(shell go version | sed 's/[^0-9.]*\([0-9.]*\).*/\1/')
+
+GOTOOLS = gopkg.in/alecthomas/gometalinter.v2 \
           github.com/axw/gocov/gocov \
           github.com/AlekSi/gocov-xml \
+
+# golint only supports the last two Go versions, update the value when its not supported anymore.
+GOLINT_MIN_GO_VERSION = 1.9
+
+# If GO_VERSION is equal or higher than the GOLINT_MIN_GO_VERSION we use golint.
+ifeq ($(GO_VERSION),$(shell echo "$(GOLINT_MIN_GO_VERSION)\n$(GO_VERSION)" | sort -V | tail -n1))
+	GOTOOLS += golang.org/x/lint/golint
+endif
 
 # Temporary patch to avoid build failing because of the outdated documentation example
 PKGS = $(shell go list ./... | egrep -v "\/docs\/|jmx")
