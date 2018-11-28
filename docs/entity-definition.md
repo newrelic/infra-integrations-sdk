@@ -18,7 +18,7 @@ An engineer installs the infrastructure agent on host1 and configures the out-of
 
 ### Metadata decoration
 
-Entity metrics could be decorated with metadata.
+Since [agent v1.0.1052](https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes/clone-new-relic-infrastructure-agent-101052) entity metrics could be decorated with metadata.
 
 At the moment integrations can only decorate their entities metrics with `hostname`, `clusterName` and `serviceName`.
 These are all optional decoration values provided via [args](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/args.md)
