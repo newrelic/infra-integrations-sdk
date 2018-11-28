@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+
+## NEXT
+
+### Added
+
+- Added metadata optional decoration for entity metrics (`hostname`, 
+  `clusterName` and `serviceName`), [check doc](/docs/entity-definition.md)
+
 ## 3.0.3
 
 ### Changed
