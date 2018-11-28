@@ -16,7 +16,17 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/persist"
 )
 
-const protocolVersion = "2"
+// Custom attribute keys:
+const (
+	CustomAttrPrefix  = "NRI_"
+	CustomAttrCluster = "cluster_name"
+	CustomAttrService = "service_name"
+)
+
+// NR infrastructure agent protocol version
+const (
+	protocolVersion = "2"
+)
 
 // Integration defines the format of the output JSON that integrations will return for protocol 2.
 type Integration struct {
@@ -24,6 +34,7 @@ type Integration struct {
 	ProtocolVersion    string    `json:"protocol_version"`
 	IntegrationVersion string    `json:"integration_version"`
 	Entities           []*Entity `json:"data"`
+	addHostnameToMeta  bool
 	locker             sync.Locker
 	storer             persist.Storer
 	prettyOutput       bool
@@ -70,6 +81,7 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 	}
 	defaultArgs := args.GetDefaultArgs(i.args)
 	i.prettyOutput = defaultArgs.Pretty
+	i.addHostnameToMeta = defaultArgs.NriAddHostname
 
 	// Setting default values, if not set yet
 	if i.logger == nil {
@@ -98,7 +110,7 @@ func (i *Integration) LocalEntity() *Entity {
 		}
 	}
 
-	e := newLocalEntity(i.storer)
+	e := newLocalEntity(i.storer, i.addHostnameToMeta)
 
 	i.Entities = append(i.Entities, e)
 
@@ -117,7 +129,7 @@ func (i *Integration) Entity(name, namespace string) (e *Entity, err error) {
 		}
 	}
 
-	e, err = newEntity(name, namespace, i.storer)
+	e, err = newEntity(name, namespace, i.storer, i.addHostnameToMeta)
 	if err != nil {
 		return nil, err
 	}
@@ -127,11 +139,18 @@ func (i *Integration) Entity(name, namespace string) (e *Entity, err error) {
 	if defaultArgs.Metadata {
 		for _, element := range os.Environ() {
 			variable := strings.Split(element, "=")
-			prefix := fmt.Sprintf("NRI_%s_", strings.ToUpper(i.Name))
+			prefix := fmt.Sprintf("%s%s_", CustomAttrPrefix, strings.ToUpper(i.Name))
 			if strings.HasPrefix(variable[0], prefix) {
 				e.setCustomAttribute(strings.TrimPrefix(variable[0], prefix), variable[1])
 			}
 		}
+	}
+
+	if defaultArgs.NriCluster != "" {
+		e.setCustomAttribute(CustomAttrCluster, defaultArgs.NriCluster)
+	}
+	if defaultArgs.NriService != "" {
+		e.setCustomAttribute(CustomAttrService, defaultArgs.NriService)
 	}
 
 	i.Entities = append(i.Entities, e)
