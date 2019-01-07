@@ -22,3 +22,14 @@ Since [agent v1.0.1052](https://docs.newrelic.com/docs/release-notes/infrastruct
 
 At the moment integrations can only decorate their entities metrics with `hostname`, `clusterName` and `serviceName`.
 These are all optional decoration values provided via [args](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/args.md)
+
+#### Custom provided metadata
+
+Any integration can be decorated by enabling `metadata` flag on [args](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/args.md) package.
+
+If this flag is enabled all samples will be decorated with provided key-value pairs.
+
+At the moment metadata could only be provided via environment variables. These should be prefixed with `NRI_` and value
+will be provided after an equal sign `=` separator. 
+
+Ie: `NRI_{INTEGRATION_NAME}_FOO=BAR` will decorate samples with a `FOO` attribute holding a `BAR`value.

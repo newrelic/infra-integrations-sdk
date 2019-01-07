@@ -30,6 +30,7 @@ consider. All of them are `bool` and default to `false`. They are described foll
 * `Metrics`: whether the integration should publish metrics' data.
 * `Pretty`: whether the output JSON must be pretty-formatted.
 * `Verbose`: whether the integration should log extra, detailed information.
+* `Metadata`: whether the integration should be decorated with `NRI_`prefixed environment provided key-value attributes (ie: `NRI_FOO=BAR`).
 * `NriAddHostname`: if true, agent will decorate all the metrics with the `hostname`.
 * `NriCluster`: if any value is provided, all the metrics will be decorated with `clusterName: value`. 
 * `NriService`: if any value is provided, all the metrics will be decorated with `serviceName: value`. 
