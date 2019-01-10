@@ -90,7 +90,7 @@ You will receive the following output
 Initialize an integration generating a scaffold.
 
 Usage:
-  nr-integrations-builder init [integration name] [flags]
+  nr-integrations-builder init [integration_name] [flags]
 
 Flags:
   -n, --company-name string       Company name (required)
@@ -104,6 +104,8 @@ Global Flags:
       --verbose         verbose output
 ```
 It's obligatory to specify `company-name` and `company-prefix` flags. Otherwise, the `nr-integrations-builder` will not initialize the integration.
+
+Keep in mind the builder will use the `integration_name` for auto generating golang files. For this reason choose a name following the [golang naming convention](https://blog.golang.org/package-names).
 
 To initialize the integration and generate the scaffold, run
 ```bash
