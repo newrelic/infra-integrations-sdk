@@ -57,11 +57,11 @@ func TestMain(m *testing.M) {
 func TestJmxOpen(t *testing.T) {
 	defer Close()
 
-	if err := Open("", "", "", ""); err != nil {
+	if err := Open("", "", "", "", "", "", "", ""); err != nil {
 		t.Error(err)
 	}
 
-	if Open("", "", "", "") == nil {
+	if Open("", "", "", "", "", "", "", "") == nil {
 		t.Error()
 	}
 }
@@ -69,7 +69,7 @@ func TestJmxOpen(t *testing.T) {
 func TestJmxQuery(t *testing.T) {
 	defer Close()
 
-	if err := openWait("", "", "", "", openAttempts); err != nil {
+	if err := openWait("", "", "", "", "", "", "", "", openAttempts); err != nil {
 		t.Error(err)
 	}
 
@@ -81,7 +81,7 @@ func TestJmxQuery(t *testing.T) {
 func TestJmxCrashQuery(t *testing.T) {
 	defer Close()
 
-	if err := openWait("", "", "", "", openAttempts); err != nil {
+	if err := openWait("", "", "", "", "", "", "", "", openAttempts); err != nil {
 		t.Error(err)
 	}
 
@@ -93,7 +93,7 @@ func TestJmxCrashQuery(t *testing.T) {
 func TestJmxInvalidQuery(t *testing.T) {
 	defer Close()
 
-	if err := openWait("", "", "", "", openAttempts); err != nil {
+	if err := openWait("", "", "", "", "", "", "", "", openAttempts); err != nil {
 		t.Error(err)
 	}
 
@@ -105,7 +105,7 @@ func TestJmxInvalidQuery(t *testing.T) {
 func TestJmxTimeoutQuery(t *testing.T) {
 	defer Close()
 
-	if err := openWait("", "", "", "", openAttempts); err != nil {
+	if err := openWait("", "", "", "", "", "", "", "", openAttempts); err != nil {
 		t.Error(err)
 	}
 
@@ -123,7 +123,7 @@ func TestJmxNoTimeoutQuery(t *testing.T) {
 
 	defer Close()
 
-	if err := openWait("", "", "", "", openAttempts); err != nil {
+	if err := openWait("", "", "", "", "", "", "", "", openAttempts); err != nil {
 		t.Error(err)
 	}
 
@@ -137,7 +137,7 @@ func TestJmxTimeoutBigQuery(t *testing.T) {
 
 	defer Close()
 
-	if err := openWait("", "", "", "", openAttempts); err != nil {
+	if err := openWait("", "", "", "", "", "", "", "", openAttempts); err != nil {
 		t.Error(err)
 	}
 
@@ -151,13 +151,13 @@ func TestJmxTimeoutBigQuery(t *testing.T) {
 }
 
 // tests can overlap, and as jmx-cmd is a singleton, waiting for it to be closed is mandatory
-func openWait(hostname, port, username, password string, attempts int) error {
-	err := Open(hostname, port, username, password)
+func openWait(hostname, port, username, password, keyStore, keyStorePwd, trustStore, trustStorePwd string, attempts int) error {
+	err := Open(hostname, port, username, password, keyStore, keyStorePwd, trustStore, trustStorePwd)
 	if err == ErrJmxCmdRunning && attempts > 0 {
 		attempts--
 		time.Sleep(10 * time.Millisecond)
 
-		return openWait(hostname, port, username, password, attempts)
+		return openWait(hostname, port, username, password, keyStore, keyStorePwd, trustStore, trustStorePwd, attempts)
 	}
 
 	return err

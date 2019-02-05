@@ -39,7 +39,7 @@ const (
 	jmxLineBuffer = 4 * 1024 * 1024 // Max 4MB per line. If single lines are outputting more JSON than that, we likely need smaller-scoped JMX queries
 )
 
-func getCommand(hostname, port, username, password string) []string {
+func getCommand(hostname, port, username, password, keyStore, keyStorePwd, trustStore, trustStorePwd string) []string {
 	var cliCommand []string
 
 	if os.Getenv("NR_JMX_TOOL") != "" {
@@ -57,7 +57,7 @@ func getCommand(hostname, port, username, password string) []string {
 }
 
 // Open will start the nrjmx command with the provided connection parameters.
-func Open(hostname, port, username, password string) error {
+func Open(hostname, port, username, password, keyStore, keyStorePwd, trustStore, trsutStorePwd string) error {
 	lock.Lock()
 	defer lock.Unlock()
 
@@ -75,7 +75,7 @@ func Open(hostname, port, username, password string) error {
 	var err error
 	var ctx context.Context
 
-	cliCommand := getCommand(hostname, port, username, password)
+	cliCommand := getCommand(hostname, port, username, password, keyStore, keyStorePwd, trustStore, trsutStorePwd)
 
 	ctx, cancel = context.WithCancel(context.Background())
 	cmd = exec.CommandContext(ctx, cliCommand[0], cliCommand[1:]...)
