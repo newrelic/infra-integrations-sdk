@@ -151,13 +151,13 @@ func TestJmxTimeoutBigQuery(t *testing.T) {
 }
 
 // tests can overlap, and as jmx-cmd is a singleton, waiting for it to be closed is mandatory
-func openWait(hostname, port, username, password, keyStore, keyStorePwd, trustStore, trustStorePwd string, attempts int) error {
-	err := Open(hostname, port, username, password, keyStore, keyStorePwd, trustStore, trustStorePwd)
+func openWait(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword string, attempts int) error {
+	err := Open(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword)
 	if err == ErrJmxCmdRunning && attempts > 0 {
 		attempts--
 		time.Sleep(10 * time.Millisecond)
 
-		return openWait(hostname, port, username, password, keyStore, keyStorePwd, trustStore, trustStorePwd, attempts)
+		return openWait(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword, attempts)
 	}
 
 	return err
