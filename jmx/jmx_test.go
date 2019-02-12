@@ -65,11 +65,33 @@ func TestJmxOpen(t *testing.T) {
 		t.Error()
 	}
 }
+func TestJmxOpenWithSSL(t *testing.T) {
+	defer Close()
+
+	if err := OpenWithSSL("", "", "", "", "", "", "", ""); err != nil {
+		t.Error(err)
+	}
+
+	if OpenWithSSL("", "", "", "", "", "", "", "") == nil {
+		t.Error()
+	}
+}
 
 func TestJmxQuery(t *testing.T) {
 	defer Close()
 
 	if err := openWait("", "", "", "", openAttempts); err != nil {
+		t.Error(err)
+	}
+
+	if _, err := Query("empty", timeout); err != nil {
+		t.Error(err)
+	}
+}
+func TestJmxQueryWithSSL(t *testing.T) {
+	defer Close()
+
+	if err := openWaitWithSSL("", "", "", "", "", "", "", "", openAttempts); err != nil {
 		t.Error(err)
 	}
 
@@ -89,6 +111,17 @@ func TestJmxCrashQuery(t *testing.T) {
 		t.Error()
 	}
 }
+func TestJmxCrashQueryWithSSL(t *testing.T) {
+	defer Close()
+
+	if err := openWaitWithSSL("", "", "", "", "", "", "", "", openAttempts); err != nil {
+		t.Error(err)
+	}
+
+	if _, err := Query("crash", timeout); err == nil {
+		t.Error()
+	}
+}
 
 func TestJmxInvalidQuery(t *testing.T) {
 	defer Close()
@@ -101,11 +134,37 @@ func TestJmxInvalidQuery(t *testing.T) {
 		t.Error()
 	}
 }
+func TestJmxInvalidQueryWithSSL(t *testing.T) {
+	defer Close()
+
+	if err := openWaitWithSSL("", "", "", "", "", "", "", "", openAttempts); err != nil {
+		t.Error(err)
+	}
+
+	if _, err := Query("invalid", timeout); err == nil {
+		t.Error()
+	}
+}
 
 func TestJmxTimeoutQuery(t *testing.T) {
 	defer Close()
 
 	if err := openWait("", "", "", "", openAttempts); err != nil {
+		t.Error(err)
+	}
+
+	if _, err := Query("timeout", timeout); err == nil {
+		t.Error()
+	}
+
+	if _, err := Query("empty", timeout); err == nil {
+		t.Error()
+	}
+}
+func TestJmxTimeoutQueryWithSSL(t *testing.T) {
+	defer Close()
+
+	if err := openWaitWithSSL("", "", "", "", "", "", "", "", openAttempts); err != nil {
 		t.Error(err)
 	}
 
@@ -131,6 +190,19 @@ func TestJmxNoTimeoutQuery(t *testing.T) {
 		t.Error(err)
 	}
 }
+func TestJmxNoTimeoutQueryWithSSL(t *testing.T) {
+	t.Skip("unreliable CI test")
+
+	defer Close()
+
+	if err := openWaitWithSSL("", "", "", "", "", "", "", "", openAttempts); err != nil {
+		t.Error(err)
+	}
+
+	if _, err := Query("timeout", 1500); err != nil {
+		t.Error(err)
+	}
+}
 
 func TestJmxTimeoutBigQuery(t *testing.T) {
 	t.Skip("unreliable CI test")
@@ -138,6 +210,23 @@ func TestJmxTimeoutBigQuery(t *testing.T) {
 	defer Close()
 
 	if err := openWait("", "", "", "", openAttempts); err != nil {
+		t.Error(err)
+	}
+
+	if _, err := Query("bigPayload", timeout); err != nil {
+		t.Error(err)
+	}
+
+	if _, err := Query("bigPayloadError", timeout); err == nil {
+		t.Error()
+	}
+}
+func TestJmxTimeoutBigQueryWithSSL(t *testing.T) {
+	t.Skip("unreliable CI test")
+
+	defer Close()
+
+	if err := openWaitWithSSL("", "", "", "", "", "", "", "", openAttempts); err != nil {
 		t.Error(err)
 	}
 
@@ -158,6 +247,18 @@ func openWait(hostname, port, username, password string, attempts int) error {
 		time.Sleep(10 * time.Millisecond)
 
 		return openWait(hostname, port, username, password, attempts)
+	}
+
+	return err
+}
+
+func openWaitWithSSL(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword string, attempts int) error {
+	err := OpenWithSSL(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword)
+	if err == ErrJmxCmdRunning && attempts > 0 {
+		attempts--
+		time.Sleep(10 * time.Millisecond)
+
+		return openWaitWithSSL(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword, attempts)
 	}
 
 	return err

@@ -56,6 +56,27 @@ func getCommand(hostname, port, username, password string) []string {
 	return cliCommand
 }
 
+func getCommandWithSSL(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword string) []string {
+	var cliCommand []string
+
+	if os.Getenv("NR_JMX_TOOL") != "" {
+		cliCommand = strings.Split(os.Getenv("NR_JMX_TOOL"), " ")
+	} else {
+		cliCommand = []string{jmxCommand}
+	}
+
+	cliCommand = append(cliCommand, "--hostname", hostname, "--port", port)
+	if username != "" && password != "" {
+		cliCommand = append(cliCommand, "--username", username, "--password", password)
+	}
+
+	if keyStore != "" && keyStorePassword != "" && trustStore != "" && trustStorePassword != "" {
+		cliCommand = append(cliCommand, "--keyStore", keyStore, "--keyStorePassword", keyStorePassword, "--trustStore", trustStore, "--trustStorePassword", trustStorePassword)
+	}
+
+	return cliCommand
+}
+
 // Open will start the nrjmx command with the provided connection parameters.
 func Open(hostname, port, username, password string) error {
 	lock.Lock()
@@ -76,6 +97,61 @@ func Open(hostname, port, username, password string) error {
 	var ctx context.Context
 
 	cliCommand := getCommand(hostname, port, username, password)
+
+	ctx, cancel = context.WithCancel(context.Background())
+	cmd = exec.CommandContext(ctx, cliCommand[0], cliCommand[1:]...)
+
+	if cmdOut, err = cmd.StdoutPipe(); err != nil {
+		return err
+	}
+	if cmdIn, err = cmd.StdinPipe(); err != nil {
+		return err
+	}
+
+	if cmdError, err = cmd.StderrPipe(); err != nil {
+		return err
+	}
+
+	if err = cmd.Start(); err != nil {
+		return err
+	}
+
+	go func() {
+		if err = cmd.Wait(); err != nil {
+			stdErr, _ := ioutil.ReadAll(cmdError)
+			cmdErr <- fmt.Errorf("JMX tool exited with error: %s [state: %s] (%s)", err, cmd.ProcessState, string(stdErr))
+		}
+
+		lock.Lock()
+		defer lock.Unlock()
+		cmd = nil
+
+		done.Done()
+	}()
+
+	return nil
+}
+
+// OpenWithSSL will start the nrjmx command with the provided SSL connection parameters
+func OpenWithSSL(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword string) error {
+	lock.Lock()
+	defer lock.Unlock()
+
+	if cmd != nil {
+		return ErrJmxCmdRunning
+	}
+
+	// Drain error channel to prevent showing past errors
+	if len(cmdErr) > 0 {
+		<-cmdErr
+	}
+
+	done.Add(1)
+
+	var err error
+	var ctx context.Context
+
+	cliCommand := getCommandWithSSL(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword)
 
 	ctx, cancel = context.WithCancel(context.Background())
 	cmd = exec.CommandContext(ctx, cliCommand[0], cliCommand[1:]...)
