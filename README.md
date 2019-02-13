@@ -125,7 +125,7 @@ You can easily fetch it using:
 ### JMX support
 
 The Integrations Go lang SDK supports getting metrics through JMX by calling the
-`jmx.Open()`, `jmx.Query()` and `jmx.Close()` functions. This JMX support relies
+`jmx.Open()`, `jmx.OpenWithSSL`, `jmx.Query()` and `jmx.Close()` functions. This JMX support relies
 on the nrjmx tool. Follow the steps in
 the [nrjmx](https://github.com/newrelic/nrjmx) repository to build it and set
 the `NR_JMX_TOOL` environment variable to point to the location of the nrjmx

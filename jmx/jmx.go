@@ -39,25 +39,38 @@ const (
 	jmxLineBuffer = 4 * 1024 * 1024 // Max 4MB per line. If single lines are outputting more JSON than that, we likely need smaller-scoped JMX queries
 )
 
-func getCommand(hostname, port, username, password string) []string {
-	var cliCommand []string
-
+func getCommand(hostname, port, username, password string) (c []string) {
 	if os.Getenv("NR_JMX_TOOL") != "" {
-		cliCommand = strings.Split(os.Getenv("NR_JMX_TOOL"), " ")
+		c = strings.Split(os.Getenv("NR_JMX_TOOL"), " ")
 	} else {
-		cliCommand = []string{jmxCommand}
+		c = []string{jmxCommand}
 	}
 
-	cliCommand = append(cliCommand, "--hostname", hostname, "--port", port)
+	c = append(c, "--hostname", hostname, "--port", port)
 	if username != "" && password != "" {
-		cliCommand = append(cliCommand, "--username", username, "--password", password)
+		c = append(c, "--username", username, "--password", password)
 	}
 
-	return cliCommand
+	return
+}
+
+func getCommandWithSSL(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword string) []string {
+	c := getCommand(hostname, port, username, password)
+
+	if keyStore != "" && keyStorePassword != "" && trustStore != "" && trustStorePassword != "" {
+		c = append(c, "--keyStore", keyStore, "--keyStorePassword", keyStorePassword, "--trustStore", trustStore, "--trustStorePassword", trustStorePassword)
+	}
+
+	return c
 }
 
 // Open will start the nrjmx command with the provided connection parameters.
 func Open(hostname, port, username, password string) error {
+	return OpenWithSSL(hostname, port, username, password, "", "", "", "")
+}
+
+// OpenWithSSL will start the nrjmx command with the provided SSL connection parameters
+func OpenWithSSL(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword string) error {
 	lock.Lock()
 	defer lock.Unlock()
 
@@ -75,7 +88,7 @@ func Open(hostname, port, username, password string) error {
 	var err error
 	var ctx context.Context
 
-	cliCommand := getCommand(hostname, port, username, password)
+	cliCommand := getCommandWithSSL(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword)
 
 	ctx, cancel = context.WithCancel(context.Background())
 	cmd = exec.CommandContext(ctx, cliCommand[0], cliCommand[1:]...)
