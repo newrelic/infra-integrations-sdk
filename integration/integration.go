@@ -18,9 +18,7 @@ import (
 
 // Custom attribute keys:
 const (
-	CustomAttrPrefix  = "NRI_"
-	CustomAttrCluster = "cluster_name"
-	CustomAttrService = "service_name"
+	CustomAttrPrefix = "NRI_"
 )
 
 // NR infrastructure agent protocol version
@@ -129,12 +127,27 @@ func (i *Integration) Entity(name, namespace string) (e *Entity, err error) {
 		}
 	}
 
-	e, err = newEntity(name, namespace, i.storer, i.addHostnameToMeta)
+	defaultArgs := args.GetDefaultArgs(i.args)
+	var eOpts []entityOption
+
+	if defaultArgs.NriCluster != "" {
+		eOpts = append(eOpts, func(e *Entity) error {
+			e.Cluster = defaultArgs.NriCluster
+			return nil
+		})
+	}
+
+	if defaultArgs.NriService != "" {
+		eOpts = append(eOpts, func(e *Entity) error {
+			e.Service = defaultArgs.NriService
+			return nil
+		})
+	}
+
+	e, err = newEntity(name, namespace, i.storer, i.addHostnameToMeta, eOpts...)
 	if err != nil {
 		return nil, err
 	}
-
-	defaultArgs := args.GetDefaultArgs(i.args)
 
 	if defaultArgs.Metadata {
 		for _, element := range os.Environ() {
@@ -144,13 +157,6 @@ func (i *Integration) Entity(name, namespace string) (e *Entity, err error) {
 				e.setCustomAttribute(strings.TrimPrefix(variable[0], prefix), variable[1])
 			}
 		}
-	}
-
-	if defaultArgs.NriCluster != "" {
-		e.setCustomAttribute(CustomAttrCluster, defaultArgs.NriCluster)
-	}
-	if defaultArgs.NriService != "" {
-		e.setCustomAttribute(CustomAttrService, defaultArgs.NriService)
 	}
 
 	i.Entities = append(i.Entities, e)

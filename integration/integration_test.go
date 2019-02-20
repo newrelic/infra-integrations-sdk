@@ -101,31 +101,35 @@ func TestDefaultArguments(t *testing.T) {
 	}
 }
 
-func TestClusterAndServiceArgumentsAreAddedToMetadata(t *testing.T) {
-	al := sdk_args.DefaultArgumentList{}
+func TestArgumentsSetEntityAttribute(t *testing.T) {
+	testCases := []struct {
+		envvar    string
+		attribute func(*Entity) string
+		value     string
+	}{
+		{"NRI_CLUSTER", func(e *Entity) string { return e.Cluster }, "foo"},
+		{"NRI_SERVICE", func(e *Entity) string { return e.Service }, "bar"},
+	}
 
-	os.Setenv("NRI_CLUSTER", "foo")
-	os.Setenv("NRI_SERVICE", "bar")
-	defer os.Clearenv()
-	os.Args = []string{"cmd"}
-	flag.CommandLine = flag.NewFlagSet("cmd", flag.ContinueOnError)
+	for _, test := range testCases {
+		t.Run(test.envvar, func(t *testing.T) {
 
-	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
-	assert.NoError(t, err)
+			al := sdk_args.DefaultArgumentList{}
 
-	e, err := i.Entity("name", "ns")
-	assert.NoError(t, err)
+			os.Setenv(test.envvar, test.value)
+			defer os.Clearenv()
+			os.Args = []string{"cmd"}
+			flag.CommandLine = flag.NewFlagSet("cmd", flag.ContinueOnError)
 
-	assert.Equal(t, []metric.Attribute{
-		{
-			Key:   CustomAttrCluster,
-			Value: "foo",
-		},
-		{
-			Key:   CustomAttrService,
-			Value: "bar",
-		},
-	}, e.customAttributes)
+			i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
+			assert.NoError(t, err)
+
+			e, err := i.Entity("name", "ns")
+			assert.NoError(t, err)
+
+			assert.Equal(t, test.value, test.attribute(e))
+		})
+	}
 }
 
 func TestAddHostnameFlagDecoratesEntities(t *testing.T) {
