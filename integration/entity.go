@@ -2,6 +2,7 @@ package integration
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/newrelic/infra-integrations-sdk/data/event"
@@ -10,6 +11,8 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/persist"
 )
 
+type entityOption func(*Entity) error
+
 // Entity is the producer of the data. Entity could be a host, a container, a pod, or whatever unit of meaning.
 type Entity struct {
 	Metadata    *EntityMetadata      `json:"entity,omitempty"`
@@ -17,6 +20,8 @@ type Entity struct {
 	Inventory   *inventory.Inventory `json:"inventory"`
 	Events      []*event.Event       `json:"events"`
 	AddHostname bool                 `json:"add_hostname,omitempty"` // add hostname to metadata at agent level
+	Cluster     string               `json:"cluster,omitempty"`      // add cluster to metadata at agent level
+	Service     string               `json:"service,omitempty"`      // add service to metadata at agent level
 	storer      persist.Storer
 	lock        sync.Locker
 	// CustomAttributes []metric.Attribute `json:"custom_attributes,omitempty"`
@@ -43,7 +48,13 @@ func newLocalEntity(storer persist.Storer, addHostnameToMetadata bool) *Entity {
 }
 
 // newEntity creates a new remote-entity.
-func newEntity(name, namespace string, storer persist.Storer, addHostnameToMetadata bool) (*Entity, error) {
+func newEntity(
+	name,
+	namespace string,
+	storer persist.Storer,
+	addHostnameToMetadata bool,
+	opts ...entityOption,
+) (*Entity, error) {
 	// If one of the attributes is defined, both Name and Namespace are needed.
 	if name == "" || namespace == "" {
 		return nil, errors.New("entity name and type are required when defining one")
@@ -57,6 +68,14 @@ func newEntity(name, namespace string, storer persist.Storer, addHostnameToMetad
 		AddHostname: addHostnameToMetadata,
 		storer:      storer,
 		lock:        &sync.Mutex{},
+	}
+
+	var err error
+	for _, opt := range opts {
+		if err = opt(&d); err != nil {
+			err = fmt.Errorf("error applying option to entity. %s", err)
+			return nil, err
+		}
 	}
 
 	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
