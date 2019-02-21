@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - SSL support for jmx package. Explained at https://github.com/newrelic/infra-integrations-sdk#jmx-support
 
+## Next Release
+
+### Changed
+
+- Protocol v2.1. NriCluster and NriService are set as entity attributes,
+  instead of decorating every sample.
+
 ## 3.1.0
 
 ### Added
