@@ -29,7 +29,7 @@ func TestCreation(t *testing.T) {
 	if i.IntegrationVersion != "1.0" {
 		t.Error()
 	}
-	if i.ProtocolVersion != "2" {
+	if i.ProtocolVersion != "2.1" {
 		t.Error()
 	}
 	if len(i.Entities) != 0 {
@@ -52,7 +52,7 @@ func TestDefaultIntegrationWritesToStdout(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "integration", i.Name)
 	assert.Equal(t, "4.0", i.IntegrationVersion)
-	assert.Equal(t, "2", i.ProtocolVersion)
+	assert.Equal(t, "2.1", i.ProtocolVersion)
 	assert.Equal(t, 0, len(i.Entities))
 
 	assert.NoError(t, i.Publish())
@@ -61,7 +61,7 @@ func TestDefaultIntegrationWritesToStdout(t *testing.T) {
 	f.Close()
 	payload, err := ioutil.ReadFile(f.Name())
 	assert.NoError(t, err)
-	assert.Equal(t, `{"name":"integration","protocol_version":"2","integration_version":"4.0","data":[]}`+"\n", string(payload))
+	assert.Equal(t, `{"name":"integration","protocol_version":"2.1","integration_version":"4.0","data":[]}`+"\n", string(payload))
 }
 
 func TestIntegration_DefaultEntity(t *testing.T) {
@@ -84,7 +84,7 @@ func TestDefaultArguments(t *testing.T) {
 	if i.IntegrationVersion != "1.0" {
 		t.Error()
 	}
-	if i.ProtocolVersion != "2" {
+	if i.ProtocolVersion != "2.1" {
 		t.Error()
 	}
 	if len(i.Entities) != 0 {
@@ -248,7 +248,7 @@ func TestIntegration_Publish(t *testing.T) {
 			expectedOutputRaw := []byte(`
 			{
 			  "name": "TestIntegration",
-			  "protocol_version": "2",
+			  "protocol_version": "2.1",
 			  "integration_version": "1.0",
 			  "data": [
 				{
