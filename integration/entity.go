@@ -2,7 +2,6 @@ package integration
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/newrelic/infra-integrations-sdk/data/event"
@@ -10,8 +9,6 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 )
-
-type entityOption func(*Entity) error
 
 // Entity is the producer of the data. Entity could be a host, a container, a pod, or whatever unit of meaning.
 type Entity struct {
@@ -47,13 +44,14 @@ func newLocalEntity(storer persist.Storer, addHostnameToMetadata bool) *Entity {
 	}
 }
 
-// newEntity creates a new remote-entity.
+// newEntityWithAttributes creates a new remote-entity with entity attributes.
 func newEntity(
 	name,
 	namespace string,
 	storer persist.Storer,
 	addHostnameToMetadata bool,
-	opts ...entityOption,
+	cluster string,
+	service string,
 ) (*Entity, error) {
 	// If one of the attributes is defined, both Name and Namespace are needed.
 	if name == "" || namespace == "" {
@@ -66,16 +64,10 @@ func newEntity(
 		Inventory:   inventory.New(),
 		Events:      []*event.Event{},
 		AddHostname: addHostnameToMetadata,
+		Cluster:     cluster,
+		Service:     service,
 		storer:      storer,
 		lock:        &sync.Mutex{},
-	}
-
-	var err error
-	for _, opt := range opts {
-		if err = opt(&d); err != nil {
-			err = fmt.Errorf("error applying option to entity. %s", err)
-			return nil, err
-		}
 	}
 
 	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.

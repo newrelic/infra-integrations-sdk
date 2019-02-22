@@ -128,23 +128,8 @@ func (i *Integration) Entity(name, namespace string) (e *Entity, err error) {
 	}
 
 	defaultArgs := args.GetDefaultArgs(i.args)
-	var eOpts []entityOption
 
-	if defaultArgs.NriCluster != "" {
-		eOpts = append(eOpts, func(e *Entity) error {
-			e.Cluster = defaultArgs.NriCluster
-			return nil
-		})
-	}
-
-	if defaultArgs.NriService != "" {
-		eOpts = append(eOpts, func(e *Entity) error {
-			e.Service = defaultArgs.NriService
-			return nil
-		})
-	}
-
-	e, err = newEntity(name, namespace, i.storer, i.addHostnameToMeta, eOpts...)
+	e, err = newEntity(name, namespace, i.storer, i.addHostnameToMeta, defaultArgs.NriCluster, defaultArgs.NriService)
 	if err != nil {
 		return nil, err
 	}
