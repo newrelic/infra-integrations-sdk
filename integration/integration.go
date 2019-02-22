@@ -23,7 +23,7 @@ const (
 
 // NR infrastructure agent protocol version
 const (
-	protocolVersion = "2.1"
+	protocolVersion = "3"
 )
 
 // Integration defines the format of the output JSON that integrations will return for protocol 2.
