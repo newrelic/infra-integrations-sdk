@@ -14,21 +14,31 @@ import (
 )
 
 func TestNewEntity(t *testing.T) {
-	e, err := newEntity("name", "type", persist.NewInMemoryStore(), false)
+	e, err := newInMemoryEntity("name", "type")
 
 	assert.NoError(t, err)
 	assert.Equal(t, "name", e.Metadata.Name)
 	assert.Equal(t, "type", e.Metadata.Namespace)
+	assert.False(t, e.AddHostname)
+}
+
+func TestNewEntityWithAttributes(t *testing.T) {
+	e, err := newEntity("name", "type", persist.NewInMemoryStore(), true, "cluster-name", "service-name")
+
+	assert.NoError(t, err)
+	assert.True(t, e.AddHostname)
+	assert.Equal(t, "cluster-name", e.Cluster)
+	assert.Equal(t, "service-name", e.Service)
 }
 
 func TestEntitiesRequireNameAndType(t *testing.T) {
-	_, err := newEntity("", "", nil, false)
+	_, err := newInMemoryEntity("", "")
 
 	assert.Error(t, err)
 }
 
 func TestAddNotificationEvent(t *testing.T) {
-	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore(), false)
+	en, err := newInMemoryEntity("Entity1", "Type1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +54,7 @@ func TestAddNotificationEvent(t *testing.T) {
 }
 
 func TestAddNotificationWithEmptySummaryFails(t *testing.T) {
-	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore(), false)
+	en, err := newInMemoryEntity("Entity1", "Type1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +66,7 @@ func TestAddNotificationWithEmptySummaryFails(t *testing.T) {
 }
 
 func TestAddEvent_Entity(t *testing.T) {
-	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore(), false)
+	en, err := newInMemoryEntity("Entity1", "Type1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,7 +86,7 @@ func TestAddEvent_Entity(t *testing.T) {
 }
 
 func TestAddEvent(t *testing.T) {
-	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore(), false)
+	en, err := newInMemoryEntity("Entity1", "Type1")
 	assert.NoError(t, err)
 
 	err = en.AddEvent(event.New("TestSummary", ""))
@@ -89,7 +99,7 @@ func TestAddEvent(t *testing.T) {
 }
 
 func TestAddEvent_Entity_EmptySummary_Error(t *testing.T) {
-	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore(), false)
+	en, err := newInMemoryEntity("Entity1", "Type1")
 	assert.NoError(t, err)
 
 	err = en.AddEvent(event.New("", "TestCategory"))
@@ -99,7 +109,7 @@ func TestAddEvent_Entity_EmptySummary_Error(t *testing.T) {
 }
 
 func TestEntity_AddInventoryConcurrent(t *testing.T) {
-	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore(), false)
+	en, err := newInMemoryEntity("Entity1", "Type1")
 	assert.NoError(t, err)
 
 	itemsAmount := 100
@@ -129,4 +139,12 @@ func TestEntity_IsDefaultEntity(t *testing.T) {
 
 	assert.Empty(t, e.Metadata, "default entity should have no identifier")
 	assert.True(t, e.isLocalEntity())
+}
+
+// newEntity creates a new remote-entity with in-memory store and empty entity attributes.
+func newInMemoryEntity(
+	name,
+	namespace string,
+) (*Entity, error) {
+	return newEntity(name, namespace, persist.NewInMemoryStore(), false, "", "")
 }
