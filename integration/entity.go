@@ -28,7 +28,9 @@ type Entity struct {
 // EntityMetadata stores entity Metadata
 type EntityMetadata struct {
 	Name      string `json:"name"`
-	Namespace string `json:"type"` // For compatibility reasons we keep the type.
+	Namespace string `json:"type"`              // For compatibility reasons we keep the type.
+	Cluster   string `json:"cluster,omitempty"` // add cluster to metadata at agent level
+	Service   string `json:"service,omitempty"` // add service to metadata at agent level
 }
 
 // newLocalEntity creates unique default entity without identifier (name & type)
@@ -64,17 +66,18 @@ func newEntity(
 		Inventory:   inventory.New(),
 		Events:      []*event.Event{},
 		AddHostname: addHostnameToMetadata,
-		Cluster:     cluster,
-		Service:     service,
 		storer:      storer,
 		lock:        &sync.Mutex{},
 	}
 
 	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
+	// cluster and service are optional.
 	if name != "" && namespace != "" {
 		d.Metadata = &EntityMetadata{
 			Name:      name,
 			Namespace: namespace,
+			Cluster:   cluster,
+			Service:   service,
 		}
 	}
 
