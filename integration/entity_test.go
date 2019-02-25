@@ -27,8 +27,8 @@ func TestNewEntityWithAttributes(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.True(t, e.AddHostname)
-	assert.Equal(t, "cluster-name", e.Cluster)
-	assert.Equal(t, "service-name", e.Service)
+	assert.Equal(t, "cluster-name", e.Metadata.Cluster)
+	assert.Equal(t, "service-name", e.Metadata.Service)
 }
 
 func TestEntitiesRequireNameAndType(t *testing.T) {

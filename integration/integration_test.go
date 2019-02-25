@@ -107,8 +107,8 @@ func TestArgumentsSetEntityAttribute(t *testing.T) {
 		attribute func(*Entity) string
 		value     string
 	}{
-		{"NRI_CLUSTER", func(e *Entity) string { return e.Cluster }, "foo"},
-		{"NRI_SERVICE", func(e *Entity) string { return e.Service }, "bar"},
+		{"NRI_CLUSTER", func(e *Entity) string { return e.Metadata.Cluster }, "foo"},
+		{"NRI_SERVICE", func(e *Entity) string { return e.Metadata.Service }, "bar"},
 	}
 
 	for _, test := range testCases {
