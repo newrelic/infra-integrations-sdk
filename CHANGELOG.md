@@ -4,18 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## Next Release
+
+### Added
+
+- Protocol v3. NriCluster and NriService are set as entity metadata fields,
+  instead of entity custom attributes.
+
 ## 3.1.1
 
 ### Added
 
 - SSL support for jmx package. Explained at https://github.com/newrelic/infra-integrations-sdk#jmx-support
-
-## Next Release
-
-### Changed
-
-- Protocol v2.1. NriCluster and NriService are set as entity attributes,
-  instead of decorating every sample.
 
 ## 3.1.0
 
