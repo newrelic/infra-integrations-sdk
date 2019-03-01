@@ -1,4 +1,4 @@
-### What is an entity?
+## What is an entity?
 
 We use the vague term entity because we want to support hosts, pods, load balancers, DBs, etc. in a generic way. In the previous SDK versions (v1 & v2) the entity was local and just one, the host. In later versions the host reporting is called local entity, and it's optional to add metrics to it. You could just use remote entities to attach metrics. An entity can have its own inventory (configuration/state) and report any kind of metrics about itself. Although we may define a new entity for each monitored thing, we may want to relate/group some of them within a parent (local) entity (ie: host it's running on).
  
@@ -16,12 +16,76 @@ An engineer installs the infrastructure agent on host1 and configures the out-of
  
 An engineer installs the infrastructure agent on host1 and configures the out-of-the-box kubernetes integration and collects metrics and inventory about the whole cluster, replica sets, pods and nodes.
 
+
+### Entity uniqueness
+
+Entity uniqueness is provided by its **key**.
+
+An entity `key` is formed by its `namespace` (or *type*) and `name`. These fields are concatenated with `:` separator.
+
+> For instance: `integration.Entity("name", "ns")` would create an entity with a `key` value `ns:name`.   
+
+Entities are attached to a user account. Each integration is responsible for providing uniqueness for its entities.
+
+It's up to the integration developer to define an entity `name` that's **unique** to its user account.
+
+
+### Entity naming guidelines
+
+An entity name is an string identifier by which user uniquely identifies an entity.
+
+Entity names should:
+
+- provide enough information to be uniquely identified
+- easily identifiable for a user to locate what they refer to
+
+**Key point**: bundle as many identifier-attributes as required but not more.
+
+Usually an *endpoint* is a good starting point to identify a service.
+
+> Eg: `host:port`
+
+
+#### Entity name composition
+
+Names could be composed of several fields, in this case we call these **identifier-attributes**.
+
+##### Identifier attributes
+
+Attributes that provide uniqueness to an entity.  
+
+> Eg: If your endpoint gather several environments, then the endpoint string is not enough to identify a service if
+> you want to attach different data to each environment.
+
+For **identifier-attributes** add both the attribute *key* and *value* to the `name` to ease readability.
+
+For **endpoints** just use the endpoint format (host:port) to start the `name` string.
+
+A usual composition is: *endpoint + [identifier attribute key + identifier attribute value]*. With as many identifier
+attributes as required.
+
+> Eg: `endpoint:identifier_attr_key=identifier_attr_value`
+
+
+#### Name Format
+
+Names are flexible, so random strings are accepted, but some good standards are:
+
+- Composed fields are separated by colon `:`.
+- Identifier-attributes have key & value, these are separated by equal sign `=`.
+
+> Eg: `host:port:environment=prod`
+
+We use this format to build the `name` when entities are built using the SDK `integration.Entity()` function.
+
+
 ### Metadata decoration
 
 Since [agent v1.0.1052](https://docs.newrelic.com/docs/release-notes/infrastructure-release-notes/infrastructure-agent-release-notes/clone-new-relic-infrastructure-agent-101052) entity metrics could be decorated with metadata.
 
 At the moment integrations can only decorate their entities metrics with `hostname`, `clusterName` and `serviceName`.
 These are all optional decoration values provided via [args](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/args.md)
+
 
 #### Custom provided metadata
 
