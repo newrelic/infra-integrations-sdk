@@ -62,7 +62,7 @@ Agent supports different JSON data-structures called *integration protocols*:
 
 * v1: Legacy data structure to monitor local entity.
 * v2: This version allows to monitor remote entities and keep support for previous local entity. [Official doc](https://docs.newrelic.com/docs/integrations/integrations-sdk/file-specifications/integration-executable-file-specifications)
-* v3: Improves remote entities support. See [the tutorial](docs/protocol-v3.md). 
+* v3: Improves remote entities support. See [protocol v3](docs/protocol-v3.md) documentation. 
 
 
 ### Local Entity vs Remote Entities
