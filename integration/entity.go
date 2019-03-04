@@ -52,7 +52,7 @@ func newEntity(
 	namespace string,
 	storer persist.Storer,
 	addHostnameToMetadata bool,
-	idAttr ...IdentifierAttribute,
+	idAttrs ...IdentifierAttribute,
 ) (*Entity, error) {
 
 	// If one of the idAttr is defined, both Name and Namespace are needed.
@@ -70,16 +70,16 @@ func newEntity(
 		lock:        &sync.Mutex{},
 	}
 
-	var idAttrs []AttrKV
-	for _, a := range attributes {
-		idAttrs = append(idAttrs, a.KV())
+	idAttrKVs := []AttrKV{}
+	for _, a := range idAttrs {
+		idAttrKVs = append(idAttrKVs, a.KV())
 	}
 
 	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
 	d.Metadata = &EntityMetadata{
 		Name:      name,
 		Namespace: namespace,
-		IDAttrs:   idAttrs,
+		IDAttrs:   idAttrKVs,
 	}
 
 	return &d, nil
