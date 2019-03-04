@@ -27,7 +27,9 @@ An entity `key` is formed by its `namespace` (or *type*) and `name`. These field
 
 Entities are attached to a user account. Each integration is responsible for providing uniqueness for its entities.
 
-It's up to the integration developer to define an entity `name` that's **unique** to its user account. An entity name should map uniquely to the entity being monitored. Imagine a situation where you are monitoring two Kafka clusters, one meant for development and the other for production, where you have a topic with the same name on each. The entity needs to map uniquely to the development topic and the production topic so that there is no collision.
+It's up to the integration developer to define an entity `name` that's **unique** to its user account. An entity name should map uniquely to the entity being monitored.
+
+Imagine a situation where you are monitoring two Kafka clusters, one meant for development and the other for production, where you have a topic with the same name on each. The entity needs to map uniquely to the development topic and the production topic so that there is no collision.
 
 
 ## Entity naming guidelines
