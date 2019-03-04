@@ -49,10 +49,10 @@ func newEntity(
 	namespace string,
 	storer persist.Storer,
 	addHostnameToMetadata bool,
-	attributes ...IdentifierAttribute,
+	idAttr ...IdentifierAttribute,
 ) (*Entity, error) {
 
-	// If one of the attributes is defined, both Name and Namespace are needed.
+	// If one of the idAttr is defined, both Name and Namespace are needed.
 	if name == "" || namespace == "" {
 		return nil, errors.New("entity name and type are required when defining one")
 	}
@@ -67,10 +67,10 @@ func newEntity(
 		lock:        &sync.Mutex{},
 	}
 
-	idAttrs := make([]map[string]string, len(attributes))
-	for i := 0; i < len(attributes); i++ {
-		idAttrs[i] = map[string]string{
-			attributes[i].key: attributes[i].value,
+	mapAttr := make([]map[string]string, len(idAttr))
+	for i, attr := range idAttr {
+		mapAttr[i] = map[string]string{
+			attr.key: attr.value,
 		}
 	}
 
@@ -78,7 +78,7 @@ func newEntity(
 	d.Metadata = &EntityMetadata{
 		Name:                 name,
 		Namespace:            namespace,
-		IdentifierAttributes: idAttrs,
+		IdentifierAttributes: mapAttr,
 	}
 
 	return &d, nil
