@@ -52,10 +52,10 @@ func newEntity(
 	namespace string,
 	storer persist.Storer,
 	addHostnameToMetadata bool,
-	attributes ...IdentifierAttribute,
+	idAttr ...IdentifierAttribute,
 ) (*Entity, error) {
 
-	// If one of the attributes is defined, both Name and Namespace are needed.
+	// If one of the idAttr is defined, both Name and Namespace are needed.
 	if name == "" || namespace == "" {
 		return nil, errors.New("entity name and type are required when defining one")
 	}

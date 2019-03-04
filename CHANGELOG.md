@@ -14,7 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- Added metadata optional decoration for entity metrics (`hostname` and attributes), [check doc](/docs/entity-definition.md)
+- Added metadata optional decoration for entity metrics (`hostname`), [check doc](/docs/entity-definition.md)
+- Added `identifier attributes` for entity metadata.
 
 ## 3.0.3
 
