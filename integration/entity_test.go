@@ -20,12 +20,12 @@ func TestNewEntity(t *testing.T) {
 	assert.Equal(t, "name", e.Metadata.Name)
 	assert.Equal(t, "type", e.Metadata.Namespace)
 	assert.False(t, e.AddHostname)
-	assert.Empty(t, e.Metadata.IdentifierAttributes)
+	assert.Empty(t, e.Metadata.IDAttrs)
 }
 
 func TestNewEntityWithAttributes(t *testing.T) {
-	attr1 := IdentifierAttribute{"env", "prod"}
-	attr2 := IdentifierAttribute{"srv", "auth"}
+	attr1 := NewIDAttr("env", "prod")
+	attr2 := NewIDAttr("srv", "auth")
 	e, err := newEntity(
 		"name",
 		"type",
@@ -37,9 +37,9 @@ func TestNewEntityWithAttributes(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.True(t, e.AddHostname)
-	assert.Len(t, e.Metadata.IdentifierAttributes, 2)
-	assert.Equal(t, e.Metadata.IdentifierAttributes[0], map[string]string{attr1.key: attr1.value})
-	assert.Equal(t, e.Metadata.IdentifierAttributes[1], map[string]string{attr2.key: attr2.value})
+	assert.Len(t, e.Metadata.IDAttrs, 2)
+	assert.Equal(t, e.Metadata.IDAttrs[0], AttrKV{attr1.key: attr1.value})
+	assert.Equal(t, e.Metadata.IDAttrs[1], AttrKV{attr2.key: attr2.value})
 }
 
 func TestEntitiesRequireNameAndType(t *testing.T) {

@@ -287,7 +287,7 @@ func TestIntegration_Publish(t *testing.T) {
 	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(w))
 	assert.NoError(t, err)
 
-	e, err := i.Entity("EntityOne", "test", IdentifierAttribute{"env", "prod"})
+	e, err := i.Entity("EntityOne", "test", NewIDAttr("env", "prod"))
 	assert.NoError(t, err)
 	ms := e.NewMetricSet("EventTypeForEntityOne")
 	assert.NoError(t, ms.SetMetric("metricOne", 1, metric.GAUGE))

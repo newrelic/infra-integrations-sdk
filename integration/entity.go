@@ -25,10 +25,13 @@ type Entity struct {
 
 // EntityMetadata stores entity Metadata
 type EntityMetadata struct {
-	Name                 string              `json:"name"`
-	Namespace            string              `json:"type"`          // For compatibility reasons we keep the type.
-	IdentifierAttributes []map[string]string `json:"id_attributes"` // For entity key uniqueness
+	Name      string   `json:"name"`
+	Namespace string   `json:"type"`          // For compatibility reasons we keep the type.
+	IDAttrs   []AttrKV `json:"id_attributes"` // For entity key uniqueness
 }
+
+// AttrKV attribute key value pair.
+type AttrKV map[string]string
 
 // newLocalEntity creates unique default entity without identifier (name & type)
 func newLocalEntity(storer persist.Storer, addHostnameToMetadata bool) *Entity {
@@ -67,18 +70,16 @@ func newEntity(
 		lock:        &sync.Mutex{},
 	}
 
-	idAttrs := make([]map[string]string, len(attributes))
-	for i := 0; i < len(attributes); i++ {
-		idAttrs[i] = map[string]string{
-			attributes[i].key: attributes[i].value,
-		}
+	var idAttrs []AttrKV
+	for _, a := range attributes {
+		idAttrs = append(idAttrs, a.KV())
 	}
 
 	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
 	d.Metadata = &EntityMetadata{
-		Name:                 name,
-		Namespace:            namespace,
-		IdentifierAttributes: idAttrs,
+		Name:      name,
+		Namespace: namespace,
+		IDAttrs:   idAttrs,
 	}
 
 	return &d, nil

@@ -49,6 +49,19 @@ type IdentifierAttribute struct {
 	value string
 }
 
+// NewIDAttr creates new identifier attribute.
+func NewIDAttr(key, value string) IdentifierAttribute {
+	return IdentifierAttribute{
+		key:   key,
+		value: value,
+	}
+}
+
+// KV key-value pair attribute format.
+func (a *IdentifierAttribute) KV() AttrKV {
+	return AttrKV{a.key: a.value}
+}
+
 // New creates new integration with sane default values.
 func New(name, version string, opts ...Option) (i *Integration, err error) {
 
