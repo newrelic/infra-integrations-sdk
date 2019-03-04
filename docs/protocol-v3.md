@@ -1,6 +1,6 @@
 # Integration Protocol v3
 
-This version is basically the same as **v2**, but it improves **remote entities uniqueness** by adding a new feature.
+This version is basically the same as **v2**, but it improves **remote entities uniqueness** by adding "local address replacement on entity names" at agent level.
 
 
 ## Agent support
