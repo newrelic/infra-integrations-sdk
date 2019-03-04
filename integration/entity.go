@@ -70,19 +70,23 @@ func newEntity(
 		lock:        &sync.Mutex{},
 	}
 
-	idAttrKVs := []AttrKV{}
-	for _, a := range idAttrs {
-		idAttrKVs = append(idAttrKVs, a.KV())
-	}
-
 	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
 	d.Metadata = &EntityMetadata{
 		Name:      name,
 		Namespace: namespace,
-		IDAttrs:   idAttrKVs,
+		IDAttrs:   pairsToKVs(idAttrs...),
 	}
 
 	return &d, nil
+}
+
+func pairsToKVs(idAttrs ...IdentifierAttribute) []AttrKV {
+	idAttrKVs := make([]AttrKV, len(idAttrs))
+	for i, a := range idAttrs {
+		idAttrKVs[i] = a.KV()
+	}
+
+	return idAttrKVs
 }
 
 // isLocalEntity returns true if entity is the default one (has no identifier: name & type)
