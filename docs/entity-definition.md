@@ -78,6 +78,8 @@ Names are flexible, so random strings are accepted, but some good standards are:
 
 > Eg: `host:port:environment=prod`
 
+In order to respect this format an identifier attribute should not use colon `:` or equals `=` characters in their name/values.
+
 We use this format to build the `name` when entities are built using the SDK `integration.Entity()` function.
 
 
