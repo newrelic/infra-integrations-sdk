@@ -25,7 +25,7 @@ const (
 
 // NR infrastructure agent protocol version
 const (
-	protocolVersion = "2"
+	protocolVersion = "3"
 )
 
 // Integration defines the format of the output JSON that integrations will return for protocol 2.
@@ -41,6 +41,12 @@ type Integration struct {
 	writer             io.Writer
 	logger             log.Logger
 	args               interface{}
+}
+
+// IdentifierAttribute is a key value struct which is used to have uniqueness during the entity key resolution.
+type IdentifierAttribute struct {
+	key   string
+	value string
 }
 
 // New creates new integration with sane default values.
@@ -118,7 +124,7 @@ func (i *Integration) LocalEntity() *Entity {
 }
 
 // Entity method creates or retrieves an already created entity.
-func (i *Integration) Entity(name, namespace string) (e *Entity, err error) {
+func (i *Integration) Entity(name, namespace string, idAttributes ...IdentifierAttribute) (e *Entity, err error) {
 	i.locker.Lock()
 	defer i.locker.Unlock()
 
@@ -129,7 +135,7 @@ func (i *Integration) Entity(name, namespace string) (e *Entity, err error) {
 		}
 	}
 
-	e, err = newEntity(name, namespace, i.storer, i.addHostnameToMeta)
+	e, err = newEntity(name, namespace, i.storer, i.addHostnameToMeta, idAttributes...)
 	if err != nil {
 		return nil, err
 	}

@@ -25,8 +25,9 @@ type Entity struct {
 
 // EntityMetadata stores entity Metadata
 type EntityMetadata struct {
-	Name      string `json:"name"`
-	Namespace string `json:"type"` // For compatibility reasons we keep the type.
+	Name                 string              `json:"name"`
+	Namespace            string              `json:"type"`          // For compatibility reasons we keep the type.
+	IdentifierAttributes []map[string]string `json:"id_attributes"` // For entity key uniqueness
 }
 
 // newLocalEntity creates unique default entity without identifier (name & type)
@@ -42,8 +43,15 @@ func newLocalEntity(storer persist.Storer, addHostnameToMetadata bool) *Entity {
 	}
 }
 
-// newEntity creates a new remote-entity.
-func newEntity(name, namespace string, storer persist.Storer, addHostnameToMetadata bool) (*Entity, error) {
+// newEntity creates a new remote-entity with entity attributes.
+func newEntity(
+	name,
+	namespace string,
+	storer persist.Storer,
+	addHostnameToMetadata bool,
+	attributes ...IdentifierAttribute,
+) (*Entity, error) {
+
 	// If one of the attributes is defined, both Name and Namespace are needed.
 	if name == "" || namespace == "" {
 		return nil, errors.New("entity name and type are required when defining one")
@@ -59,12 +67,18 @@ func newEntity(name, namespace string, storer persist.Storer, addHostnameToMetad
 		lock:        &sync.Mutex{},
 	}
 
-	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
-	if name != "" && namespace != "" {
-		d.Metadata = &EntityMetadata{
-			Name:      name,
-			Namespace: namespace,
+	idAttrs := make([]map[string]string, len(attributes))
+	for i := 0; i < len(attributes); i++ {
+		idAttrs[i] = map[string]string{
+			attributes[i].key: attributes[i].value,
 		}
+	}
+
+	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
+	d.Metadata = &EntityMetadata{
+		Name:                 name,
+		Namespace:            namespace,
+		IdentifierAttributes: idAttrs,
 	}
 
 	return &d, nil

@@ -8,8 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/data/event"
+
+	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/stretchr/testify/assert"
@@ -23,18 +24,10 @@ var (
 func TestCreation(t *testing.T) {
 	i := newTestIntegration(t)
 
-	if i.Name != "TestIntegration" {
-		t.Error()
-	}
-	if i.IntegrationVersion != "1.0" {
-		t.Error()
-	}
-	if i.ProtocolVersion != "2" {
-		t.Error()
-	}
-	if len(i.Entities) != 0 {
-		t.Error()
-	}
+	assert.Equal(t, "TestIntegration", i.Name)
+	assert.Equal(t, "1.0", i.IntegrationVersion)
+	assert.Equal(t, "3", i.ProtocolVersion)
+	assert.Len(t, i.Entities, 0)
 }
 
 func TestDefaultIntegrationWritesToStdout(t *testing.T) {
@@ -52,7 +45,7 @@ func TestDefaultIntegrationWritesToStdout(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "integration", i.Name)
 	assert.Equal(t, "4.0", i.IntegrationVersion)
-	assert.Equal(t, "2", i.ProtocolVersion)
+	assert.Equal(t, "3", i.ProtocolVersion)
 	assert.Equal(t, 0, len(i.Entities))
 
 	assert.NoError(t, i.Publish())
@@ -61,7 +54,7 @@ func TestDefaultIntegrationWritesToStdout(t *testing.T) {
 	f.Close()
 	payload, err := ioutil.ReadFile(f.Name())
 	assert.NoError(t, err)
-	assert.Equal(t, `{"name":"integration","protocol_version":"2","integration_version":"4.0","data":[]}`+"\n", string(payload))
+	assert.Equal(t, `{"name":"integration","protocol_version":"3","integration_version":"4.0","data":[]}`+"\n", string(payload))
 }
 
 func TestIntegration_DefaultEntity(t *testing.T) {
@@ -78,27 +71,13 @@ func TestDefaultArguments(t *testing.T) {
 	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
 	assert.NoError(t, err)
 
-	if i.Name != "TestIntegration" {
-		t.Error()
-	}
-	if i.IntegrationVersion != "1.0" {
-		t.Error()
-	}
-	if i.ProtocolVersion != "2" {
-		t.Error()
-	}
-	if len(i.Entities) != 0 {
-		t.Error()
-	}
-	if !al.All() {
-		t.Error()
-	}
-	if al.Pretty {
-		t.Error()
-	}
-	if al.Verbose {
-		t.Error()
-	}
+	assert.Equal(t, "TestIntegration", i.Name)
+	assert.Equal(t, "1.0", i.IntegrationVersion)
+	assert.Equal(t, "3", i.ProtocolVersion)
+	assert.Len(t, i.Entities, 0)
+	assert.True(t, al.All())
+	assert.False(t, al.Pretty)
+	assert.False(t, al.Verbose)
 }
 
 func TestClusterAndServiceArgumentsAreAddedToMetadata(t *testing.T) {
@@ -244,13 +223,16 @@ func TestIntegration_Publish(t *testing.T) {
 			expectedOutputRaw := []byte(`
 			{
 			  "name": "TestIntegration",
-			  "protocol_version": "2",
+			  "protocol_version": "3",
 			  "integration_version": "1.0",
 			  "data": [
 				{
 				  "entity": {
 					"name": "EntityOne",
-					"type": "test"
+					"type": "test",
+					"id_attributes": [
+					  {"env" : "prod"}
+					]
 				  },
 				  "metrics": [
 					{
@@ -275,7 +257,8 @@ func TestIntegration_Publish(t *testing.T) {
 				{
 				  "entity": {
 					"name": "EntityTwo",
-					"type": "test"
+					"type": "test",
+					"id_attributes": []
 				  },
 				  "metrics": [
 					{
@@ -304,7 +287,7 @@ func TestIntegration_Publish(t *testing.T) {
 	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(w))
 	assert.NoError(t, err)
 
-	e, err := i.Entity("EntityOne", "test")
+	e, err := i.Entity("EntityOne", "test", IdentifierAttribute{"env", "prod"})
 	assert.NoError(t, err)
 	ms := e.NewMetricSet("EventTypeForEntityOne")
 	assert.NoError(t, ms.SetMetric("metricOne", 1, metric.GAUGE))
