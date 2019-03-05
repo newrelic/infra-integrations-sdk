@@ -56,7 +56,6 @@ func newEntity(
 	idAttrs ...IDAttribute,
 ) (*Entity, error) {
 
-	// If one of the idAttr is defined, both Name and Namespace are needed.
 	if name == "" || namespace == "" {
 		return nil, errors.New("entity name and type are required when defining one")
 	}
@@ -69,13 +68,11 @@ func newEntity(
 		AddHostname: addHostnameToMetadata,
 		storer:      storer,
 		lock:        &sync.Mutex{},
-	}
-
-	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
-	d.Metadata = &EntityMetadata{
-		Name:      name,
-		Namespace: namespace,
-		IDAttrs:   sortIDAttributes(idAttrs...),
+		Metadata: &EntityMetadata{
+			Name:      name,
+			Namespace: namespace,
+			IDAttrs:   sortIDAttributes(idAttrs...),
+		},
 	}
 
 	return &d, nil
@@ -103,6 +100,9 @@ func (s *IDAttributesSorter) Less(i, j int) bool {
 
 func sortIDAttributes(idAttrs ...IDAttribute) SortedIDAttributes {
 	sorted := make(SortedIDAttributes, len(idAttrs))
+	if len(sorted) == 0 {
+		return sorted
+	}
 	for i, attr := range idAttrs {
 		sorted[i] = attr
 	}
