@@ -20,12 +20,12 @@ func TestNewEntity(t *testing.T) {
 	assert.Equal(t, "name", e.Metadata.Name)
 	assert.Equal(t, "type", e.Metadata.Namespace)
 	assert.False(t, e.AddHostname)
-	assert.Empty(t, e.Metadata.IdentifierAttributes)
+	assert.Empty(t, e.Metadata.IDAttrs)
 }
 
 func TestNewEntityWithAttributes(t *testing.T) {
-	attr1 := IdentifierAttribute{"env", "prod"}
-	attr2 := IdentifierAttribute{"srv", "auth"}
+	attr1 := NewIDAttribute("env", "prod")
+	attr2 := NewIDAttribute("srv", "auth")
 	e, err := newEntity(
 		"name",
 		"type",
@@ -37,9 +37,47 @@ func TestNewEntityWithAttributes(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.True(t, e.AddHostname)
-	assert.Len(t, e.Metadata.IdentifierAttributes, 2)
-	assert.Equal(t, e.Metadata.IdentifierAttributes[0], map[string]string{attr1.key: attr1.value})
-	assert.Equal(t, e.Metadata.IdentifierAttributes[1], map[string]string{attr2.key: attr2.value})
+	assert.Len(t, e.Metadata.IDAttrs, 2)
+	assert.Equal(t, e.Metadata.IDAttrs[0], attr1)
+	assert.Equal(t, e.Metadata.IDAttrs[1], attr2)
+}
+
+func TestNewEntityWithOneAttribute(t *testing.T) {
+	attr1 := NewIDAttribute("env", "prod")
+	e, err := newEntity(
+		"name",
+		"type",
+		persist.NewInMemoryStore(),
+		true,
+		attr1,
+	)
+
+	assert.NoError(t, err)
+	assert.True(t, e.AddHostname)
+	assert.Len(t, e.Metadata.IDAttrs, 1)
+	assert.Equal(t, e.Metadata.IDAttrs[0], attr1)
+}
+
+func TestEntity_AttributesAreSortedByKey(t *testing.T) {
+
+	attr1 := NewIDAttribute("bbb", "x")
+	attr2 := NewIDAttribute("aaa", "x")
+	attr3 := NewIDAttribute("ccc", "x")
+	attr4 := NewIDAttribute("zzz", "x")
+	attr5 := NewIDAttribute("ddd", "x")
+
+	expected := SortedIDAttributes{attr2, attr1, attr3, attr5, attr4}
+	attributes := [][]IDAttribute{
+		{attr1, attr2, attr3, attr4, attr5},
+		{attr2, attr3, attr4, attr1, attr5},
+		{attr1, attr5, attr4, attr3, attr2},
+		{attr5, attr4, attr3, attr2, attr1},
+	}
+	for _, attrs := range attributes {
+		e, err := newEntity("name", "type", persist.NewInMemoryStore(), true, attrs...)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, e.Metadata.IDAttrs)
+	}
 }
 
 func TestEntitiesRequireNameAndType(t *testing.T) {

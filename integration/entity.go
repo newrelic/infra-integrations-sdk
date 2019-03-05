@@ -2,6 +2,7 @@ package integration
 
 import (
 	"errors"
+	"sort"
 	"sync"
 
 	"github.com/newrelic/infra-integrations-sdk/data/event"
@@ -23,11 +24,14 @@ type Entity struct {
 	customAttributes []metric.Attribute
 }
 
+//SortedIDAttributes this sorted list ensures uniqueness for the entity Key.
+type SortedIDAttributes []IDAttribute
+
 // EntityMetadata stores entity Metadata
 type EntityMetadata struct {
-	Name                 string              `json:"name"`
-	Namespace            string              `json:"type"`          // For compatibility reasons we keep the type.
-	IdentifierAttributes []map[string]string `json:"id_attributes"` // For entity key uniqueness
+	Name      string             `json:"name"`
+	Namespace string             `json:"type"`          // For compatibility reasons we keep the type.
+	IDAttrs   SortedIDAttributes `json:"id_attributes"` // For entity Key uniqueness
 }
 
 // newLocalEntity creates unique default entity without identifier (name & type)
@@ -49,7 +53,7 @@ func newEntity(
 	namespace string,
 	storer persist.Storer,
 	addHostnameToMetadata bool,
-	idAttr ...IdentifierAttribute,
+	idAttrs ...IDAttribute,
 ) (*Entity, error) {
 
 	// If one of the idAttr is defined, both Name and Namespace are needed.
@@ -67,21 +71,47 @@ func newEntity(
 		lock:        &sync.Mutex{},
 	}
 
-	mapAttr := make([]map[string]string, len(idAttr))
-	for i, attr := range idAttr {
-		mapAttr[i] = map[string]string{
-			attr.key: attr.value,
-		}
-	}
-
 	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
 	d.Metadata = &EntityMetadata{
-		Name:                 name,
-		Namespace:            namespace,
-		IdentifierAttributes: mapAttr,
+		Name:      name,
+		Namespace: namespace,
+		IDAttrs:   sortIDAttributes(idAttrs...),
 	}
 
 	return &d, nil
+}
+
+//IDAttributesSorter ...
+type IDAttributesSorter struct {
+	IDAttributes SortedIDAttributes
+}
+
+// Len is part of sort.Interface.
+func (s *IDAttributesSorter) Len() int {
+	return len(s.IDAttributes)
+}
+
+// Swap is part of sort.Interface.
+func (s *IDAttributesSorter) Swap(i, j int) {
+	s.IDAttributes[i], s.IDAttributes[j] = s.IDAttributes[j], s.IDAttributes[i]
+}
+
+// Less is part of sort.Interface.
+func (s *IDAttributesSorter) Less(i, j int) bool {
+	return s.IDAttributes[i].Key < s.IDAttributes[j].Key
+}
+
+func sortIDAttributes(idAttrs ...IDAttribute) SortedIDAttributes {
+	sorted := make(SortedIDAttributes, len(idAttrs))
+	for i, attr := range idAttrs {
+		sorted[i] = attr
+	}
+	sorter := &IDAttributesSorter{
+		IDAttributes: sorted,
+	}
+	sort.Sort(sorter)
+
+	return sorted
 }
 
 // isLocalEntity returns true if entity is the default one (has no identifier: name & type)

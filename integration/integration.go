@@ -43,10 +43,18 @@ type Integration struct {
 	args               interface{}
 }
 
-// IdentifierAttribute is a key value struct which is used to have uniqueness during the entity key resolution.
-type IdentifierAttribute struct {
-	key   string
-	value string
+// IDAttribute is a Key Value struct which is used to have uniqueness during the entity Key resolution.
+type IDAttribute struct {
+	Key   string
+	Value string
+}
+
+// NewIDAttribute creates new identifier attribute.
+func NewIDAttribute(key, value string) IDAttribute {
+	return IDAttribute{
+		Key:   key,
+		Value: value,
+	}
 }
 
 // New creates new integration with sane default values.
@@ -124,7 +132,7 @@ func (i *Integration) LocalEntity() *Entity {
 }
 
 // Entity method creates or retrieves an already created entity.
-func (i *Integration) Entity(name, namespace string, idAttributes ...IdentifierAttribute) (e *Entity, err error) {
+func (i *Integration) Entity(name, namespace string, idAttributes ...IDAttribute) (e *Entity, err error) {
 	i.locker.Lock()
 	defer i.locker.Unlock()
 
