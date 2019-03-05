@@ -24,8 +24,8 @@ func TestNewEntity(t *testing.T) {
 }
 
 func TestNewEntityWithAttributes(t *testing.T) {
-	attr1 := NewIDAttr("env", "prod")
-	attr2 := NewIDAttr("srv", "auth")
+	attr1 := NewIDAttribute("env", "prod")
+	attr2 := NewIDAttribute("srv", "auth")
 	e, err := newEntity(
 		"name",
 		"type",
@@ -38,8 +38,52 @@ func TestNewEntityWithAttributes(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, e.AddHostname)
 	assert.Len(t, e.Metadata.IDAttrs, 2)
-	assert.Equal(t, e.Metadata.IDAttrs[0], AttrKV{attr1.key: attr1.value})
-	assert.Equal(t, e.Metadata.IDAttrs[1], AttrKV{attr2.key: attr2.value})
+	assert.Equal(t, e.Metadata.IDAttrs[0], attr1)
+	assert.Equal(t, e.Metadata.IDAttrs[1], attr2)
+}
+
+func TestNewEntityWithOneAttribute(t *testing.T) {
+	attr1 := NewIDAttribute("env", "prod")
+	e, err := newEntity(
+		"name",
+		"type",
+		persist.NewInMemoryStore(),
+		true,
+		attr1,
+	)
+
+	assert.NoError(t, err)
+	assert.True(t, e.AddHostname)
+	assert.Len(t, e.Metadata.IDAttrs, 1)
+	assert.Equal(t, e.Metadata.IDAttrs[0], attr1)
+}
+
+func TestEntity_AttributesAreSortedByKey(t *testing.T) {
+	attr1 := NewIDAttribute("env", "prod")
+	attr2 := NewIDAttribute("srv", "auth")
+	e, err := newEntity(
+		"name",
+		"type",
+		persist.NewInMemoryStore(),
+		true,
+		attr1,
+		attr2,
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, e.Metadata.IDAttrs[0].Key, attr1.Key)
+	assert.Equal(t, e.Metadata.IDAttrs[1].Key, attr2.Key)
+
+	e2, err := newEntity(
+		"name",
+		"type",
+		persist.NewInMemoryStore(),
+		true,
+		attr2,
+		attr1,
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, e2.Metadata.IDAttrs[0].Key, attr1.Key)
+	assert.Equal(t, e2.Metadata.IDAttrs[1].Key, attr2.Key)
 }
 
 func TestEntitiesRequireNameAndType(t *testing.T) {
