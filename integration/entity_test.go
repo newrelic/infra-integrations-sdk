@@ -60,13 +60,13 @@ func TestNewEntityWithOneAttribute(t *testing.T) {
 
 func TestEntity_AttributesAreSortedByKey(t *testing.T) {
 
-	attr1 := NewIDAttribute("bbb", "x")
-	attr2 := NewIDAttribute("aaa", "x")
+	attr1 := NewIDAttribute("aaa", "x")
+	attr2 := NewIDAttribute("bbb", "x")
 	attr3 := NewIDAttribute("ccc", "x")
-	attr4 := NewIDAttribute("zzz", "x")
-	attr5 := NewIDAttribute("ddd", "x")
+	attr4 := NewIDAttribute("ddd", "x")
+	attr5 := NewIDAttribute("zzz", "x")
 
-	expected := SortedIDAttributes{attr2, attr1, attr3, attr5, attr4}
+	expected := SortedIDAttributes{attr1, attr2, attr3, attr4, attr5}
 	attributes := [][]IDAttribute{
 		{attr1, attr2, attr3, attr4, attr5},
 		{attr2, attr3, attr4, attr1, attr5},
