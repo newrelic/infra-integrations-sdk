@@ -2,7 +2,6 @@ package integration
 
 import (
 	"errors"
-	"sort"
 	"sync"
 
 	"github.com/newrelic/infra-integrations-sdk/data/event"
@@ -24,14 +23,14 @@ type Entity struct {
 	customAttributes []metric.Attribute
 }
 
-//SortedIDAttributes this sorted list ensures uniqueness for the entity Key.
-type SortedIDAttributes []IDAttribute
+//IDAttributes used for the entity key uniqueness
+type IDAttributes []IDAttribute
 
 // EntityMetadata stores entity Metadata
 type EntityMetadata struct {
-	Name      string             `json:"name"`
-	Namespace string             `json:"type"`          // For compatibility reasons we keep the type.
-	IDAttrs   SortedIDAttributes `json:"id_attributes"` // For entity Key uniqueness
+	Name      string       `json:"name"`
+	Namespace string       `json:"type"`          // For compatibility reasons we keep the type.
+	IDAttrs   IDAttributes `json:"id_attributes"` // For entity Key uniqueness
 }
 
 // newLocalEntity creates unique default entity without identifier (name & type)
@@ -71,47 +70,23 @@ func newEntity(
 		Metadata: &EntityMetadata{
 			Name:      name,
 			Namespace: namespace,
-			IDAttrs:   sortIDAttributes(idAttrs...),
+			IDAttrs:   idAttributes(idAttrs...),
 		},
 	}
 
 	return &d, nil
 }
 
-//IDAttributesSorter ...
-type IDAttributesSorter struct {
-	IDAttributes SortedIDAttributes
-}
-
-// Len is part of sort.Interface.
-func (s *IDAttributesSorter) Len() int {
-	return len(s.IDAttributes)
-}
-
-// Swap is part of sort.Interface.
-func (s *IDAttributesSorter) Swap(i, j int) {
-	s.IDAttributes[i], s.IDAttributes[j] = s.IDAttributes[j], s.IDAttributes[i]
-}
-
-// Less is part of sort.Interface.
-func (s *IDAttributesSorter) Less(i, j int) bool {
-	return s.IDAttributes[i].Key < s.IDAttributes[j].Key
-}
-
-func sortIDAttributes(idAttrs ...IDAttribute) SortedIDAttributes {
-	sorted := make(SortedIDAttributes, len(idAttrs))
-	if len(sorted) == 0 {
-		return sorted
+func idAttributes(idAttrs ...IDAttribute) IDAttributes {
+	attrs := make(IDAttributes, len(idAttrs))
+	if len(attrs) == 0 {
+		return attrs
 	}
 	for i, attr := range idAttrs {
-		sorted[i] = attr
+		attrs[i] = attr
 	}
-	sorter := &IDAttributesSorter{
-		IDAttributes: sorted,
-	}
-	sort.Sort(sorter)
 
-	return sorted
+	return attrs
 }
 
 // isLocalEntity returns true if entity is the default one (has no identifier: name & type)

@@ -58,28 +58,6 @@ func TestNewEntityWithOneAttribute(t *testing.T) {
 	assert.Equal(t, e.Metadata.IDAttrs[0], attr1)
 }
 
-func TestEntity_AttributesAreSortedByKey(t *testing.T) {
-
-	attr1 := NewIDAttribute("aaa", "x")
-	attr2 := NewIDAttribute("bbb", "x")
-	attr3 := NewIDAttribute("ccc", "x")
-	attr4 := NewIDAttribute("ddd", "x")
-	attr5 := NewIDAttribute("zzz", "x")
-
-	expected := SortedIDAttributes{attr1, attr2, attr3, attr4, attr5}
-	attributes := [][]IDAttribute{
-		{attr1, attr2, attr3, attr4, attr5},
-		{attr2, attr3, attr4, attr1, attr5},
-		{attr1, attr5, attr4, attr3, attr2},
-		{attr5, attr4, attr3, attr2, attr1},
-	}
-	for _, attrs := range attributes {
-		e, err := newEntity("name", "type", persist.NewInMemoryStore(), true, attrs...)
-		assert.NoError(t, err)
-		assert.Equal(t, expected, e.Metadata.IDAttrs)
-	}
-}
-
 func TestEntitiesRequireNameAndType(t *testing.T) {
 	_, err := newEntity("", "", nil, false)
 
