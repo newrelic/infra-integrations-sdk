@@ -40,6 +40,7 @@ const (
 	jmxLineBuffer = 4 * 1024 * 1024 // Max 4MB per line. If single lines are outputting more JSON than that, we likely need smaller-scoped JMX queries
 )
 
+// connectionConfig is the configuration for the nrjmx command.
 type connectionConfig struct {
 	hostname           string
 	port               string
@@ -52,11 +53,12 @@ type connectionConfig struct {
 	remote             bool
 }
 
-func (cfg connectionConfig) isSSL() bool {
+func (cfg *connectionConfig) isSSL() bool {
 	return cfg.keyStore != "" && cfg.keyStorePassword != "" && cfg.trustStore != "" && cfg.trustStorePassword != ""
 }
 
-func getCommand(cfg connectionConfig) (c []string) {
+func (cfg *connectionConfig) command() []string {
+	c := make([]string, 0)
 	if os.Getenv("NR_JMX_TOOL") != "" {
 		c = strings.Split(os.Getenv("NR_JMX_TOOL"), " ")
 	} else {
@@ -70,13 +72,6 @@ func getCommand(cfg connectionConfig) (c []string) {
 	if cfg.remote {
 		c = append(c, "--remote", strconv.FormatBool(cfg.remote))
 	}
-
-	return
-}
-
-func getCommandWithSSL(cfg connectionConfig) []string {
-	c := getCommand(cfg)
-
 	if cfg.isSSL() {
 		c = append(c, "--keyStore", cfg.keyStore, "--keyStorePassword", cfg.keyStorePassword, "--trustStore", cfg.trustStore, "--trustStorePassword", cfg.trustStorePassword)
 	}
@@ -85,8 +80,9 @@ func getCommandWithSSL(cfg connectionConfig) []string {
 }
 
 // Open will start the nrjmx command with the provided connection parameters.
+// Deprecated use OpenWithParameters instead.
 func Open(hostname, port, username, password string) error {
-	config := connectionConfig{
+	config := &connectionConfig{
 		hostname: hostname,
 		port:     port,
 		username: username,
@@ -96,9 +92,10 @@ func Open(hostname, port, username, password string) error {
 	return openConnection(config)
 }
 
-// OpenWithSSL will start the nrjmx command with the provided SSL connection parameters
+// OpenWithSSL will start the nrjmx command with the provided SSL connection parameters.
+// Deprecated use OpenWithParameters instead.
 func OpenWithSSL(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword string) error {
-	config := connectionConfig{
+	config := &connectionConfig{
 		hostname:           hostname,
 		port:               port,
 		username:           username,
@@ -112,23 +109,43 @@ func OpenWithSSL(hostname, port, username, password, keyStore, keyStorePassword,
 	return openConnection(config)
 }
 
-func OpenWithSSLRemote(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword string, remote bool) error {
-	config := connectionConfig{
-		hostname:           hostname,
-		port:               port,
-		username:           username,
-		password:           password,
-		keyStore:           keyStore,
-		keyStorePassword:   keyStorePassword,
-		trustStore:         trustStore,
-		trustStorePassword: trustStorePassword,
-		remote:             remote,
+// OpenWithParameters executes a nrjmx command using the given options.
+func OpenWithParameters(hostname, port, username, password string, opts ...Option) error {
+	config := &connectionConfig{
+		hostname: hostname,
+		port:     port,
+		username: username,
+		password: password,
+	}
+
+	for _, opt := range opts {
+		opt(config)
 	}
 
 	return openConnection(config)
 }
 
-func openConnection(config connectionConfig) error {
+// Option sets an option on integration level.
+type Option func(config *connectionConfig)
+
+// WithSSL for SSL connection configuration.
+func WithSSL(keyStore, keyStorePassword, trustStore, trustStorePassword string) Option {
+	return func(config *connectionConfig) {
+		config.keyStore = keyStore
+		config.keyStorePassword = keyStorePassword
+		config.trustStore = trustStore
+		config.trustStorePassword = trustStorePassword
+	}
+}
+
+// WithRemoteProtocol uses the remote JMX protocol URL.
+func WithRemoteProtocol() Option {
+	return func(config *connectionConfig) {
+		config.remote = true
+	}
+}
+
+func openConnection(config *connectionConfig) error {
 	lock.Lock()
 	defer lock.Unlock()
 
@@ -146,7 +163,7 @@ func openConnection(config connectionConfig) error {
 	var err error
 	var ctx context.Context
 
-	cliCommand := getCommandWithSSL(config)
+	cliCommand := config.command()
 
 	ctx, cancel = context.WithCancel(context.Background())
 	cmd = exec.CommandContext(ctx, cliCommand[0], cliCommand[1:]...)
