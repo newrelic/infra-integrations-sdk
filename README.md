@@ -58,10 +58,11 @@ You can find the latest API documentation generated from the source code in
 Integrations are executed periodically by the *agent*. The integration `stdout` is consumed by the *agent*.
 This `stdout` data is formatted as JSON.
 
-Agent supports 2 different JSON data-structures called *wire protocols*:
+Agent supports different JSON data-structures called *integration protocols*:
 
 * v1: Legacy data structure to monitor local entity.
-* v2: Latest data structure to monitor the local entity and remote entities. [Official doc](https://docs.newrelic.com/docs/integrations/integrations-sdk/file-specifications/integration-executable-file-specifications)
+* v2: This version allows to monitor remote entities and keep support for previous local entity. [Official doc](https://docs.newrelic.com/docs/integrations/integrations-sdk/file-specifications/integration-executable-file-specifications)
+* v3: Improves remote entities support. See [protocol v3](docs/protocol-v3.md) documentation. 
 
 
 ### Local Entity vs Remote Entities
@@ -82,8 +83,7 @@ https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/v2tov3.md
 
 SDK v1 and v2 use *protocol-v1*.
 
-SDK v3 use *protocol-v2*.
- 
+SDK v3 could use either *protocol-v2* or *protocol-v3*.
 
 
 ## Tools
