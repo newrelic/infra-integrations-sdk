@@ -78,6 +78,15 @@ func TestOpenWithSSL_OnlyWorksWhenClosed(t *testing.T) {
 	assert.NoError(t, OpenWithSSL("", "", "", "", "", "", "", ""))
 }
 
+func TestOpenWithSSLRemote_OnlyWorksWhenClosed(t *testing.T) {
+	defer Close()
+
+	assert.NoError(t, OpenWithSSLRemote("", "", "", "", "", "", "", "", false))
+	assert.Error(t, OpenWithSSLRemote("", "", "", "", "", "", "", "", false))
+	Close()
+	assert.NoError(t, OpenWithSSLRemote("", "", "", "", "", "", "", "", false))
+}
+
 func TestQuery(t *testing.T) {
 	for q, isErr := range query2IsErr {
 		assert.NoError(t, openWait("", "", "", "", openAttempts), "error on opening for query %s", q)

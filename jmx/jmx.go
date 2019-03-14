@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -39,26 +40,45 @@ const (
 	jmxLineBuffer = 4 * 1024 * 1024 // Max 4MB per line. If single lines are outputting more JSON than that, we likely need smaller-scoped JMX queries
 )
 
-func getCommand(hostname, port, username, password string) (c []string) {
+type connectionConfig struct {
+	hostname           string
+	port               string
+	username           string
+	password           string
+	keyStore           string
+	keyStorePassword   string
+	trustStore         string
+	trustStorePassword string
+	remote             bool
+}
+
+func (cfg connectionConfig) isSSL() bool {
+	return cfg.keyStore != "" && cfg.keyStorePassword != "" && cfg.trustStore != "" && cfg.trustStorePassword != ""
+}
+
+func getCommand(cfg connectionConfig) (c []string) {
 	if os.Getenv("NR_JMX_TOOL") != "" {
 		c = strings.Split(os.Getenv("NR_JMX_TOOL"), " ")
 	} else {
 		c = []string{jmxCommand}
 	}
 
-	c = append(c, "--hostname", hostname, "--port", port)
-	if username != "" && password != "" {
-		c = append(c, "--username", username, "--password", password)
+	c = append(c, "--hostname", cfg.hostname, "--port", cfg.port)
+	if cfg.username != "" && cfg.password != "" {
+		c = append(c, "--username", cfg.username, "--password", cfg.password)
+	}
+	if cfg.remote {
+		c = append(c, "--remote", strconv.FormatBool(cfg.remote))
 	}
 
 	return
 }
 
-func getCommandWithSSL(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword string) []string {
-	c := getCommand(hostname, port, username, password)
+func getCommandWithSSL(cfg connectionConfig) []string {
+	c := getCommand(cfg)
 
-	if keyStore != "" && keyStorePassword != "" && trustStore != "" && trustStorePassword != "" {
-		c = append(c, "--keyStore", keyStore, "--keyStorePassword", keyStorePassword, "--trustStore", trustStore, "--trustStorePassword", trustStorePassword)
+	if cfg.isSSL() {
+		c = append(c, "--keyStore", cfg.keyStore, "--keyStorePassword", cfg.keyStorePassword, "--trustStore", cfg.trustStore, "--trustStorePassword", cfg.trustStorePassword)
 	}
 
 	return c
@@ -66,11 +86,49 @@ func getCommandWithSSL(hostname, port, username, password, keyStore, keyStorePas
 
 // Open will start the nrjmx command with the provided connection parameters.
 func Open(hostname, port, username, password string) error {
-	return OpenWithSSL(hostname, port, username, password, "", "", "", "")
+	config := connectionConfig{
+		hostname: hostname,
+		port:     port,
+		username: username,
+		password: password,
+	}
+
+	return openConnection(config)
 }
 
 // OpenWithSSL will start the nrjmx command with the provided SSL connection parameters
 func OpenWithSSL(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword string) error {
+	config := connectionConfig{
+		hostname:           hostname,
+		port:               port,
+		username:           username,
+		password:           password,
+		keyStore:           keyStore,
+		keyStorePassword:   keyStorePassword,
+		trustStore:         trustStore,
+		trustStorePassword: trustStorePassword,
+	}
+
+	return openConnection(config)
+}
+
+func OpenWithSSLRemote(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword string, remote bool) error {
+	config := connectionConfig{
+		hostname:           hostname,
+		port:               port,
+		username:           username,
+		password:           password,
+		keyStore:           keyStore,
+		keyStorePassword:   keyStorePassword,
+		trustStore:         trustStore,
+		trustStorePassword: trustStorePassword,
+		remote:             remote,
+	}
+
+	return openConnection(config)
+}
+
+func openConnection(config connectionConfig) error {
 	lock.Lock()
 	defer lock.Unlock()
 
@@ -88,7 +146,7 @@ func OpenWithSSL(hostname, port, username, password, keyStore, keyStorePassword,
 	var err error
 	var ctx context.Context
 
-	cliCommand := getCommandWithSSL(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword)
+	cliCommand := getCommandWithSSL(config)
 
 	ctx, cancel = context.WithCancel(context.Background())
 	cmd = exec.CommandContext(ctx, cliCommand[0], cliCommand[1:]...)
