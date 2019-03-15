@@ -25,7 +25,7 @@ func TestWriter(t *testing.T) {
 
 	assert.NoError(t, i.Publish())
 
-	assert.Equal(t, `{"name":"integration","protocol_version":"2","integration_version":"7.0","data":[]}`+"\n", w.String())
+	assert.Equal(t, `{"name":"integration","protocol_version":"3","integration_version":"7.0","data":[]}`+"\n", w.String())
 }
 
 func TestArgs(t *testing.T) {

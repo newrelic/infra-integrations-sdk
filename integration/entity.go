@@ -23,10 +23,14 @@ type Entity struct {
 	customAttributes []metric.Attribute
 }
 
+//IDAttributes used for the entity key uniqueness
+type IDAttributes []IDAttribute
+
 // EntityMetadata stores entity Metadata
 type EntityMetadata struct {
-	Name      string `json:"name"`
-	Namespace string `json:"type"` // For compatibility reasons we keep the type.
+	Name      string       `json:"name"`
+	Namespace string       `json:"type"`          // For compatibility reasons we keep the type.
+	IDAttrs   IDAttributes `json:"id_attributes"` // For entity Key uniqueness
 }
 
 // newLocalEntity creates unique default entity without identifier (name & type)
@@ -42,9 +46,15 @@ func newLocalEntity(storer persist.Storer, addHostnameToMetadata bool) *Entity {
 	}
 }
 
-// newEntity creates a new remote-entity.
-func newEntity(name, namespace string, storer persist.Storer, addHostnameToMetadata bool) (*Entity, error) {
-	// If one of the attributes is defined, both Name and Namespace are needed.
+// newEntity creates a new remote-entity with entity attributes.
+func newEntity(
+	name,
+	namespace string,
+	storer persist.Storer,
+	addHostnameToMetadata bool,
+	idAttrs ...IDAttribute,
+) (*Entity, error) {
+
 	if name == "" || namespace == "" {
 		return nil, errors.New("entity name and type are required when defining one")
 	}
@@ -57,17 +67,26 @@ func newEntity(name, namespace string, storer persist.Storer, addHostnameToMetad
 		AddHostname: addHostnameToMetadata,
 		storer:      storer,
 		lock:        &sync.Mutex{},
-	}
-
-	// Entity data is optional. When not specified, data from the integration is reported for the agent's own entity.
-	if name != "" && namespace != "" {
-		d.Metadata = &EntityMetadata{
+		Metadata: &EntityMetadata{
 			Name:      name,
 			Namespace: namespace,
-		}
+			IDAttrs:   idAttributes(idAttrs...),
+		},
 	}
 
 	return &d, nil
+}
+
+func idAttributes(idAttrs ...IDAttribute) IDAttributes {
+	attrs := make(IDAttributes, len(idAttrs))
+	if len(attrs) == 0 {
+		return attrs
+	}
+	for i, attr := range idAttrs {
+		attrs[i] = attr
+	}
+
+	return attrs
 }
 
 // isLocalEntity returns true if entity is the default one (has no identifier: name & type)
