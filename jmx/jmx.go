@@ -14,7 +14,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -70,7 +69,7 @@ func (cfg *connectionConfig) command() []string {
 		c = append(c, "--username", cfg.username, "--password", cfg.password)
 	}
 	if cfg.remote {
-		c = append(c, "--remote", strconv.FormatBool(cfg.remote))
+		c = append(c, "--remote")
 	}
 	if cfg.isSSL() {
 		c = append(c, "--keyStore", cfg.keyStore, "--keyStorePassword", cfg.keyStorePassword, "--trustStore", cfg.trustStore, "--trustStorePassword", cfg.trustStorePassword)
