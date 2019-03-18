@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- JMX with optional parameters. Added remote JMX URL protocol option.
+- New JMX open method with optional parameters. Added remote JMX URL protocol option.
+Use `jmx.OpenWithParameters` instead of old removed methods `jmx.OpenWithSSL` and `jmx.Open` 
 
 ## 3.1.2
 

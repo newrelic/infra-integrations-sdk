@@ -78,36 +78,6 @@ func (cfg *connectionConfig) command() []string {
 	return c
 }
 
-// Open will start the nrjmx command with the provided connection parameters.
-// Deprecated use OpenWithParameters instead.
-func Open(hostname, port, username, password string) error {
-	config := &connectionConfig{
-		hostname: hostname,
-		port:     port,
-		username: username,
-		password: password,
-	}
-
-	return openConnection(config)
-}
-
-// OpenWithSSL will start the nrjmx command with the provided SSL connection parameters.
-// Deprecated use OpenWithParameters instead.
-func OpenWithSSL(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword string) error {
-	config := &connectionConfig{
-		hostname:           hostname,
-		port:               port,
-		username:           username,
-		password:           password,
-		keyStore:           keyStore,
-		keyStorePassword:   keyStorePassword,
-		trustStore:         trustStore,
-		trustStorePassword: trustStorePassword,
-	}
-
-	return openConnection(config)
-}
-
 // OpenWithParameters executes a nrjmx command using the given options.
 func OpenWithParameters(hostname, port, username, password string, opts ...Option) error {
 	config := &connectionConfig{
