@@ -39,38 +39,82 @@ const (
 	jmxLineBuffer = 4 * 1024 * 1024 // Max 4MB per line. If single lines are outputting more JSON than that, we likely need smaller-scoped JMX queries
 )
 
-func getCommand(hostname, port, username, password string) (c []string) {
+// connectionConfig is the configuration for the nrjmx command.
+type connectionConfig struct {
+	hostname           string
+	port               string
+	username           string
+	password           string
+	keyStore           string
+	keyStorePassword   string
+	trustStore         string
+	trustStorePassword string
+	remote             bool
+}
+
+func (cfg *connectionConfig) isSSL() bool {
+	return cfg.keyStore != "" && cfg.keyStorePassword != "" && cfg.trustStore != "" && cfg.trustStorePassword != ""
+}
+
+func (cfg *connectionConfig) command() []string {
+	c := make([]string, 0)
 	if os.Getenv("NR_JMX_TOOL") != "" {
 		c = strings.Split(os.Getenv("NR_JMX_TOOL"), " ")
 	} else {
 		c = []string{jmxCommand}
 	}
 
-	c = append(c, "--hostname", hostname, "--port", port)
-	if username != "" && password != "" {
-		c = append(c, "--username", username, "--password", password)
+	c = append(c, "--hostname", cfg.hostname, "--port", cfg.port)
+	if cfg.username != "" && cfg.password != "" {
+		c = append(c, "--username", cfg.username, "--password", cfg.password)
 	}
-
-	return
-}
-
-func getCommandWithSSL(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword string) []string {
-	c := getCommand(hostname, port, username, password)
-
-	if keyStore != "" && keyStorePassword != "" && trustStore != "" && trustStorePassword != "" {
-		c = append(c, "--keyStore", keyStore, "--keyStorePassword", keyStorePassword, "--trustStore", trustStore, "--trustStorePassword", trustStorePassword)
+	if cfg.remote {
+		c = append(c, "--remote")
+	}
+	if cfg.isSSL() {
+		c = append(c, "--keyStore", cfg.keyStore, "--keyStorePassword", cfg.keyStorePassword, "--trustStore", cfg.trustStore, "--trustStorePassword", cfg.trustStorePassword)
 	}
 
 	return c
 }
 
-// Open will start the nrjmx command with the provided connection parameters.
-func Open(hostname, port, username, password string) error {
-	return OpenWithSSL(hostname, port, username, password, "", "", "", "")
+// Open executes a nrjmx command using the given options.
+func Open(hostname, port, username, password string, opts ...Option) error {
+	config := &connectionConfig{
+		hostname: hostname,
+		port:     port,
+		username: username,
+		password: password,
+	}
+
+	for _, opt := range opts {
+		opt(config)
+	}
+
+	return openConnection(config)
 }
 
-// OpenWithSSL will start the nrjmx command with the provided SSL connection parameters
-func OpenWithSSL(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword string) error {
+// Option sets an option on integration level.
+type Option func(config *connectionConfig)
+
+// WithSSL for SSL connection configuration.
+func WithSSL(keyStore, keyStorePassword, trustStore, trustStorePassword string) Option {
+	return func(config *connectionConfig) {
+		config.keyStore = keyStore
+		config.keyStorePassword = keyStorePassword
+		config.trustStore = trustStore
+		config.trustStorePassword = trustStorePassword
+	}
+}
+
+// WithRemoteProtocol uses the remote JMX protocol URL.
+func WithRemoteProtocol() Option {
+	return func(config *connectionConfig) {
+		config.remote = true
+	}
+}
+
+func openConnection(config *connectionConfig) error {
 	lock.Lock()
 	defer lock.Unlock()
 
@@ -88,7 +132,7 @@ func OpenWithSSL(hostname, port, username, password, keyStore, keyStorePassword,
 	var err error
 	var ctx context.Context
 
-	cliCommand := getCommandWithSSL(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword)
+	cliCommand := config.command()
 
 	ctx, cancel = context.WithCancel(context.Background())
 	cmd = exec.CommandContext(ctx, cliCommand[0], cliCommand[1:]...)
