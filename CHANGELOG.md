@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
+- JMX with optional parameters. Added remote JMX URL protocol option.
+
+## 3.1.2
+
+### Added
+
 - Protocol v3: See full [documentation](docs/protocol-v3.md).
 
 
