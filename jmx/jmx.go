@@ -78,8 +78,8 @@ func (cfg *connectionConfig) command() []string {
 	return c
 }
 
-// OpenWithParameters executes a nrjmx command using the given options.
-func OpenWithParameters(hostname, port, username, password string, opts ...Option) error {
+// Open executes a nrjmx command using the given options.
+func Open(hostname, port, username, password string, opts ...Option) error {
 	config := &connectionConfig{
 		hostname: hostname,
 		port:     port,

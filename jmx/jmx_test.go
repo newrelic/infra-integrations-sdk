@@ -63,10 +63,10 @@ func TestMain(m *testing.M) {
 func TestOpenWithParameters_OnlyWorksWhenClosed(t *testing.T) {
 	defer Close()
 
-	assert.NoError(t, OpenWithParameters("", "", "", ""))
-	assert.Error(t, OpenWithParameters("", "", "", ""))
+	assert.NoError(t, Open("", "", "", ""))
+	assert.Error(t, Open("", "", "", ""))
 	Close()
-	assert.NoError(t, OpenWithParameters("", "", "", ""))
+	assert.NoError(t, Open("", "", "", ""))
 }
 
 func TestQuery(t *testing.T) {
@@ -152,7 +152,7 @@ func openWait(hostname, port, username, password string, attempts int) error {
 
 func openWaitWithSSL(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword string, attempts int) error {
 	ssl := WithSSL(keyStore, keyStorePassword, trustStore, trustStorePassword)
-	err := OpenWithParameters(hostname, port, username, password, ssl)
+	err := Open(hostname, port, username, password, ssl)
 	if err == ErrJmxCmdRunning && attempts > 0 {
 		attempts--
 		time.Sleep(10 * time.Millisecond)

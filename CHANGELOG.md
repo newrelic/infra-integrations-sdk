@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-- New JMX open method with optional parameters. Added remote JMX URL protocol option.
-Use `jmx.OpenWithParameters` instead of old removed methods `jmx.OpenWithSSL` and `jmx.Open` 
+- New JMX option for remote URL protocol connections.
+- Changed JMX open method. New `jmx.OpenWithParameters` accepts optionals parameters like SSL, remote connections, etc. Old integrations using old  methods `jmx.OpenWithSSL` and `jmx.Open` should use this new `jmx.OpenWithParameters` method instead. 
 
 ## 3.1.2
 
