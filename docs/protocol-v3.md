@@ -5,7 +5,7 @@ This version is basically the same as **v2**, but it improves **remote entities 
 
 ## Agent support
 
-This integration protocol is supported by New Relic infrastructure agent since version **TBD**.
+This integration protocol is supported by New Relic infrastructure agent since version `1.2.25`.
 
 
 ## Name local address replacement
