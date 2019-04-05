@@ -3,6 +3,8 @@ package integration
 import (
 	"testing"
 
+	"github.com/newrelic/infra-integrations-sdk/data/metric"
+
 	"strconv"
 	"sync"
 
@@ -23,7 +25,7 @@ func TestNewEntity(t *testing.T) {
 	assert.Empty(t, e.Metadata.IDAttrs)
 }
 
-func TestNewEntityWithAttributes(t *testing.T) {
+func TestNewEntityWithIdentifierAttributes(t *testing.T) {
 	attr1 := NewIDAttribute("env", "prod")
 	attr2 := NewIDAttribute("srv", "auth")
 	e, err := newEntity(
@@ -42,7 +44,7 @@ func TestNewEntityWithAttributes(t *testing.T) {
 	assert.Equal(t, e.Metadata.IDAttrs[1], attr2)
 }
 
-func TestNewEntityWithOneAttribute(t *testing.T) {
+func TestNewEntityWithOneIdentifierAttribute(t *testing.T) {
 	attr1 := NewIDAttribute("env", "prod")
 	e, err := newEntity(
 		"name",
@@ -56,6 +58,27 @@ func TestNewEntityWithOneAttribute(t *testing.T) {
 	assert.True(t, e.AddHostname)
 	assert.Len(t, e.Metadata.IDAttrs, 1)
 	assert.Equal(t, e.Metadata.IDAttrs[0], attr1)
+}
+
+func TestEntity_AddAttributes(t *testing.T) {
+	idAttr := NewIDAttribute("env", "prod")
+	e, err := newEntity(
+		"name",
+		"type",
+		persist.NewInMemoryStore(),
+		false,
+		idAttr,
+	)
+	assert.NoError(t, err)
+
+	e.AddAttributes(metric.Attr("key1", "val1"), metric.Attr("key2", "val2"))
+
+	assert.Len(t, e.customAttributes, 2, "attributes should have been added to the entity")
+
+	ms := e.NewMetricSet("event-type")
+
+	assert.Equal(t, "val1", ms.Metrics["key1"])
+	assert.Equal(t, "val2", ms.Metrics["key2"])
 }
 
 func TestEntitiesRequireNameAndType(t *testing.T) {
