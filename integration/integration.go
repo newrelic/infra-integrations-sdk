@@ -23,6 +23,12 @@ const (
 	CustomAttrService = "service_name"
 )
 
+// Standard attributes
+const (
+	AttrReportingEntity   = "reportingEntityKey"
+	AttrReportingEndpoint = "reportingEndpoint"
+)
+
 // NR infrastructure agent protocol version
 const (
 	protocolVersion = "3"
@@ -41,20 +47,6 @@ type Integration struct {
 	writer             io.Writer
 	logger             log.Logger
 	args               interface{}
-}
-
-// IDAttribute is a Key Value struct which is used to have uniqueness during the entity Key resolution.
-type IDAttribute struct {
-	Key   string
-	Value string
-}
-
-// NewIDAttribute creates new identifier attribute.
-func NewIDAttribute(key, value string) IDAttribute {
-	return IDAttribute{
-		Key:   key,
-		Value: value,
-	}
 }
 
 // New creates new integration with sane default values.
@@ -129,6 +121,28 @@ func (i *Integration) LocalEntity() *Entity {
 	i.Entities = append(i.Entities, e)
 
 	return e
+}
+
+// EntityReportedBy entity being reported from another entity that is not producing the actual entity data.
+func (i *Integration) EntityReportedBy(reportingEntity EntityKey, reportedEntityName, reportedEntityNamespace string, idAttributes ...IDAttribute) (e *Entity, err error) {
+	e, err = i.Entity(reportedEntityName, reportedEntityNamespace, idAttributes...)
+	if err != nil {
+		return
+	}
+
+	e.setCustomAttribute(AttrReportingEntity, reportingEntity.String())
+	return
+}
+
+// EntityReportedVia entity being reported from a known endpoint.
+func (i *Integration) EntityReportedVia(endpoint, reportedEntityName, reportedEntityNamespace string, idAttributes ...IDAttribute) (e *Entity, err error) {
+	e, err = i.Entity(reportedEntityName, reportedEntityNamespace, idAttributes...)
+	if err != nil {
+		return
+	}
+
+	e.setCustomAttribute(AttrReportingEndpoint, endpoint)
+	return
 }
 
 // Entity method creates or retrieves an already created entity.
