@@ -128,6 +128,13 @@ func (e *Entity) SetInventoryItem(key string, field string, value interface{}) e
 	return e.Inventory.SetItem(key, field, value)
 }
 
+// AddAttributes adds attributes to every entity metric-set.
+func (e *Entity) AddAttributes(attributes ...metric.Attribute) {
+	for _, a := range attributes {
+		e.setCustomAttribute(a.Key, a.Value)
+	}
+}
+
 func (e *Entity) setCustomAttribute(key string, value string) {
 	attribute := metric.Attribute{key, value}
 	e.customAttributes = append(e.customAttributes, attribute)
