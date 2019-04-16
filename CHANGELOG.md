@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Next Release
 
+### Added
+
+- Standardise the attributes used to store the data sources: reporting-entity & reporting-endpoint under new attributes:
+ `reportingEntityKey`, `reportingEndpoint`. See [doc](/docs/entity-definition.md#entity-reporting-data). 
+
 ### Changed
 
 - New JMX option for remote URL protocol connections.

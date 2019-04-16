@@ -23,9 +23,6 @@ type Entity struct {
 	customAttributes []metric.Attribute
 }
 
-//IDAttributes used for the entity key uniqueness
-type IDAttributes []IDAttribute
-
 // EntityMetadata stores entity Metadata
 type EntityMetadata struct {
 	Name      string       `json:"name"`
@@ -77,18 +74,6 @@ func newEntity(
 	return &d, nil
 }
 
-func idAttributes(idAttrs ...IDAttribute) IDAttributes {
-	attrs := make(IDAttributes, len(idAttrs))
-	if len(attrs) == 0 {
-		return attrs
-	}
-	for i, attr := range idAttrs {
-		attrs[i] = attr
-	}
-
-	return attrs
-}
-
 // isLocalEntity returns true if entity is the default one (has no identifier: name & type)
 func (e *Entity) isLocalEntity() bool {
 	return e.Metadata == nil || e.Metadata.Name == ""
@@ -138,4 +123,9 @@ func (e *Entity) AddAttributes(attributes ...metric.Attribute) {
 func (e *Entity) setCustomAttribute(key string, value string) {
 	attribute := metric.Attribute{key, value}
 	e.customAttributes = append(e.customAttributes, attribute)
+}
+
+// Key unique entity identifier within a New Relic customer account.
+func (e *Entity) Key() (EntityKey, error) {
+	return e.Metadata.Key()
 }

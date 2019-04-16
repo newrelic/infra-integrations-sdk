@@ -190,3 +190,23 @@ func TestEntity_IsDefaultEntity(t *testing.T) {
 	assert.Empty(t, e.Metadata, "default entity should have no identifier")
 	assert.True(t, e.isLocalEntity())
 }
+
+func TestEntity_Key(t *testing.T) {
+	e, err := newEntity("entity", "ns", persist.NewInMemoryStore(), false)
+	assert.NoError(t, err)
+
+	k, err := e.Key()
+	assert.NoError(t, err)
+	assert.Equal(t, "ns:entity", k.String())
+}
+
+func TestEntity_Key_WithIDAttrs(t *testing.T) {
+	attr1 := NewIDAttribute("env", "prod")
+	attr2 := NewIDAttribute("srv", "auth")
+	e, err := newEntity("entity", "ns", persist.NewInMemoryStore(), false, attr1, attr2)
+	assert.NoError(t, err)
+
+	k, err := e.Key()
+	assert.NoError(t, err)
+	assert.Equal(t, "ns:entity:env=prod:srv=auth", k.String())
+}

@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Attribute represents an attribute metric in key-value pair format.
+// Attribute represents a metric attribute key-value pair.
 type Attribute struct {
 	Key   string
 	Value string

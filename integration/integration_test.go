@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/newrelic/infra-integrations-sdk/data/event"
 
 	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
@@ -57,12 +59,58 @@ func TestDefaultIntegrationWritesToStdout(t *testing.T) {
 	assert.Equal(t, `{"name":"integration","protocol_version":"3","integration_version":"4.0","data":[]}`+"\n", string(payload))
 }
 
-func TestIntegration_DefaultEntity(t *testing.T) {
+func TestIntegration_LocalEntity(t *testing.T) {
 	i := newTestIntegration(t)
 
 	e1 := i.LocalEntity()
 	e2 := i.LocalEntity()
 	assert.Equal(t, e1, e2)
+}
+
+func TestIntegration_Entity(t *testing.T) {
+	i := newTestIntegration(t)
+
+	e1, err := i.Entity("name", "ns")
+	assert.NoError(t, err)
+	e2, err := i.Entity("name2", "ns")
+	assert.NoError(t, err)
+	e3, err := i.Entity("name", "ns")
+	assert.NoError(t, err)
+
+	assert.NotEqual(t, e1, e2, "Different names create different entities")
+	assert.Equal(t, e1, e3, "Same namespace & name create/retrieve same entity")
+}
+
+func TestIntegration_EntityReportedBy(t *testing.T) {
+	i := newTestIntegration(t)
+
+	e, err := i.EntityReportedBy("reporting:entity:key", "name", "ns")
+	assert.NoError(t, err)
+
+	reportingEntityExists := false
+	for _, a := range e.customAttributes {
+		if a.Key == AttrReportingEntity {
+			reportingEntityExists = true
+			assert.Equal(t, a.Value, "reporting:entity:key")
+		}
+	}
+	require.True(t, reportingEntityExists)
+}
+
+func TestIntegration_EntityReportedVia(t *testing.T) {
+	i := newTestIntegration(t)
+
+	e, err := i.EntityReportedVia("reporting.endpoint:123", "name", "ns")
+	assert.NoError(t, err)
+
+	reportingEndpointExists := false
+	for _, a := range e.customAttributes {
+		if a.Key == AttrReportingEndpoint {
+			reportingEndpointExists = true
+			assert.Equal(t, a.Value, "reporting.endpoint:123")
+		}
+	}
+	require.True(t, reportingEndpointExists)
 }
 
 func TestDefaultArguments(t *testing.T) {
