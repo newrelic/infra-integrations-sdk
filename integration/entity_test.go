@@ -210,3 +210,18 @@ func TestEntity_Key_WithIDAttrs(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "ns:entity:env=prod:srv=auth", k.String())
 }
+
+func TestEntity_SameAs(t *testing.T) {
+	attr := NewIDAttribute("env", "prod")
+	e1, err := newEntity("entity", "ns", persist.NewInMemoryStore(), false, attr)
+	assert.NoError(t, err)
+
+	e2, err := newEntity("entity", "ns", persist.NewInMemoryStore(), false, attr)
+	assert.NoError(t, err)
+
+	e3, err := newEntity("entity", "ns", persist.NewInMemoryStore(), false)
+	assert.NoError(t, err)
+
+	assert.True(t, e1.SameAs(e2))
+	assert.False(t, e1.SameAs(e3))
+}

@@ -150,16 +150,15 @@ func (i *Integration) Entity(name, namespace string, idAttributes ...IDAttribute
 	i.locker.Lock()
 	defer i.locker.Unlock()
 
-	// we should change this to map for performance
-	for _, e = range i.Entities {
-		if e.Metadata != nil && e.Metadata.Name == name && e.Metadata.Namespace == namespace {
-			return e, nil
-		}
-	}
-
 	e, err = newEntity(name, namespace, i.storer, i.addHostnameToMeta, idAttributes...)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, eIt := range i.Entities {
+		if e.SameAs(eIt) {
+			return eIt, nil
+		}
 	}
 
 	defaultArgs := args.GetDefaultArgs(i.args)

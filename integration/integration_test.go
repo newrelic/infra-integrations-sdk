@@ -81,6 +81,22 @@ func TestIntegration_Entity(t *testing.T) {
 	assert.Equal(t, e1, e3, "Same namespace & name create/retrieve same entity")
 }
 
+func TestIntegration_Entity_WithIDAttrs(t *testing.T) {
+	i := newTestIntegration(t)
+
+	idAttr := NewIDAttribute("k", "v")
+
+	e1, err := i.Entity("name", "ns", idAttr)
+	assert.NoError(t, err)
+	e2, err := i.Entity("name", "ns")
+	assert.NoError(t, err)
+	e3, err := i.Entity("name", "ns", idAttr)
+	assert.NoError(t, err)
+
+	assert.NotEqual(t, e1, e2, "Different id-attributes create different entities")
+	assert.Equal(t, e1, e3, "Same namespace, name and id-attributes create/retrieve same entity")
+}
+
 func TestIntegration_EntityReportedBy(t *testing.T) {
 	i := newTestIntegration(t)
 
