@@ -5,7 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## Next Release
+## 3.1.5
+
+### Fixed
+
+- Different [Identifier
+  attributes](/blob/master/docs/entity-definition.md#identifier-attributes)
+  fetch/create different entities. `integration.Entity` method fix.
+
+## 3.1.4
 
 ### Added
 
