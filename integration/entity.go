@@ -30,6 +30,26 @@ type EntityMetadata struct {
 	IDAttrs   IDAttributes `json:"id_attributes"` // For entity Key uniqueness
 }
 
+// EqualsTo returns true when both metadata are equal.
+func (m *EntityMetadata) EqualsTo(b *EntityMetadata) bool {
+	// prevent checking on Key() for performance
+	if m.Name != b.Name || m.Namespace != b.Namespace {
+		return false
+	}
+
+	k1, err := m.Key()
+	if err != nil {
+		return false
+	}
+
+	k2, err := b.Key()
+	if err != nil {
+		return false
+	}
+
+	return k1.String() == k2.String()
+}
+
 // newLocalEntity creates unique default entity without identifier (name & type)
 func newLocalEntity(storer persist.Storer, addHostnameToMetadata bool) *Entity {
 	return &Entity{
@@ -77,6 +97,15 @@ func newEntity(
 // isLocalEntity returns true if entity is the default one (has no identifier: name & type)
 func (e *Entity) isLocalEntity() bool {
 	return e.Metadata == nil || e.Metadata.Name == ""
+}
+
+// SameAs return true when is same entity
+func (e *Entity) SameAs(b *Entity) bool {
+	if e.Metadata == nil || b.Metadata == nil {
+		return false
+	}
+
+	return e.Metadata.EqualsTo(b.Metadata)
 }
 
 // NewMetricSet returns a new instance of Set with its sample attached to the integration.
