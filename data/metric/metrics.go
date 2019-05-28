@@ -28,6 +28,7 @@ var (
 	ErrNonNumeric        = errors.New("non-numeric value for rate/delta")
 	ErrNoStoreToCalcDiff = errors.New("cannot use deltas nor rates without persistent store")
 	ErrTooCloseSamples   = errors.New("samples too close in time, skipping")
+	ErrNegativeDiff      = errors.New("source was reset, skipping")
 	ErrOverrideSetAttrs  = errors.New("cannot overwrite metric-set attributes")
 	ErrDeltaWithNoAttrs  = errors.New("delta/rate metrics should be attached to an attribute identified metric-set")
 )
@@ -80,12 +81,13 @@ func (ms *Set) SetMetric(name string, value interface{}, sourceType SourceType) 
 
 	// Only sample metrics of numeric type
 	switch sourceType {
-	case RATE, DELTA:
+	case RATE, DELTA, URATE, UDELTA:
 		if len(ms.nsAttributes) == 0 {
 			err = ErrDeltaWithNoAttrs
 			return
 		}
-		newValue, errElapsed = ms.elapsedDifference(name, value, sourceType)
+		unsigned := sourceType == URATE || sourceType == UDELTA
+		newValue, errElapsed = ms.elapsedDifference(name, value, sourceType, unsigned)
 		if errElapsed != nil {
 			return errors.Wrapf(errElapsed, "cannot calculate elapsed difference for metric: %s value %v", name, value)
 		}
@@ -128,7 +130,7 @@ func castToFloat(value interface{}) (float64, error) {
 	return strconv.ParseFloat(fmt.Sprintf("%v", value), 64)
 }
 
-func (ms *Set) elapsedDifference(name string, absolute interface{}, sourceType SourceType) (elapsed float64, err error) {
+func (ms *Set) elapsedDifference(name string, absolute interface{}, sourceType SourceType, unsigned bool) (elapsed float64, err error) {
 	if ms.storer == nil {
 		err = ErrNoStoreToCalcDiff
 		return
@@ -163,6 +165,12 @@ func (ms *Set) elapsedDifference(name string, absolute interface{}, sourceType S
 	}
 
 	elapsed = newValue - oldValue
+
+	if elapsed < 0 && unsigned {
+		err = ErrNegativeDiff
+		return
+	}
+
 	if sourceType == RATE {
 		elapsed = elapsed / float64(duration)
 	}

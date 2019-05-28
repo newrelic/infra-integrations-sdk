@@ -58,7 +58,7 @@ func TestSet_SetMetricAttribute(t *testing.T) {
 func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 	storer := persist.NewInMemoryStore()
 
-	for _, sourceType := range []SourceType{DELTA, RATE} {
+	for _, sourceType := range []SourceType{DELTA, RATE, URATE, UDELTA} {
 		persist.SetNow(growingTime)
 
 		ms := NewSet("some-event-type", storer, Attr("k", "v"))
@@ -92,6 +92,26 @@ func TestSet_SetMetricAllowsNegativeDeltas(t *testing.T) {
 	assert.NoError(t, ms.SetMetric("d", 5, DELTA))
 	assert.NoError(t, ms.SetMetric("d", 2, DELTA))
 	assert.Equal(t, ms.Metrics["d"], -3.0)
+}
+
+func TestSet_SetMetricUnsignedNotAllowsNegativeDeltas(t *testing.T) {
+	for _, sourceType := range []SourceType{UDELTA, URATE} {
+		t.Run(string(sourceType), func(t *testing.T) {
+			persist.SetNow(growingTime)
+			ms := NewSet(
+				"some-event-type",
+				persist.NewInMemoryStore(),
+				Attr("k", "v"),
+			)
+			assert.NoError(t, ms.SetMetric("d", 5, sourceType))
+			assert.Error(
+				t,
+				ms.SetMetric("d", 2, sourceType),
+				"source was reset, skipping",
+			)
+			assert.Equal(t, ms.Metrics["d"], 0.0)
+		})
+	}
 }
 
 func TestSet_SetMetric_NilStorer(t *testing.T) {

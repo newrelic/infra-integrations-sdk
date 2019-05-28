@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 3.2.0
+
+### Added
+
+- Adds the unsigned version of `RATE` and `DELTA`, `URATE` and `UDELTA`, which 
+  don't allow negatives values.
+
 ## 3.1.5
 
 ### Fixed

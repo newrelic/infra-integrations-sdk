@@ -17,8 +17,12 @@ const (
 	GAUGE SourceType = iota
 	// RATE is an ever-growing value which might be reset. The package calculates the change rate.
 	RATE SourceType = iota
+	// URATE is the unsigned version of RATE, it doesn't allow negative values.
+	URATE SourceType = iota
 	// DELTA is an ever-growing value which might be reset. The package calculates the difference between samples.
 	DELTA SourceType = iota
+	// UDELTA is the unsigned version of DELTA, it doesn't allow negative values.
+	UDELTA SourceType = iota
 	// ATTRIBUTE is any string value
 	ATTRIBUTE SourceType = iota
 )
