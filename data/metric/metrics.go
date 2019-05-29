@@ -81,13 +81,12 @@ func (ms *Set) SetMetric(name string, value interface{}, sourceType SourceType) 
 
 	// Only sample metrics of numeric type
 	switch sourceType {
-	case RATE, DELTA, URATE, UDELTA:
+	case RATE, DELTA, PRATE, PDELTA:
 		if len(ms.nsAttributes) == 0 {
 			err = ErrDeltaWithNoAttrs
 			return
 		}
-		unsigned := sourceType == URATE || sourceType == UDELTA
-		newValue, errElapsed = ms.elapsedDifference(name, value, sourceType, unsigned)
+		newValue, errElapsed = ms.elapsedDifference(name, value, sourceType)
 		if errElapsed != nil {
 			return errors.Wrapf(errElapsed, "cannot calculate elapsed difference for metric: %s value %v", name, value)
 		}
@@ -130,7 +129,7 @@ func castToFloat(value interface{}) (float64, error) {
 	return strconv.ParseFloat(fmt.Sprintf("%v", value), 64)
 }
 
-func (ms *Set) elapsedDifference(name string, absolute interface{}, sourceType SourceType, unsigned bool) (elapsed float64, err error) {
+func (ms *Set) elapsedDifference(name string, absolute interface{}, sourceType SourceType) (elapsed float64, err error) {
 	if ms.storer == nil {
 		err = ErrNoStoreToCalcDiff
 		return
@@ -166,7 +165,7 @@ func (ms *Set) elapsedDifference(name string, absolute interface{}, sourceType S
 
 	elapsed = newValue - oldValue
 
-	if elapsed < 0 && unsigned {
+	if elapsed < 0 && sourceType.IsPositive() {
 		err = ErrNegativeDiff
 		return
 	}

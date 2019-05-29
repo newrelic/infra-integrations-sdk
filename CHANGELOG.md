@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- Adds the unsigned version of `RATE` and `DELTA`, `URATE` and `UDELTA`, which 
-  don't allow negatives values.
+- Adds the positive only version of `RATE` and `DELTA`, named `PRATE` and
+  `PDELTA` respectively.
 
 ## 3.1.5
 

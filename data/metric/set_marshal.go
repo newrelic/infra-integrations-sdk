@@ -32,7 +32,9 @@ const (
 // If the value does not match one of the values below an error will be returned.
 //   - gauge
 //   - rate
+//   - prate
 //   - delta
+//   - pdelta
 //   - attribute
 //
 // If one of the required tags is missing an error will be returned.
@@ -44,6 +46,8 @@ const (
 //      Attribute string  `metric_name:"metric.attribute" source_type:"attribute"`
 //      Rate      float64 `metric_name:"metric.rate" source_type:"RATE"`
 //      Delta     float64 `metric_name:"metric.delta" source_type:"delta"`
+//      PRate     float64 `metric_name:"metric.prate" source_type:"prate"`
+//      PDelta    float64 `metric_name:"metric.pdelta" source_type:"pdelta"`
 //   }
 //
 // Any non-struct/non-pointer value that has the correct struct field tags
