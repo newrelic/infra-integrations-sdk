@@ -13,11 +13,15 @@ func TestSet_MarshalMetricsSimpleStruct(t *testing.T) {
 		Attribute string  `metric_name:"metric.attribute" source_type:"attribute"`
 		Rate      float64 `metric_name:"metric.rate" source_type:"rate"`
 		Delta     float64 `metric_name:"metric.delta" source_type:"delta"`
+		PRate     float64 `metric_name:"metric.prate" source_type:"prate"`
+		PDelta    float64 `metric_name:"metric.pdelta" source_type:"pdelta"`
 	}{
 		10,
 		"some-attribute",
 		float64(20),
 		float64(30),
+		float64(40),
+		float64(50),
 	}
 
 	expectedMarshall := map[string]interface{}{
@@ -27,6 +31,8 @@ func TestSet_MarshalMetricsSimpleStruct(t *testing.T) {
 		"metric.rate":      0.,
 		"metric.attribute": "some-attribute",
 		"metric.delta":     0.,
+		"metric.pdelta":    0.,
+		"metric.prate":     0.,
 	}
 
 	ms := newTestSet()

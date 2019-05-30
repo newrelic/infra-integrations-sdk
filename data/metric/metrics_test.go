@@ -58,7 +58,7 @@ func TestSet_SetMetricAttribute(t *testing.T) {
 func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 	storer := persist.NewInMemoryStore()
 
-	for _, sourceType := range []SourceType{DELTA, RATE} {
+	for _, sourceType := range []SourceType{DELTA, RATE, PRATE, PDELTA} {
 		persist.SetNow(growingTime)
 
 		ms := NewSet("some-event-type", storer, Attr("k", "v"))
@@ -84,14 +84,53 @@ func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 	}
 }
 
-func TestSet_SetMetricAllowsNegativeDeltas(t *testing.T) {
-	persist.SetNow(growingTime)
+func TestSet_SetMetricsRatesAndDeltas(t *testing.T) {
+	var testCases = []struct {
+		sourceType  SourceType
+		firstValue  float64
+		secondValue float64
+		finalValue  float64
+	}{
+		{DELTA, 5, 2, -3.0},
+		{DELTA, 2, 5, 3.0},
+		{PDELTA, 1, 5, 4.0},
+		{RATE, 2, 4, 2.0},
+		{RATE, 4, 2, -2.0},
+		{PRATE, 2, 4, 2.0},
+	}
 
-	ms := NewSet("some-event-type", persist.NewInMemoryStore(), Attr("k", "v"))
+	for _, tc := range testCases {
+		t.Run(string(tc.sourceType), func(t *testing.T) {
 
-	assert.NoError(t, ms.SetMetric("d", 5, DELTA))
-	assert.NoError(t, ms.SetMetric("d", 2, DELTA))
-	assert.Equal(t, ms.Metrics["d"], -3.0)
+			persist.SetNow(growingTime)
+
+			ms := NewSet("some-event-type", persist.NewInMemoryStore(), Attr("k", "v"))
+
+			assert.NoError(t, ms.SetMetric("d", tc.firstValue, tc.sourceType))
+			assert.NoError(t, ms.SetMetric("d", tc.secondValue, tc.sourceType))
+			assert.Equal(t, ms.Metrics["d"], tc.finalValue)
+		})
+	}
+}
+
+func TestSet_SetMetricPositivesThrowsOnNegativeValues(t *testing.T) {
+	for _, sourceType := range []SourceType{PDELTA, PRATE} {
+		t.Run(string(sourceType), func(t *testing.T) {
+			persist.SetNow(growingTime)
+			ms := NewSet(
+				"some-event-type",
+				persist.NewInMemoryStore(),
+				Attr("k", "v"),
+			)
+			assert.NoError(t, ms.SetMetric("d", 5, sourceType))
+			assert.Error(
+				t,
+				ms.SetMetric("d", 2, sourceType),
+				"source was reset, skipping",
+			)
+			assert.Equal(t, ms.Metrics["d"], 0.0)
+		})
+	}
 }
 
 func TestSet_SetMetric_NilStorer(t *testing.T) {
