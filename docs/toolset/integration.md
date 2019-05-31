@@ -83,8 +83,10 @@ are four type of metrics:
 
 * `GAUGE`: an absolute, spot value, such as percentage of used CPU or free system memory.
 * `RATE`: a value that represents a measured quantity on a time period. For example, transferred bytes per second.
+* `PRATE`: version of `RATE` that only allows positive values.
 * `DELTA`: a value that represents the variation of a quantity since the last sample. For example, number of new
   connections since the last metric sample was set.
+* `PDELTA`: version of `DELTA` that only allows positive values.
 * `ATTRIBUTE`: a string value (e.g. `"high"` or `"stopped"`)
 
 Metrics are grouped in a key-value map (called _metrics set_). Every entity can control several, different metric sets.
@@ -97,7 +99,7 @@ cpu := myHost.NewMetricSet("CpuSample")
 err = cpu.SetMetric("cpuPercent", 75.0, metric.GAUGE)
 ```
 
-**RATE and DELTAs require to belong to at least 1 attribute.**
+**RATE, PRATE, DELTA and PDELTA require to belong to at least 1 attribute.**
 
 As they are flushed to disk this attribute is used to "namespace" the metrics on the set so they don't collide with others with the same name.
 
@@ -105,7 +107,7 @@ So `NewMetricSet` provides an optional list of `metric.Attribute` arguments. The
 
 The attributes provided on the `NewMetricSet` constructor are also added as usual attribute metrics.
 
-If no `Attribute` is provided to `NewMetricSet`, an `error` value will be returned when calling `SetMetric` for a RATE or DELTA.
+If no `Attribute` is provided to `NewMetricSet`, an `error` value will be returned when calling `SetMetric` for a RATE, PRATE, DELTA or PDELTA.
 
 ```go
 disk := myHost.NewMetricSet("DiskSample", metric.Attr("diskStatus", "OK"))
