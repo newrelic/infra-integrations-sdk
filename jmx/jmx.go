@@ -43,6 +43,7 @@ const (
 type connectionConfig struct {
 	hostname           string
 	port               string
+	uriPath            string
 	username           string
 	password           string
 	keyStore           string
@@ -65,6 +66,9 @@ func (cfg *connectionConfig) command() []string {
 	}
 
 	c = append(c, "--hostname", cfg.hostname, "--port", cfg.port)
+	if cfg.uriPath != "" {
+		c = append(c, "--uriPath", cfg.uriPath)
+	}
 	if cfg.username != "" && cfg.password != "" {
 		c = append(c, "--username", cfg.username, "--password", cfg.password)
 	}
@@ -96,6 +100,13 @@ func Open(hostname, port, username, password string, opts ...Option) error {
 
 // Option sets an option on integration level.
 type Option func(config *connectionConfig)
+
+//WithURIPath for specifying non standard(jmxrmi) path on jmx service uri
+func WithURIPath(uriPath string) Option {
+	return func(config *connectionConfig) {
+		config.uriPath = uriPath
+	}
+}
 
 // WithSSL for SSL connection configuration.
 func WithSSL(keyStore, keyStorePassword, trustStore, trustStorePassword string) Option {
