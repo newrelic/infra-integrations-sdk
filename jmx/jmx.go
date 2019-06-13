@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -28,6 +27,21 @@ var cmdIn io.WriteCloser
 var cmdErr = make(chan error, 1)
 var done sync.WaitGroup
 var warnings []string
+
+type chanErrorWriter struct {
+	chanErr chan error
+}
+
+func newChanErrorWriter(c chan error) *chanErrorWriter {
+	return &chanErrorWriter{
+		chanErr: c,
+	}
+}
+
+func (rw *chanErrorWriter) Write(p []byte) (int, error) {
+	rw.chanErr <- fmt.Errorf(string(p))
+	return len(p), nil
+}
 
 var (
 	jmxCommand = "/usr/bin/nrjmx"
@@ -144,9 +158,7 @@ func openConnection(config *connectionConfig) error {
 		return err
 	}
 
-	if cmdError, err = cmd.StderrPipe(); err != nil {
-		return err
-	}
+	cmd.Stderr = newChanErrorWriter(cmdErr)
 
 	if err = cmd.Start(); err != nil {
 		return err
@@ -154,8 +166,7 @@ func openConnection(config *connectionConfig) error {
 
 	go func() {
 		if err = cmd.Wait(); err != nil {
-			stdErr, _ := ioutil.ReadAll(cmdError)
-			cmdErr <- fmt.Errorf("JMX tool exited with error: %s [state: %s] (%s)", err, cmd.ProcessState, string(stdErr))
+			cmdErr <- fmt.Errorf("JMX tool exited with error: %s [state: %s]", err, cmd.ProcessState)
 		}
 
 		lock.Lock()
@@ -230,6 +241,20 @@ func Query(objectPattern string, timeout int) (map[string]interface{}, error) {
 	return receiveResult(lineCh, queryErrors, cancelFn, objectPattern, outTimeout)
 }
 
+func checkStdErr(err error) (error) {
+	select {
+	case stdErr := <-cmdErr:
+		if strings.HasPrefix(stdErr.Error(), "WARNING") {
+			warnings = append(warnings, stdErr.Error())
+		} else {
+			return fmt.Errorf("%v (%v)", err, stdErr)
+		}
+	default:
+	}
+
+	return err
+}
+
 // receiveResult checks for channels to receive result from nrjmx command.
 func receiveResult(lineCh chan []byte, queryErrors chan error, cancelFn context.CancelFunc, objectPattern string, timeout time.Duration) (result map[string]interface{}, err error) {
 	select {
@@ -237,10 +262,10 @@ func receiveResult(lineCh chan []byte, queryErrors chan error, cancelFn context.
 		if line == nil {
 			cancelFn()
 			Close()
-			return nil, fmt.Errorf("got empty result for query: %s", objectPattern)
+			return nil, checkStdErr(fmt.Errorf("got empty result for query: %s", objectPattern))
 		}
 		if err := json.Unmarshal(line, &result); err != nil {
-			return nil, fmt.Errorf("invalid return value for query: %s, %s", objectPattern, err)
+			return nil, checkStdErr(fmt.Errorf("invalid return value for query: %s, %s", objectPattern, err))
 		}
 	case err := <-cmdErr: // Will receive an error if the nrjmx tool exited prematurely
 		if strings.HasPrefix(err.Error(), "WARNING") {
@@ -249,12 +274,12 @@ func receiveResult(lineCh chan []byte, queryErrors chan error, cancelFn context.
 			return nil, err
 		}
 	case err := <-queryErrors: // Will receive an error if we failed while reading query output
-		return nil, err
+		return nil, checkStdErr(err)
 	case <-time.After(timeout):
 		// In case of timeout, we want to close the command to avoid mixing up results coming up latter
 		cancelFn()
 		Close()
-		return nil, fmt.Errorf("timeout while waiting for query: %s", objectPattern)
+		return nil, checkStdErr(fmt.Errorf("timeout while waiting for query: %s", objectPattern))
 	}
 	return result, nil
 }
