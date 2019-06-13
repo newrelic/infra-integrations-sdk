@@ -22,7 +22,6 @@ var lock sync.Mutex
 var cmd *exec.Cmd
 var cancel context.CancelFunc
 var cmdOut io.ReadCloser
-var cmdError io.ReadCloser
 var cmdIn io.WriteCloser
 var cmdErr = make(chan error, 1)
 var done sync.WaitGroup
@@ -191,7 +190,6 @@ func Close() {
 
 	cancel()
 	_ = cmdIn.Close()
-	_ = cmdError.Close()
 
 	lock.Unlock()
 
