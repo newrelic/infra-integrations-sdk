@@ -44,7 +44,7 @@ type connectionConfig struct {
 
 	hostname              string
 	port                  string
-        uriPath               string
+	uriPath               string
 	username              string
 	password              string
 	keyStore              string
