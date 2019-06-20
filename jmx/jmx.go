@@ -41,7 +41,6 @@ const (
 
 // connectionConfig is the configuration for the nrjmx command.
 type connectionConfig struct {
-
 	hostname              string
 	port                  string
 	uriPath               string
