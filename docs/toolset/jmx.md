@@ -89,10 +89,14 @@ jmx.Open("127.0.0.1", "9010", "", "", ssl)
 ```
 
 # Example 3: Remoting protocol for JMX
-Some jBoss versions need the `remoting-jmx` protocol URL. Use `WithRemoteProtocol()` for using this remoting URL.
+Some jBoss versions need the `remoting-jmx` protocol URL.
+
+Use `WithRemoteProtocol()` for using this remoting URL, by defult it targets jBoss Domain-mode.
 - **URL without remoting protocol** `service:jmx:rmi:///jndi/rmi://host:port/jmxrmi`
-- **Remoting URL** `service:jmx:remoting-jmx://host:port`
+- **Remoting URL** `service:jmx:remote://host:port`
 
 ```go
 jmx.Open("127.0.0.1", "9010", "", "", WithRemoteProtocol())
 ```
+
+For jbos Standalone mode use `WithRemoteStandAloneJBoss()`.
