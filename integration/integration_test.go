@@ -313,7 +313,11 @@ func TestIntegration_Publish(t *testing.T) {
 				  "events": [
 					{
 					  "summary": "evnt1sum",
-					  "category": "evnt1cat"
+					  "category": "evnt1cat",
+						"attributes": {
+							"attr1": "attr1Val",
+							"attr2": 42
+						}
 					},
 					{
 					  "summary": "evnt2sum",
@@ -361,7 +365,14 @@ func TestIntegration_Publish(t *testing.T) {
 	assert.NoError(t, ms.SetMetric("metricTwo", "test", metric.ATTRIBUTE))
 	assert.NoError(t, ms.SetMetric("metricBool", true, metric.GAUGE))
 
-	assert.NoError(t, e.AddEvent(event.New("evnt1sum", "evnt1cat")))
+	assert.NoError(t, e.AddEvent(event.NewWithAttributes(
+		"evnt1sum",
+		"evnt1cat",
+		map[string]interface{}{
+			"attr1": "attr1Val",
+			"attr2": 42,
+		},
+	)))
 	assert.NoError(t, e.AddEvent(event.New("evnt2sum", "evnt2cat")))
 
 	e2, err := i.Entity("EntityTwo", "test")
