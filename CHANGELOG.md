@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- Support for event attributes.
+[//]: # (TODO: FIX AGENT VERSION)
+
+- Support for event attributes. Supported since infra agent version X.X.X
 
 ## 3.2.0
 

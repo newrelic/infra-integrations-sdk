@@ -6,10 +6,22 @@ const (
 )
 
 // Event is the data type to represent arbitrary, one-off messages for key
-// activities on a system.
+// activities on a system. Ex:
+//
+// Event{
+//   Category: "gear",
+//   Summary:  "gear has been changed",
+//   Attributes: map[string]interface{}{
+//     "oldGear":      3,
+//     "newGear":      4,
+//     "transmission": "manual",
+//   },
+// }
 type Event struct {
-	Summary    string                 `json:"summary"`
-	Category   string                 `json:"category,omitempty"`
+	Summary  string `json:"summary"`
+	Category string `json:"category,omitempty"`
+	// Attributes are optional, they represent additional information that
+	// can be attached to an event.
 	Attributes map[string]interface{} `json:"attributes,omitempty"`
 }
 
