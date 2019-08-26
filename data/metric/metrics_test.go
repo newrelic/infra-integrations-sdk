@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/newrelic/infra-integrations-sdk/data/attributes"
 	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
@@ -61,7 +62,7 @@ func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 	for _, sourceType := range []SourceType{DELTA, RATE, PRATE, PDELTA} {
 		persist.SetNow(growingTime)
 
-		ms := NewSet("some-event-type", storer, Attr("k", "v"))
+		ms := NewSet("some-event-type", storer, attributes.Attr("k", "v"))
 
 		for _, tt := range rateAndDeltaTests {
 			// user should not store different types under the same key
@@ -104,7 +105,7 @@ func TestSet_SetMetricsRatesAndDeltas(t *testing.T) {
 
 			persist.SetNow(growingTime)
 
-			ms := NewSet("some-event-type", persist.NewInMemoryStore(), Attr("k", "v"))
+			ms := NewSet("some-event-type", persist.NewInMemoryStore(), attributes.Attr("k", "v"))
 
 			assert.NoError(t, ms.SetMetric("d", tc.firstValue, tc.sourceType))
 			assert.NoError(t, ms.SetMetric("d", tc.secondValue, tc.sourceType))
@@ -120,7 +121,7 @@ func TestSet_SetMetricPositivesThrowsOnNegativeValues(t *testing.T) {
 			ms := NewSet(
 				"some-event-type",
 				persist.NewInMemoryStore(),
-				Attr("k", "v"),
+				attributes.Attr("k", "v"),
 			)
 			assert.NoError(t, ms.SetMetric("d", 5, sourceType))
 			assert.Error(
@@ -164,7 +165,7 @@ func TestSet_SetMetric_IncorrectMetricType(t *testing.T) {
 }
 
 func TestSet_MarshalJSON(t *testing.T) {
-	ms := NewSet("some-event-type", persist.NewInMemoryStore(), Attr("k", "v"))
+	ms := NewSet("some-event-type", persist.NewInMemoryStore(), attributes.Attr("k", "v"))
 
 	ms.SetMetric("foo", 1, RATE)
 	ms.SetMetric("bar", 1, DELTA)
@@ -181,7 +182,7 @@ func TestSet_MarshalJSON(t *testing.T) {
 }
 
 func TestSet_UnmarshalJSON(t *testing.T) {
-	ms := NewSet("some-event-type", persist.NewInMemoryStore(), Attr("k", "v"))
+	ms := NewSet("some-event-type", persist.NewInMemoryStore(), attributes.Attr("k", "v"))
 
 	err := ms.UnmarshalJSON([]byte(`{"foo":0,"bar":1.5,"quux":"bar"}`))
 
@@ -199,7 +200,7 @@ func TestNewSet_FileStore_StoresBetweenRuns(t *testing.T) {
 	s, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
 	assert.NoError(t, err)
 
-	set1 := NewSet("type", s, Attr("k", "v"))
+	set1 := NewSet("type", s, attributes.Attr("k", "v"))
 
 	assert.NoError(t, set1.SetMetric("foo", 1, DELTA))
 
@@ -208,7 +209,7 @@ func TestNewSet_FileStore_StoresBetweenRuns(t *testing.T) {
 	s2, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
 	assert.NoError(t, err)
 
-	set2 := NewSet("type", s2, Attr("k", "v"))
+	set2 := NewSet("type", s2, attributes.Attr("k", "v"))
 
 	assert.NoError(t, set2.SetMetric("foo", 3, DELTA))
 
@@ -227,8 +228,8 @@ func TestNewSet_Attr_AddsAttributes(t *testing.T) {
 	set := NewSet(
 		"type",
 		storeWrite,
-		Attr("pod", "pod-a"),
-		Attr("node", "node-a"),
+		attributes.Attr("pod", "pod-a"),
+		attributes.Attr("node", "node-a"),
 	)
 
 	assert.Equal(t, "pod-a", set.Metrics["pod"])
@@ -244,9 +245,9 @@ func TestNewSet_Attr_SolvesCacheCollision(t *testing.T) {
 	storeWrite, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
 	assert.NoError(t, err)
 
-	ms1 := NewSet("type", storeWrite, Attr("pod", "pod-a"))
-	ms2 := NewSet("type", storeWrite, Attr("pod", "pod-a"))
-	ms3 := NewSet("type", storeWrite, Attr("pod", "pod-b"))
+	ms1 := NewSet("type", storeWrite, attributes.Attr("pod", "pod-a"))
+	ms2 := NewSet("type", storeWrite, attributes.Attr("pod", "pod-a"))
+	ms3 := NewSet("type", storeWrite, attributes.Attr("pod", "pod-b"))
 
 	assert.NoError(t, ms1.SetMetric("field", 1, DELTA))
 	assert.NoError(t, ms2.SetMetric("field", 2, DELTA))
@@ -258,7 +259,7 @@ func TestNewSet_Attr_SolvesCacheCollision(t *testing.T) {
 	storeRead, err := persist.NewFileStore(storeFile, log.Discard, 1*time.Hour)
 	assert.NoError(t, err)
 
-	msRead := NewSet("type", storeRead, Attr("pod", "pod-a"))
+	msRead := NewSet("type", storeRead, attributes.Attr("pod", "pod-a"))
 
 	// write is required to make data available for read
 	assert.NoError(t, msRead.SetMetric("field", 10, DELTA))
@@ -267,7 +268,7 @@ func TestNewSet_Attr_SolvesCacheCollision(t *testing.T) {
 }
 
 func TestSet_namespace(t *testing.T) {
-	s := NewSet("type", persist.NewInMemoryStore(), Attr("k", "v"))
+	s := NewSet("type", persist.NewInMemoryStore(), attributes.Attr("k", "v"))
 
 	assert.Equal(t, fmt.Sprintf("k==v::foo"), s.namespace("foo"))
 
@@ -275,8 +276,8 @@ func TestSet_namespace(t *testing.T) {
 	s = NewSet(
 		"type",
 		persist.NewInMemoryStore(),
-		Attr("k1", "v1"),
-		Attr("k2", "v2"),
+		attributes.Attr("k1", "v1"),
+		attributes.Attr("k2", "v2"),
 	)
 
 	assert.Equal(t, fmt.Sprintf("k1==v1::k2==v2::foo"), s.namespace("foo"))
@@ -285,8 +286,8 @@ func TestSet_namespace(t *testing.T) {
 	s = NewSet(
 		"type",
 		persist.NewInMemoryStore(),
-		Attr("k2", "v2"),
-		Attr("k1", "v1"),
+		attributes.Attr("k2", "v2"),
+		attributes.Attr("k1", "v1"),
 	)
 
 	assert.Equal(t, fmt.Sprintf("k1==v1::k2==v2::foo"), s.namespace("foo"))

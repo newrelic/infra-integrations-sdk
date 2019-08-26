@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/newrelic/infra-integrations-sdk/data/attributes"
 	"github.com/newrelic/infra-integrations-sdk/data/event"
 	"github.com/newrelic/infra-integrations-sdk/data/inventory"
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
@@ -20,7 +21,7 @@ type Entity struct {
 	storer      persist.Storer
 	lock        sync.Locker
 	// CustomAttributes []metric.Attribute `json:"custom_attributes,omitempty"`
-	customAttributes []metric.Attribute
+	customAttributes []attributes.Attribute
 }
 
 // EntityMetadata stores entity Metadata
@@ -109,7 +110,7 @@ func (e *Entity) SameAs(b *Entity) bool {
 }
 
 // NewMetricSet returns a new instance of Set with its sample attached to the integration.
-func (e *Entity) NewMetricSet(eventType string, nameSpacingAttributes ...metric.Attribute) *metric.Set {
+func (e *Entity) NewMetricSet(eventType string, nameSpacingAttributes ...attributes.Attribute) *metric.Set {
 
 	s := metric.NewSet(eventType, e.storer, nameSpacingAttributes...)
 
@@ -124,14 +125,18 @@ func (e *Entity) NewMetricSet(eventType string, nameSpacingAttributes ...metric.
 }
 
 // AddEvent method adds a new Event.
-func (e *Entity) AddEvent(event *event.Event) error {
-	if event.Summary == "" {
+func (e *Entity) AddEvent(evnt *event.Event) error {
+	if evnt.Summary == "" {
 		return errors.New("summary of the event cannot be empty")
+	}
+
+	if len(e.customAttributes) > 0 {
+		event.AddCustomAttributes(evnt, e.customAttributes)
 	}
 
 	e.lock.Lock()
 	defer e.lock.Unlock()
-	e.Events = append(e.Events, event)
+	e.Events = append(e.Events, evnt)
 	return nil
 }
 
@@ -143,14 +148,14 @@ func (e *Entity) SetInventoryItem(key string, field string, value interface{}) e
 }
 
 // AddAttributes adds attributes to every entity metric-set.
-func (e *Entity) AddAttributes(attributes ...metric.Attribute) {
+func (e *Entity) AddAttributes(attributes ...attributes.Attribute) {
 	for _, a := range attributes {
 		e.setCustomAttribute(a.Key, a.Value)
 	}
 }
 
 func (e *Entity) setCustomAttribute(key string, value string) {
-	attribute := metric.Attribute{key, value}
+	attribute := attributes.Attribute{key, value}
 	e.customAttributes = append(e.customAttributes, attribute)
 }
 

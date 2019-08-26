@@ -1,5 +1,7 @@
 package event
 
+import "github.com/newrelic/infra-integrations-sdk/data/attributes"
+
 const (
 	// NotificationEventCategory category for notification events.
 	NotificationEventCategory = "notifications"
@@ -43,4 +45,18 @@ func NewWithAttributes(summary, category string, attributes map[string]interface
 	e := New(summary, category)
 	e.Attributes = attributes
 	return e
+}
+
+func (e *Event) setAttribute(key string, val interface{}) {
+	e.Attributes[key] = val
+}
+
+// AddCustomAttributes add customAttributes to MetricSet
+func AddCustomAttributes(e *Event, customAttributes []attributes.Attribute) {
+	if e.Attributes == nil {
+		return
+	}
+	for _, attr := range customAttributes {
+		e.setAttribute(attr.Key, attr.Value)
+	}
 }

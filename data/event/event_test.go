@@ -3,6 +3,7 @@ package event
 import (
 	"testing"
 
+	"github.com/newrelic/infra-integrations-sdk/data/attributes"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,7 +19,7 @@ func TestNewNotification(t *testing.T) {
 	assert.Equal(t, n.Summary, "summary")
 }
 
-func TestNewAttributes(t *testing.T) {
+func TestNewEventsWithAttributes(t *testing.T) {
 	e := NewWithAttributes(
 		"summary",
 		"category",
@@ -28,4 +29,20 @@ func TestNewAttributes(t *testing.T) {
 	assert.Equal(t, e.Summary, "summary")
 	assert.Equal(t, e.Category, "category")
 	assert.Equal(t, e.Attributes["attrKey"], "attrVal")
+}
+
+func TestEventsAddCustomAttributes(t *testing.T) {
+	e := &Event{
+		Summary:    "summary",
+		Category:   "category",
+		Attributes: map[string]interface{}{"attrKey": "attrVal"},
+	}
+
+	a := attributes.Attributes{attributes.Attr("clusterName", "my-cluster")}
+
+	AddCustomAttributes(e, a)
+
+	assert.Equal(t, e.Summary, "summary")
+	assert.Equal(t, e.Category, "category")
+	assert.Equal(t, e.Attributes, map[string]interface{}{"attrKey": "attrVal", "clusterName": "my-cluster"})
 }

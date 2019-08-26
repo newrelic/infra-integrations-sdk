@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/newrelic/infra-integrations-sdk/data/attributes"
 	"github.com/newrelic/infra-integrations-sdk/data/event"
 
 	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
@@ -159,7 +160,7 @@ func TestClusterAndServiceArgumentsAreAddedToMetadata(t *testing.T) {
 	e, err := i.Entity("name", "ns")
 	assert.NoError(t, err)
 
-	assert.Equal(t, []metric.Attribute{
+	assert.Equal(t, []attributes.Attribute{
 		{
 			Key:   CustomAttrCluster,
 			Value: "foo",
