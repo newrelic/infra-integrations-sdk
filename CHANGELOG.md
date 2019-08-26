@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 3.4.0
+
+### Added
+
+- Support for event attributes. Supported since infra agent version 1.5.31.
+
+## 3.3.1
+
+### Added
+
+- JMX support for custom URI paths (this enables support for integrations like ForgeRock OpenDJ)
+
+## 3.3.0
+
+### Added
+
+- JMX JBoss remote support for Domain-mode as default and Standalone-mode optionally.
+
 ## 3.2.0
 
 ### Added

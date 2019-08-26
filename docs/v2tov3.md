@@ -108,7 +108,12 @@ The `v2` JSON schema also adds the following fields for each entry in the `metri
       "events": [
         {
           "category": "gear",
-          "summary": "gear has been changed"
+          "summary": "gear has been changed",
+          "attributes": {
+            "oldGear": 3,
+            "newGear": 4,
+            "transmission": "manual"
+          }
         }
       ]
     }
