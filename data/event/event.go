@@ -30,8 +30,9 @@ type Event struct {
 // New creates a new event.
 func New(summary, category string) *Event {
 	return &Event{
-		Summary:  summary,
-		Category: category,
+		Summary:    summary,
+		Category:   category,
+		Attributes: make(map[string]interface{}),
 	}
 }
 
@@ -51,11 +52,8 @@ func (e *Event) setAttribute(key string, val interface{}) {
 	e.Attributes[key] = val
 }
 
-// AddCustomAttributes add customAttributes to MetricSet
+// AddCustomAttributes add customAttributes to the Event
 func AddCustomAttributes(e *Event, customAttributes []attributes.Attribute) {
-	if e.Attributes == nil {
-		return
-	}
 	for _, attr := range customAttributes {
 		e.setAttribute(attr.Key, attr.Value)
 	}

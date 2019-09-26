@@ -155,7 +155,10 @@ func (e *Entity) AddAttributes(attributes ...attributes.Attribute) {
 }
 
 func (e *Entity) setCustomAttribute(key string, value string) {
-	attribute := attributes.Attribute{key, value}
+	attribute := attributes.Attribute{
+		Key:   key,
+		Value: value,
+	}
 	e.customAttributes = append(e.customAttributes, attribute)
 }
 
