@@ -12,6 +12,7 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/data/event"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewEntity(t *testing.T) {
@@ -106,16 +107,14 @@ func TestAddNotificationEvent(t *testing.T) {
 
 func TestAddEventWithAttributes(t *testing.T) {
 	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore(), false)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	en.customAttributes = attributes.Attributes{attributes.Attr("clusterName", "my-cluster-name")}
 	attrs := map[string]interface{}{"attrKey": "attrVal"}
 	err = en.AddEvent(event.NewWithAttributes("TestSummary", "TestCategory", attrs))
 	assert.NoError(t, err)
 
-	assert.Len(t, en.Events, 1)
+	require.Len(t, en.Events, 1)
 
 	assert.Equal(t, "TestSummary", en.Events[0].Summary)
 	assert.Equal(t, "TestCategory", en.Events[0].Category)
