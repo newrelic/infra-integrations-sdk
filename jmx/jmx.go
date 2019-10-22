@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -171,14 +170,39 @@ func openConnection(config *connectionConfig) error {
 		return err
 	}
 
+	go func() {
+		scanner := bufio.NewScanner(cmdError)
+		scanner.Buffer([]byte{}, jmxLineBuffer)
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				break
+			}
+			scanner.Scan()
+
+			line := scanner.Text()
+			fmt.Println("FOO", line)
+			if strings.Contains(line, "WARNING") {
+				cmdErr <- fmt.Errorf("JMX tool exited with error: %s [state: %s] (%s)", err, cmd.ProcessState, line)
+			}
+		}
+
+	}()
+
 	if err = cmd.Start(); err != nil {
 		return err
 	}
 
 	go func() {
 		if err = cmd.Wait(); err != nil {
-			stdErr, _ := ioutil.ReadAll(cmdError)
-			cmdErr <- fmt.Errorf("JMX tool exited with error: %s [state: %s] (%s)", err, cmd.ProcessState, string(stdErr))
+			if err != nil {
+				fmt.Errorf("JMX tool exited with error: %s [state: %s]", err, cmd.ProcessState)
+			}
+			//stdErr, _ := ioutil.ReadAll(cmdError)
+			//cmdErr <- fmt.Errorf("JMX tool exited with error: %s [state: %s] (%s)", err, cmd.ProcessState, string(stdErr))
 		}
 
 		lock.Lock()
@@ -234,13 +258,25 @@ func doQuery(ctx context.Context, out chan []byte, errorChan chan error, querySt
 			errorChan <- fmt.Errorf("error reading output from JMX tool: %v", err)
 		} else {
 			// If scanner.Scan() returns false but err is also nil, it hit EOF. We consider that a problem, so we should return an error.
-			errorChan <- fmt.Errorf("got an EOF while reading JMX tool output")
+			//errorChan <- fmt.Errorf("got an EOF while reading JMX tool output")
 		}
 	}
 }
 
 // Query executes JMX query against nrjmx tool waiting up to timeout (in milliseconds)
 func Query(objectPattern string, timeout int) (map[string]interface{}, error) {
+
+	//f, err := os.Create("cpuprof")
+	//if err != nil {
+	//	panic(fmt.Errorf("could not create CPU profile"))
+	//} else {
+	//	runtime.SetCPUProfileRate(10000)
+	//	if err := pprof.StartCPUProfile(f); err != nil {
+	//		panic(fmt.Errorf("could not start CPU profile"))
+	//	}
+	//	defer pprof.StopCPUProfile()
+	//}
+
 	defer flushWarnings()
 	ctx, cancelFn := context.WithCancel(context.Background())
 
@@ -266,11 +302,7 @@ func receiveResult(lineCh chan []byte, queryErrors chan error, cancelFn context.
 			return nil, fmt.Errorf("invalid return value for query: %s, %s", objectPattern, err)
 		}
 	case err := <-cmdErr: // Will receive an error if the nrjmx tool exited prematurely
-		if strings.HasPrefix(err.Error(), "WARNING") {
 			warnings = append(warnings, err.Error())
-		} else {
-			return nil, err
-		}
 	case err := <-queryErrors: // Will receive an error if we failed while reading query output
 		return nil, err
 	case <-time.After(timeout):
