@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -22,6 +23,7 @@ var query2IsErr = map[string]bool{
 	"empty":   false,
 	"crash":   true,
 	"invalid": true,
+	"timeout": true,
 }
 
 func TestMain(m *testing.M) {
@@ -71,7 +73,7 @@ func TestOpenWithParameters_OnlyWorksWhenClosed(t *testing.T) {
 
 func TestQuery(t *testing.T) {
 	for q, isErr := range query2IsErr {
-		assert.NoError(t, openWait("", "", "", "", openAttempts), "error on opening for query %s", q)
+		require.NoError(t, openWait("", "", "", "", openAttempts), "error on opening for query %s", q)
 
 		_, err := Query(q, timeout)
 		if isErr {
@@ -85,7 +87,7 @@ func TestQuery(t *testing.T) {
 
 func TestQuery_WithSSL(t *testing.T) {
 	for q, isErr := range query2IsErr {
-		assert.NoError(t, openWaitWithSSL("", "", "", "", "", "", "", "", openAttempts))
+		require.NoError(t, openWaitWithSSL("", "", "", "", "", "", "", "", openAttempts))
 
 		_, err := Query(q, timeout)
 		if isErr {
@@ -94,22 +96,6 @@ func TestQuery_WithSSL(t *testing.T) {
 			assert.NoError(t, err, "case "+q)
 		}
 		Close()
-	}
-}
-
-func TestQuery_TimeoutReturnsError(t *testing.T) {
-	defer Close()
-
-	if err := openWait("", "", "", "", openAttempts); err != nil {
-		t.Error(err)
-	}
-
-	if _, err := Query("timeout", timeout); err == nil {
-		t.Error()
-	}
-
-	if _, err := Query("empty", timeout); err == nil {
-		t.Error()
 	}
 }
 
@@ -122,7 +108,7 @@ func TestJmxNoTimeoutQuery(t *testing.T) {
 		t.Error(err)
 	}
 
-	if _, err := Query("timeout", 1500); err != nil {
+	if _, err := Query("timeout", timeout+1000); err != nil {
 		t.Error(err)
 	}
 }
@@ -163,20 +149,18 @@ func openWaitWithSSL(hostname, port, username, password, keyStore, keyStorePassw
 	return err
 }
 
-// test that if we receive a WARNING message we still will receive the actual data.
-func TestLoop(t *testing.T) {
+func Test_receiveResult_warningsDoNotBreakResultReception(t *testing.T) {
 	_, cancelFn := context.WithCancel(context.Background())
 
-	lineCh := make(chan []byte, jmxLineBuffer*2)
-	queryErrors := make(chan error)
+	resultCh := make(chan []byte, 1)
+	queryErrCh := make(chan error)
 	outTimeout := time.Duration(timeout) * time.Millisecond
-	receiveResult(lineCh, queryErrors, cancelFn, "empty", outTimeout)
-	warningMessage := "WARNING foo bar"
-	cmdExitErr <- fmt.Errorf(warningMessage)
-	errorChannel := <-cmdExitErr
-	assert.Equal(t, errorChannel, fmt.Errorf(warningMessage))
-	b := []byte("{foo}")
-	lineCh <- b
-	msg := string(<-lineCh)
-	assert.Equal(t, msg, "{foo}")
+
+	_, _ = receiveResult(resultCh, queryErrCh, cancelFn, "empty", outTimeout)
+
+	cmdExitErr <- fmt.Errorf("WARNING foo bar")
+	assert.Equal(t, <-cmdExitErr, fmt.Errorf("WARNING foo bar"))
+
+	resultCh <- []byte("{foo}")
+	assert.Equal(t, string(<-resultCh), "{foo}")
 }
