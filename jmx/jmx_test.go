@@ -89,9 +89,9 @@ func TestQuery_WithSSL(t *testing.T) {
 
 		_, err := Query(q, timeout)
 		if isErr {
-			assert.Error(t, err)
+			assert.Error(t, err, "case "+q)
 		} else {
-			assert.NoError(t, err)
+			assert.NoError(t, err, "case "+q)
 		}
 		Close()
 	}
@@ -165,7 +165,6 @@ func openWaitWithSSL(hostname, port, username, password, keyStore, keyStorePassw
 
 // test that if we receive a WARNING message we still will receive the actual data.
 func TestLoop(t *testing.T) {
-	defer flushWarnings()
 	_, cancelFn := context.WithCancel(context.Background())
 
 	lineCh := make(chan []byte, jmxLineBuffer*2)
@@ -173,12 +172,11 @@ func TestLoop(t *testing.T) {
 	outTimeout := time.Duration(timeout) * time.Millisecond
 	receiveResult(lineCh, queryErrors, cancelFn, "empty", outTimeout)
 	warningMessage := "WARNING foo bar"
-	cmdErr <- fmt.Errorf(warningMessage)
-	errorChannel := <-cmdErr
+	cmdExitErr <- fmt.Errorf(warningMessage)
+	errorChannel := <-cmdExitErr
 	assert.Equal(t, errorChannel, fmt.Errorf(warningMessage))
 	b := []byte("{foo}")
 	lineCh <- b
 	msg := string(<-lineCh)
 	assert.Equal(t, msg, "{foo}")
-
 }
