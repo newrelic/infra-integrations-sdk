@@ -277,7 +277,7 @@ func receiveResult(lineCh chan []byte, queryErrors chan error, cancelFn context.
 		select {
 		case line := <-lineCh:
 			gotResult = true
-			if line == nil {
+			if len(line) == 0 {
 				cancelFn()
 				log.Warn(fmt.Sprintf("empty result for query: %s", objectPattern))
 				continue
