@@ -55,7 +55,7 @@ func TestMain(m *testing.M) {
 			} else if command == cmdInvalid {
 				fmt.Println("not a json")
 			} else if command == cmdTimeout {
-				time.Sleep(timeoutMillis * time.Millisecond)
+				time.Sleep(timeoutMillis + 200*time.Millisecond)
 				fmt.Println("{}")
 			} else if command == cmdBigPayload {
 				// Create a payload of more than 64K
