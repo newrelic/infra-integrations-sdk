@@ -87,6 +87,11 @@ func (cfg *connectionConfig) command() []string {
 	return c
 }
 
+// OpenNoAuth executes a nrjmx command without user/pass using the given options.
+func OpenNoAuth(hostname, port string, opts ...Option) error {
+	return Open(hostname, port, "", "", opts...)
+}
+
 // Open executes a nrjmx command using the given options.
 func Open(hostname, port, username, password string, opts ...Option) error {
 	config := &connectionConfig{
