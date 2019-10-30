@@ -15,15 +15,22 @@ import (
 )
 
 const (
-	timeout      = 1000
-	openAttempts = 5
+	timeoutMillis = 1000
+	openAttempts  = 5
+	// jmx mock cmds
+	cmdEmpty         = "empty"
+	cmdCrash         = "crash"
+	cmdInvalid       = "invalid"
+	cmdTimeout       = "timeout"
+	cmdBigPayload    = "bigPayload"
+	cmdBigPayloadErr = "bigPayloadError"
 )
 
 var query2IsErr = map[string]bool{
-	"empty":   false,
-	"crash":   true,
-	"invalid": true,
-	"timeout": true,
+	cmdEmpty:   false,
+	cmdCrash:   true,
+	cmdInvalid: true,
+	cmdTimeout: true,
 }
 
 func TestMain(m *testing.M) {
@@ -41,19 +48,19 @@ func TestMain(m *testing.M) {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			command := scanner.Text()
-			if command == "empty" {
+			if command == cmdEmpty {
 				fmt.Println("{}")
-			} else if command == "crash" {
+			} else if command == cmdCrash {
 				os.Exit(1)
-			} else if command == "invalid" {
+			} else if command == cmdInvalid {
 				fmt.Println("not a json")
-			} else if command == "timeout" {
-				time.Sleep(1000 * time.Millisecond)
+			} else if command == cmdTimeout {
+				time.Sleep(timeoutMillis * time.Millisecond)
 				fmt.Println("{}")
-			} else if command == "bigPayload" {
+			} else if command == cmdBigPayload {
 				// Create a payload of more than 64K
 				fmt.Println(fmt.Sprintf("{\"first\": 1%s}", strings.Repeat(", \"s\": 2", 70*1024)))
-			} else if command == "bigPayloadError" {
+			} else if command == cmdBigPayloadErr {
 				// Create a payload of more than 4M
 				fmt.Println(fmt.Sprintf("{\"first\": 1%s}", strings.Repeat(", \"s\": 2", 4*1024*1024)))
 			}
@@ -75,7 +82,7 @@ func TestQuery(t *testing.T) {
 	for q, isErr := range query2IsErr {
 		require.NoError(t, openWait("", "", "", "", openAttempts), "error on opening for query %s", q)
 
-		_, err := Query(q, timeout)
+		_, err := Query(q, timeoutMillis)
 		if isErr {
 			assert.Error(t, err)
 		} else {
@@ -89,7 +96,7 @@ func TestQuery_WithSSL(t *testing.T) {
 	for q, isErr := range query2IsErr {
 		require.NoError(t, openWaitWithSSL("", "", "", "", "", "", "", "", openAttempts))
 
-		_, err := Query(q, timeout)
+		_, err := Query(q, timeoutMillis)
 		if isErr {
 			assert.Error(t, err, "case "+q)
 		} else {
@@ -108,7 +115,7 @@ func TestJmxNoTimeoutQuery(t *testing.T) {
 		t.Error(err)
 	}
 
-	if _, err := Query("timeout", timeout+1000); err != nil {
+	if _, err := Query(cmdTimeout, timeoutMillis+1000); err != nil {
 		t.Error(err)
 	}
 }
@@ -122,11 +129,11 @@ func TestJmxTimeoutBigQuery(t *testing.T) {
 		t.Error(err)
 	}
 
-	if _, err := Query("bigPayload", timeout); err != nil {
+	if _, err := Query(cmdBigPayload, timeoutMillis); err != nil {
 		t.Error(err)
 	}
 
-	if _, err := Query("bigPayloadError", timeout); err == nil {
+	if _, err := Query(cmdBigPayloadErr, timeoutMillis); err == nil {
 		t.Error()
 	}
 }
@@ -154,7 +161,7 @@ func Test_receiveResult_warningsDoNotBreakResultReception(t *testing.T) {
 
 	resultCh := make(chan []byte, 1)
 	queryErrCh := make(chan error)
-	outTimeout := time.Duration(timeout) * time.Millisecond
+	outTimeout := time.Duration(timeoutMillis) * time.Millisecond
 
 	_, _ = receiveResult(resultCh, queryErrCh, cancelFn, "empty", outTimeout)
 
