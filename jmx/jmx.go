@@ -28,7 +28,6 @@ var cmdError io.ReadCloser
 var cmdIn io.WriteCloser
 var cmdExitErr = make(chan error, 1000)
 var done sync.WaitGroup
-var cmdWarn = make(chan string, 1000)
 
 var (
 	jmxCommand = "/usr/bin/nrjmx"
@@ -174,25 +173,7 @@ func openConnection(config *connectionConfig) (err error) {
 		return err
 	}
 
-	go func() {
-		scanner := bufio.NewScanner(cmdError)
-		scanner.Buffer([]byte{}, jmxLineBuffer)
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				break
-			}
-			scanner.Scan()
-
-			line := scanner.Text()
-			if strings.HasPrefix(line, "WARNING") {
-				cmdWarn <- fmt.Sprintf("cannot read nrjmx stderr: %s [proc-state: %s] (line: %s)", err, cmd.ProcessState, line)
-			}
-		}
-	}()
+	go handleStdErr(ctx)
 
 	if err = cmd.Start(); err != nil {
 		return err
@@ -213,6 +194,28 @@ func openConnection(config *connectionConfig) (err error) {
 	}()
 
 	return nil
+}
+
+func handleStdErr(ctx context.Context) {
+	s := bufio.NewScanner(cmdError)
+	s.Buffer([]byte{}, jmxLineBuffer)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			break
+		}
+		if !s.Scan() {
+			return
+		}
+
+		line := s.Text()
+		if strings.HasPrefix(line, "WARNING") {
+			log.Warn(line[7:])
+		}
+	}
 }
 
 // Close will finish the underlying nrjmx application by closing its standard
@@ -296,9 +299,6 @@ func receiveResult(lineCh chan []byte, queryErrors chan error, cancelFn context.
 
 		case err = <-queryErrors:
 			gotResult = true
-
-		case w := <-cmdWarn:
-			log.Warn(w)
 
 		case <-time.After(timeout):
 			// In case of timeout, we want to close the command to avoid mixing up results coming up latter
