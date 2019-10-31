@@ -226,8 +226,6 @@ func Close() {
 	}
 
 	cancel()
-	_ = cmdIn.Close()
-	_ = cmdError.Close()
 
 	lock.Unlock()
 
