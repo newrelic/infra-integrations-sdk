@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 
 - JMX package: fixed `nrjmx` error handling
+- JMX package support for `nrjmx` multi-line responses
 
 ## 3.4.0
 

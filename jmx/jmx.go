@@ -20,22 +20,23 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/log"
 )
 
+const (
+	jmxLineBuffer = 4 * 1024 * 1024 // Max 4MB per line. If single lines are outputting more JSON than that, we likely need smaller-scoped JMX queries
+	cmdStdChanLen = 1000
+)
+
 var cmd *exec.Cmd
 var cancel context.CancelFunc
 var cmdOut io.ReadCloser
 var cmdError io.ReadCloser
 var cmdIn io.WriteCloser
-var cmdExitErr = make(chan error, 1000)
+var cmdExitErr = make(chan error, cmdStdChanLen)
 var done sync.WaitGroup
 
 var (
 	jmxCommand = "/usr/bin/nrjmx"
 	// ErrJmxCmdRunning error returned when trying to Open and nrjmx command is still running
 	ErrJmxCmdRunning = errors.New("JMX tool is already running")
-)
-
-const (
-	jmxLineBuffer = 4 * 1024 * 1024 // Max 4MB per line. If single lines are outputting more JSON than that, we likely need smaller-scoped JMX queries
 )
 
 // connectionConfig is the configuration for the nrjmx command.
@@ -147,7 +148,7 @@ func openConnection(config *connectionConfig) (err error) {
 	}
 
 	// Drain error channel to prevent showing past errors
-	cmdExitErr = make(chan error, 1000)
+	cmdExitErr = make(chan error, cmdStdChanLen)
 
 	done.Add(1)
 
@@ -229,27 +230,29 @@ func doQuery(ctx context.Context, out chan []byte, queryErrC chan error, querySt
 	scanner := bufio.NewScanner(cmdOut)
 	scanner.Buffer([]byte{}, jmxLineBuffer) // Override default buffer to increase buffer size
 
-	if scanner.Scan() {
+	for scanner.Scan() {
 		select {
 		case <-ctx.Done():
 			return
 		case out <- scanner.Bytes():
 		default:
 		}
-	} else {
-		// not EOF & error
-		if err := scanner.Err(); err != nil {
-			queryErrC <- fmt.Errorf("error reading output from JMX tool: %v", err)
-		}
+	}
+
+	// not EOF & error
+	if err := scanner.Err(); err != nil {
+		queryErrC <- fmt.Errorf("error reading output from JMX tool: %v", err)
 	}
 }
 
 // Query executes JMX query against nrjmx tool waiting up to timeout (in milliseconds)
 func Query(objectPattern string, timeoutMillis int) (result map[string]interface{}, err error) {
+	defer Close()
+
 	ctx, cancelFn := context.WithCancel(context.Background())
 
-	lineCh := make(chan []byte)
-	queryErrors := make(chan error)
+	lineCh := make(chan []byte, cmdStdChanLen)
+	queryErrors := make(chan error, cmdStdChanLen)
 	outTimeout := time.Duration(timeoutMillis) * time.Millisecond
 	// Send the query async to the underlying process so we can timeout it
 	go doQuery(ctx, lineCh, queryErrors, []byte(fmt.Sprintf("%s\n", objectPattern)))
@@ -259,7 +262,6 @@ func Query(objectPattern string, timeoutMillis int) (result map[string]interface
 
 // receiveResult checks for channels to receive result from nrjmx command.
 func receiveResult(lineCh chan []byte, queryErrors chan error, cancelFn context.CancelFunc, objectPattern string, timeout time.Duration) (result map[string]interface{}, err error) {
-	defer Close()
 	gotResult := false
 	for {
 		select {
@@ -270,9 +272,16 @@ func receiveResult(lineCh chan []byte, queryErrors chan error, cancelFn context.
 				log.Warn(fmt.Sprintf("empty result for query: %s", objectPattern))
 				continue
 			}
-			if err = json.Unmarshal(line, &result); err != nil {
+			var r map[string]interface{}
+			if err = json.Unmarshal(line, &r); err != nil {
 				err = fmt.Errorf("invalid return value for query: %s, error: %s", objectPattern, err)
 				return
+			}
+			if result == nil {
+				result = make(map[string]interface{})
+			}
+			for k, v := range r {
+				result[k] = v
 			}
 
 		case err = <-cmdExitErr:
