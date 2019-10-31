@@ -55,7 +55,7 @@ func TestMain(m *testing.M) {
 			} else if command == cmdInvalid {
 				fmt.Println("not a json")
 			} else if command == cmdTimeout {
-				time.Sleep(timeoutMillis * time.Millisecond)
+				time.Sleep(timeoutMillis + 200*time.Millisecond)
 				fmt.Println("{}")
 			} else if command == cmdBigPayload {
 				// Create a payload of more than 64K
@@ -72,10 +72,10 @@ func TestMain(m *testing.M) {
 func TestOpenWithParameters_OnlyWorksWhenClosed(t *testing.T) {
 	defer Close()
 
-	assert.NoError(t, Open("", "", "", ""))
-	assert.Error(t, Open("", "", "", ""))
+	assert.NoError(t, OpenNoAuth("", ""))
+	assert.Error(t, OpenNoAuth("", ""))
 	Close()
-	assert.NoError(t, Open("", "", "", ""))
+	assert.NoError(t, OpenNoAuth("", ""))
 }
 
 func TestQuery(t *testing.T) {
