@@ -11,17 +11,26 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
-	timeout      = 1000
-	openAttempts = 5
+	timeoutMillis = 1000
+	openAttempts  = 5
+	// jmx mock cmds
+	cmdEmpty         = "empty"
+	cmdCrash         = "crash"
+	cmdInvalid       = "invalid"
+	cmdTimeout       = "timeout"
+	cmdBigPayload    = "bigPayload"
+	cmdBigPayloadErr = "bigPayloadError"
 )
 
 var query2IsErr = map[string]bool{
-	"empty":   false,
-	"crash":   true,
-	"invalid": true,
+	cmdEmpty:   false,
+	cmdCrash:   true,
+	cmdInvalid: true,
+	//cmdTimeout: true, // flaky test
 }
 
 func TestMain(m *testing.M) {
@@ -39,19 +48,19 @@ func TestMain(m *testing.M) {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			command := scanner.Text()
-			if command == "empty" {
+			if command == cmdEmpty {
 				fmt.Println("{}")
-			} else if command == "crash" {
+			} else if command == cmdCrash {
 				os.Exit(1)
-			} else if command == "invalid" {
+			} else if command == cmdInvalid {
 				fmt.Println("not a json")
-			} else if command == "timeout" {
-				time.Sleep(1000 * time.Millisecond)
+			} else if command == cmdTimeout {
+				time.Sleep(timeoutMillis + 200*time.Millisecond)
 				fmt.Println("{}")
-			} else if command == "bigPayload" {
+			} else if command == cmdBigPayload {
 				// Create a payload of more than 64K
 				fmt.Println(fmt.Sprintf("{\"first\": 1%s}", strings.Repeat(", \"s\": 2", 70*1024)))
-			} else if command == "bigPayloadError" {
+			} else if command == cmdBigPayloadErr {
 				// Create a payload of more than 4M
 				fmt.Println(fmt.Sprintf("{\"first\": 1%s}", strings.Repeat(", \"s\": 2", 4*1024*1024)))
 			}
@@ -63,17 +72,17 @@ func TestMain(m *testing.M) {
 func TestOpenWithParameters_OnlyWorksWhenClosed(t *testing.T) {
 	defer Close()
 
-	assert.NoError(t, Open("", "", "", ""))
-	assert.Error(t, Open("", "", "", ""))
+	assert.NoError(t, OpenNoAuth("", ""))
+	assert.Error(t, OpenNoAuth("", ""))
 	Close()
-	assert.NoError(t, Open("", "", "", ""))
+	assert.NoError(t, OpenNoAuth("", ""))
 }
 
 func TestQuery(t *testing.T) {
 	for q, isErr := range query2IsErr {
-		assert.NoError(t, openWait("", "", "", "", openAttempts), "error on opening for query %s", q)
+		require.NoError(t, openWait("", "", "", "", openAttempts), "error on opening for query %s", q)
 
-		_, err := Query(q, timeout)
+		_, err := Query(q, timeoutMillis)
 		if isErr {
 			assert.Error(t, err)
 		} else {
@@ -85,31 +94,15 @@ func TestQuery(t *testing.T) {
 
 func TestQuery_WithSSL(t *testing.T) {
 	for q, isErr := range query2IsErr {
-		assert.NoError(t, openWaitWithSSL("", "", "", "", "", "", "", "", openAttempts))
+		require.NoError(t, openWaitWithSSL("", "", "", "", "", "", "", "", openAttempts))
 
-		_, err := Query(q, timeout)
+		_, err := Query(q, timeoutMillis)
 		if isErr {
-			assert.Error(t, err)
+			assert.Error(t, err, "case "+q)
 		} else {
-			assert.NoError(t, err)
+			assert.NoError(t, err, "case "+q)
 		}
 		Close()
-	}
-}
-
-func TestQuery_TimeoutReturnsError(t *testing.T) {
-	defer Close()
-
-	if err := openWait("", "", "", "", openAttempts); err != nil {
-		t.Error(err)
-	}
-
-	if _, err := Query("timeout", timeout); err == nil {
-		t.Error()
-	}
-
-	if _, err := Query("empty", timeout); err == nil {
-		t.Error()
 	}
 }
 
@@ -122,7 +115,7 @@ func TestJmxNoTimeoutQuery(t *testing.T) {
 		t.Error(err)
 	}
 
-	if _, err := Query("timeout", 1500); err != nil {
+	if _, err := Query(cmdTimeout, timeoutMillis+1000); err != nil {
 		t.Error(err)
 	}
 }
@@ -136,11 +129,11 @@ func TestJmxTimeoutBigQuery(t *testing.T) {
 		t.Error(err)
 	}
 
-	if _, err := Query("bigPayload", timeout); err != nil {
+	if _, err := Query(cmdBigPayload, timeoutMillis); err != nil {
 		t.Error(err)
 	}
 
-	if _, err := Query("bigPayloadError", timeout); err == nil {
+	if _, err := Query(cmdBigPayloadErr, timeoutMillis); err == nil {
 		t.Error()
 	}
 }
@@ -163,22 +156,18 @@ func openWaitWithSSL(hostname, port, username, password, keyStore, keyStorePassw
 	return err
 }
 
-// test that if we receive a WARNING message we still will receive the actual data.
-func TestLoop(t *testing.T) {
-	defer flushWarnings()
+func Test_receiveResult_warningsDoNotBreakResultReception(t *testing.T) {
 	_, cancelFn := context.WithCancel(context.Background())
 
-	lineCh := make(chan []byte, jmxLineBuffer*2)
-	queryErrors := make(chan error)
-	outTimeout := time.Duration(timeout) * time.Millisecond
-	receiveResult(lineCh, queryErrors, cancelFn, "empty", outTimeout)
-	warningMessage := "WARNING foo bar"
-	cmdErr <- fmt.Errorf(warningMessage)
-	errorChannel := <-cmdErr
-	assert.Equal(t, errorChannel, fmt.Errorf(warningMessage))
-	b := []byte("{foo}")
-	lineCh <- b
-	msg := string(<-lineCh)
-	assert.Equal(t, msg, "{foo}")
+	resultCh := make(chan []byte, 1)
+	queryErrCh := make(chan error)
+	outTimeout := time.Duration(timeoutMillis) * time.Millisecond
 
+	_, _ = receiveResult(resultCh, queryErrCh, cancelFn, "empty", outTimeout)
+
+	cmdExitErr <- fmt.Errorf("WARNING foo bar")
+	assert.Equal(t, <-cmdExitErr, fmt.Errorf("WARNING foo bar"))
+
+	resultCh <- []byte("{foo}")
+	assert.Equal(t, string(<-resultCh), "{foo}")
 }

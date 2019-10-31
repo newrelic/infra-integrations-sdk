@@ -11,12 +11,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/newrelic/infra-integrations-sdk/log"
 )
 
 var lock sync.Mutex
@@ -25,9 +26,8 @@ var cancel context.CancelFunc
 var cmdOut io.ReadCloser
 var cmdError io.ReadCloser
 var cmdIn io.WriteCloser
-var cmdErr = make(chan error, 1)
+var cmdExitErr = make(chan error, 1000)
 var done sync.WaitGroup
-var warnings []string
 
 var (
 	jmxCommand = "/usr/bin/nrjmx"
@@ -86,6 +86,11 @@ func (cfg *connectionConfig) command() []string {
 	return c
 }
 
+// OpenNoAuth executes a nrjmx command without user/pass using the given options.
+func OpenNoAuth(hostname, port string, opts ...Option) error {
+	return Open(hostname, port, "", "", opts...)
+}
+
 // Open executes a nrjmx command using the given options.
 func Open(hostname, port, username, password string, opts ...Option) error {
 	config := &connectionConfig{
@@ -137,7 +142,7 @@ func WithRemoteStandAloneJBoss() Option {
 	}
 }
 
-func openConnection(config *connectionConfig) error {
+func openConnection(config *connectionConfig) (err error) {
 	lock.Lock()
 	defer lock.Unlock()
 
@@ -146,13 +151,10 @@ func openConnection(config *connectionConfig) error {
 	}
 
 	// Drain error channel to prevent showing past errors
-	if len(cmdErr) > 0 {
-		<-cmdErr
-	}
+	cmdExitErr = make(chan error, 1000)
 
 	done.Add(1)
 
-	var err error
 	var ctx context.Context
 
 	cliCommand := config.command()
@@ -171,14 +173,17 @@ func openConnection(config *connectionConfig) error {
 		return err
 	}
 
+	go handleStdErr(ctx)
+
 	if err = cmd.Start(); err != nil {
 		return err
 	}
 
 	go func() {
 		if err = cmd.Wait(); err != nil {
-			stdErr, _ := ioutil.ReadAll(cmdError)
-			cmdErr <- fmt.Errorf("JMX tool exited with error: %s [state: %s] (%s)", err, cmd.ProcessState, string(stdErr))
+			if err != nil {
+				cmdExitErr <- fmt.Errorf("nrjmx error: %s [proc-state: %s]", err, cmd.ProcessState)
+			}
 		}
 
 		lock.Lock()
@@ -189,6 +194,28 @@ func openConnection(config *connectionConfig) error {
 	}()
 
 	return nil
+}
+
+func handleStdErr(ctx context.Context) {
+	s := bufio.NewScanner(cmdError)
+	s.Buffer([]byte{}, jmxLineBuffer)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			break
+		}
+		if !s.Scan() {
+			return
+		}
+
+		line := s.Text()
+		if strings.HasPrefix(line, "WARNING") {
+			log.Warn(line[7:])
+		}
+	}
 }
 
 // Close will finish the underlying nrjmx application by closing its standard
@@ -202,19 +229,17 @@ func Close() {
 	}
 
 	cancel()
-	_ = cmdIn.Close()
-	_ = cmdError.Close()
 
 	lock.Unlock()
 
 	done.Wait()
 }
 
-func doQuery(ctx context.Context, out chan []byte, errorChan chan error, queryString []byte) {
+func doQuery(ctx context.Context, out chan []byte, queryErrC chan error, queryString []byte) {
 	lock.Lock()
 	if _, err := cmdIn.Write(queryString); err != nil {
 		lock.Unlock()
-		errorChan <- fmt.Errorf("writing query string: %s", err.Error())
+		queryErrC <- fmt.Errorf("writing query string: %s", err.Error())
 		return
 	}
 
@@ -230,23 +255,20 @@ func doQuery(ctx context.Context, out chan []byte, errorChan chan error, querySt
 		default:
 		}
 	} else {
+		// not EOF & error
 		if err := scanner.Err(); err != nil {
-			errorChan <- fmt.Errorf("error reading output from JMX tool: %v", err)
-		} else {
-			// If scanner.Scan() returns false but err is also nil, it hit EOF. We consider that a problem, so we should return an error.
-			errorChan <- fmt.Errorf("got an EOF while reading JMX tool output")
+			queryErrC <- fmt.Errorf("error reading output from JMX tool: %v", err)
 		}
 	}
 }
 
 // Query executes JMX query against nrjmx tool waiting up to timeout (in milliseconds)
-func Query(objectPattern string, timeout int) (map[string]interface{}, error) {
-	defer flushWarnings()
+func Query(objectPattern string, timeoutMillis int) (result map[string]interface{}, err error) {
 	ctx, cancelFn := context.WithCancel(context.Background())
 
 	lineCh := make(chan []byte)
 	queryErrors := make(chan error)
-	outTimeout := time.Duration(timeout) * time.Millisecond
+	outTimeout := time.Duration(timeoutMillis) * time.Millisecond
 	// Send the query async to the underlying process so we can timeout it
 	go doQuery(ctx, lineCh, queryErrors, []byte(fmt.Sprintf("%s\n", objectPattern)))
 
@@ -255,35 +277,36 @@ func Query(objectPattern string, timeout int) (map[string]interface{}, error) {
 
 // receiveResult checks for channels to receive result from nrjmx command.
 func receiveResult(lineCh chan []byte, queryErrors chan error, cancelFn context.CancelFunc, objectPattern string, timeout time.Duration) (result map[string]interface{}, err error) {
-	select {
-	case line := <-lineCh:
-		if line == nil {
-			cancelFn()
-			Close()
-			return nil, fmt.Errorf("got empty result for query: %s", objectPattern)
-		}
-		if err := json.Unmarshal(line, &result); err != nil {
-			return nil, fmt.Errorf("invalid return value for query: %s, %s", objectPattern, err)
-		}
-	case err := <-cmdErr: // Will receive an error if the nrjmx tool exited prematurely
-		if strings.HasPrefix(err.Error(), "WARNING") {
-			warnings = append(warnings, err.Error())
-		} else {
-			return nil, err
-		}
-	case err := <-queryErrors: // Will receive an error if we failed while reading query output
-		return nil, err
-	case <-time.After(timeout):
-		// In case of timeout, we want to close the command to avoid mixing up results coming up latter
-		cancelFn()
-		Close()
-		return nil, fmt.Errorf("timeout while waiting for query: %s", objectPattern)
-	}
-	return result, nil
-}
+	defer Close()
+	gotResult := false
+	for {
+		select {
+		case line := <-lineCh:
+			gotResult = true
+			if len(line) == 0 {
+				cancelFn()
+				log.Warn(fmt.Sprintf("empty result for query: %s", objectPattern))
+				continue
+			}
+			if err = json.Unmarshal(line, &result); err != nil {
+				err = fmt.Errorf("invalid return value for query: %s, error: %s", objectPattern, err)
+				return
+			}
 
-func flushWarnings() {
-	for _, w := range warnings {
-		_, _ = os.Stderr.WriteString(w + "\n")
+		case err = <-cmdExitErr:
+			gotResult = true
+			return
+
+		case err = <-queryErrors:
+			gotResult = true
+
+		case <-time.After(timeout):
+			// In case of timeout, we want to close the command to avoid mixing up results coming up latter
+			cancelFn()
+			if !gotResult {
+				err = fmt.Errorf("timeout waiting for query: %s", objectPattern)
+			}
+			return
+		}
 	}
 }
