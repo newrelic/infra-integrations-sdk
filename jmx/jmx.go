@@ -20,7 +20,6 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/log"
 )
 
-var lock sync.Mutex
 var cmd *exec.Cmd
 var cancel context.CancelFunc
 var cmdOut io.ReadCloser
@@ -143,9 +142,6 @@ func WithRemoteStandAloneJBoss() Option {
 }
 
 func openConnection(config *connectionConfig) (err error) {
-	lock.Lock()
-	defer lock.Unlock()
-
 	if cmd != nil {
 		return ErrJmxCmdRunning
 	}
@@ -186,8 +182,6 @@ func openConnection(config *connectionConfig) (err error) {
 			}
 		}
 
-		lock.Lock()
-		defer lock.Unlock()
 		cmd = nil
 
 		done.Done()
@@ -221,31 +215,19 @@ func handleStdErr(ctx context.Context) {
 // Close will finish the underlying nrjmx application by closing its standard
 // input and canceling the execution afterwards to clean-up.
 func Close() {
-	lock.Lock()
-
-	if cmd == nil {
-		lock.Unlock()
-		return
-	}
-
 	cancel()
-
-	lock.Unlock()
 
 	done.Wait()
 }
 
 func doQuery(ctx context.Context, out chan []byte, queryErrC chan error, queryString []byte) {
-	lock.Lock()
 	if _, err := cmdIn.Write(queryString); err != nil {
-		lock.Unlock()
 		queryErrC <- fmt.Errorf("writing query string: %s", err.Error())
 		return
 	}
 
 	scanner := bufio.NewScanner(cmdOut)
 	scanner.Buffer([]byte{}, jmxLineBuffer) // Override default buffer to increase buffer size
-	lock.Unlock()
 
 	if scanner.Scan() {
 		select {
