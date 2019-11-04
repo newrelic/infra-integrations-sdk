@@ -21,8 +21,8 @@ import (
 )
 
 const (
-	jmxLineBuffer = 4 * 1024 * 1024 // Max 4MB per line. If single lines are outputting more JSON than that, we likely need smaller-scoped JMX queries
-	cmdStdChanLen = 1000
+	jmxLineInitialBuffer = 4 * 1024 // initial 4KB per line, it'll be increased when required
+	cmdStdChanLen        = 1000
 )
 
 var cmd *exec.Cmd
@@ -192,9 +192,10 @@ func openConnection(config *connectionConfig) (err error) {
 }
 
 func handleStdErr(ctx context.Context) {
-	s := bufio.NewScanner(cmdError)
-	s.Buffer([]byte{}, jmxLineBuffer)
+	scanner := bufio.NewReaderSize(cmdError, jmxLineInitialBuffer)
 
+	var line string
+	var err error
 	for {
 		select {
 		case <-ctx.Done():
@@ -202,13 +203,16 @@ func handleStdErr(ctx context.Context) {
 		default:
 			break
 		}
-		if !s.Scan() {
-			return
-		}
 
-		line := s.Text()
+		line, err = scanner.ReadString('\n')
+		if err != nil && err != io.EOF {
+			log.Error(fmt.Sprintf("error reading stderr from JMX tool: %s", err.Error()))
+		}
 		if strings.HasPrefix(line, "WARNING") {
 			log.Warn(line[7:])
+		}
+		if err == io.EOF {
+			return
 		}
 	}
 }
@@ -227,21 +231,26 @@ func doQuery(ctx context.Context, out chan []byte, queryErrC chan error, querySt
 		return
 	}
 
-	scanner := bufio.NewScanner(cmdOut)
-	scanner.Buffer([]byte{}, jmxLineBuffer) // Override default buffer to increase buffer size
+	scanner := bufio.NewReaderSize(cmdOut, jmxLineInitialBuffer)
 
-	for scanner.Scan() {
+	var b []byte
+	var err error
+	for {
 		select {
 		case <-ctx.Done():
 			return
-		case out <- scanner.Bytes():
 		default:
+			break
 		}
-	}
 
-	// not EOF & error
-	if err := scanner.Err(); err != nil {
-		queryErrC <- fmt.Errorf("error reading output from JMX tool: %v", err)
+		b, err = scanner.ReadBytes('\n')
+		if err != nil && err != io.EOF {
+			queryErrC <- fmt.Errorf("error reading output from JMX tool: %v", err)
+		}
+		out <- b
+		if err == io.EOF {
+			return
+		}
 	}
 }
 
