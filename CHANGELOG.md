@@ -7,9 +7,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Next
 
+### Added
+
+- JMX no-auth connection
+
 ### Changed
 
 - JMX does not support concurrency
+- JMX improved test readability, removed flaky test
+- JMX removed std channels unrequired close calls
+- JMX better empty line comparison
+- JMX removed lock
+
+### Fixed
+
+- JMX package: fixed `nrjmx` error handling
 
 ## 3.4.0
 
