@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 - JMX no-auth connection
+- JMX constructor option to provice custom nrjmx tool executable
 
 ### Changed
 
@@ -19,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - JMX removed std channels unrequired close calls
 - JMX better empty line comparison
 - JMX removed lock
+- JMX removed stderr fd closed error
 
 ### Fixed
 

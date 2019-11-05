@@ -130,6 +130,16 @@ func TestQuery_WithSSL(t *testing.T) {
 	}
 }
 
+func TestOpen_WithNrjmx(t *testing.T) {
+	aux := os.Getenv("NR_JMX_TOOL")
+	require.NoError(t, os.Unsetenv("NR_JMX_TOOL"))
+
+	assert.Error(t, OpenNoAuth("", "", WithNrJmxTool("/foo")), "/foo is not an executable")
+	assert.Equal(t, "/foo", cmd.Args[0])
+
+	require.NoError(t, os.Setenv("NR_JMX_TOOL", aux))
+}
+
 func TestJmxNoTimeoutQuery(t *testing.T) {
 	t.Skip("unreliable CI test")
 
