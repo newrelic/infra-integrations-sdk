@@ -27,7 +27,7 @@ const (
 
 // Error vars to ease Query response handling.
 var (
-	BeanPatternErr = errors.New("cannot parse bean pattern")
+	ErrBeanPattern = errors.New("cannot parse bean pattern")
 )
 
 var cmd *exec.Cmd
@@ -40,7 +40,7 @@ var cmdWarnC = make(chan string, cmdStdChanLen)
 var done sync.WaitGroup
 
 var (
-	// DefaultNrjmxCommand default nrjmx tool executable path
+	// DefaultNrjmxExec default nrjmx tool executable path
 	DefaultNrjmxExec = "/usr/bin/nrjmx"
 	// ErrJmxCmdRunning error returned when trying to Open and nrjmx command is still running
 	ErrJmxCmdRunning = errors.New("JMX tool is already running")
@@ -240,11 +240,10 @@ func handleStdErr(ctx context.Context) {
 		if strings.HasPrefix(line, "WARNING") {
 			msg := line[7:]
 			if strings.Contains(msg, "Can't parse bean name") {
-				cmdErrC <- BeanPatternErr
+				cmdErrC <- ErrBeanPattern
 				return
-			} else {
-				cmdWarnC <- msg
 			}
+			cmdWarnC <- msg
 		}
 		if err != nil {
 			cmdErrC <- err
