@@ -199,8 +199,8 @@ func Test_receiveResult_warningsDoNotBreakResultReception(t *testing.T) {
 
 	_, _ = receiveResult(resultCh, queryErrCh, cancelFn, "empty", outTimeout)
 
-	cmdExitErr <- fmt.Errorf("WARNING foo bar")
-	assert.Equal(t, <-cmdExitErr, fmt.Errorf("WARNING foo bar"))
+	cmdErrC <- fmt.Errorf("WARNING foo bar")
+	assert.Equal(t, <-cmdErrC, fmt.Errorf("WARNING foo bar"))
 
 	resultCh <- []byte("{foo}")
 	assert.Equal(t, string(<-resultCh), "{foo}")

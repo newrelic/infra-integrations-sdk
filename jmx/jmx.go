@@ -30,11 +30,13 @@ var cancel context.CancelFunc
 var cmdOut io.ReadCloser
 var cmdError io.ReadCloser
 var cmdIn io.WriteCloser
-var cmdExitErr = make(chan error, cmdStdChanLen)
+var cmdErrC = make(chan error, cmdStdChanLen)
+var cmdWarnC = make(chan string, cmdStdChanLen)
 var done sync.WaitGroup
 
 var (
-	defaultNrjmxCommand = "/usr/bin/nrjmx"
+	// DefaultNrjmxCommand default nrjmx tool executable path
+	DefaultNrjmxExec = "/usr/bin/nrjmx"
 	// ErrJmxCmdRunning error returned when trying to Open and nrjmx command is still running
 	ErrJmxCmdRunning = errors.New("JMX tool is already running")
 )
@@ -53,6 +55,7 @@ type connectionConfig struct {
 	remote                bool
 	remoteJBossStandalone bool
 	executablePath        string
+	verbose               bool
 }
 
 func (cfg *connectionConfig) isSSL() bool {
@@ -99,12 +102,14 @@ func Open(hostname, port, username, password string, opts ...Option) error {
 		port:           port,
 		username:       username,
 		password:       password,
-		executablePath: defaultNrjmxCommand,
+		executablePath: DefaultNrjmxExec,
 	}
 
 	for _, opt := range opts {
 		opt(config)
 	}
+
+	log.SetupLogging(config.verbose)
 
 	return openConnection(config)
 }
@@ -120,10 +125,17 @@ func WithNrJmxTool(executablePath string) Option {
 	}
 }
 
-//WithURIPath for specifying non standard(jmxrmi) path on jmx service uri
+// WithURIPath for specifying non standard(jmxrmi) path on jmx service uri
 func WithURIPath(uriPath string) Option {
 	return func(config *connectionConfig) {
 		config.uriPath = uriPath
+	}
+}
+
+// WithVerbose enables verbose mode for nrjmx.
+func WithVerbose() Option {
+	return func(config *connectionConfig) {
+		config.verbose = true
 	}
 }
 
@@ -158,7 +170,8 @@ func openConnection(config *connectionConfig) (err error) {
 	}
 
 	// Drain error channel to prevent showing past errors
-	cmdExitErr = make(chan error, cmdStdChanLen)
+	cmdErrC = make(chan error, cmdStdChanLen)
+	cmdWarnC = make(chan string, cmdStdChanLen)
 
 	done.Add(1)
 
@@ -189,7 +202,7 @@ func openConnection(config *connectionConfig) (err error) {
 	go func() {
 		if err = cmd.Wait(); err != nil {
 			if err != nil {
-				cmdExitErr <- fmt.Errorf("nrjmx error: %s [proc-state: %s]", err, cmd.ProcessState)
+				cmdErrC <- fmt.Errorf("nrjmx error: %s [proc-state: %s]", err, cmd.ProcessState)
 			}
 		}
 
@@ -220,7 +233,7 @@ func handleStdErr(ctx context.Context) {
 			log.Error(fmt.Sprintf("error reading stderr from JMX tool: %s", err.Error()))
 		}
 		if strings.HasPrefix(line, "WARNING") {
-			log.Warn(line[7:])
+			cmdWarnC <- line[7:]
 		}
 		if err != nil {
 			return
@@ -238,7 +251,7 @@ func Close() {
 
 func doQuery(ctx context.Context, out chan []byte, queryErrC chan error, queryString []byte) {
 	if _, err := cmdIn.Write(queryString); err != nil {
-		queryErrC <- fmt.Errorf("writing query string: %s", err.Error())
+		queryErrC <- fmt.Errorf("writing nrjmx stdin: %s", err.Error())
 		return
 	}
 
@@ -256,7 +269,7 @@ func doQuery(ctx context.Context, out chan []byte, queryErrC chan error, querySt
 
 		b, err = scanner.ReadBytes('\n')
 		if err != nil && err != io.EOF {
-			queryErrC <- fmt.Errorf("error reading output from JMX tool: %v", err)
+			queryErrC <- fmt.Errorf("reading nrjmx stdout: %s", err.Error())
 		}
 		out <- b
 		if err == io.EOF {
@@ -283,6 +296,7 @@ func Query(objectPattern string, timeoutMillis int) (result map[string]interface
 // receiveResult checks for channels to receive result from nrjmx command.
 func receiveResult(lineCh chan []byte, queryErrors chan error, cancelFn context.CancelFunc, objectPattern string, timeout time.Duration) (result map[string]interface{}, err error) {
 	gotResult := false
+	var warn string
 	for {
 		select {
 		case line := <-lineCh:
@@ -304,11 +318,17 @@ func receiveResult(lineCh chan []byte, queryErrors chan error, cancelFn context.
 				result[k] = v
 			}
 
-		case err = <-cmdExitErr:
+		case warn = <-cmdWarnC:
+			gotResult = true
+			log.Warn(warn)
+			return
+
+		case err = <-cmdErrC:
 			gotResult = true
 			return
 
 		case err = <-queryErrors:
+			log.Warn("query error: " + err.Error())
 			gotResult = true
 
 		case <-time.After(timeout):
