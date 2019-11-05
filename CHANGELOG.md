@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
+- JMX removed line length limitation
 - JMX does not support concurrency
 - JMX improved test readability, removed flaky test
 - JMX removed std channels unrequired close calls
@@ -22,6 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 
 - JMX package: fixed `nrjmx` error handling
+- JMX package support for `nrjmx` multi-line responses
 
 ## 3.4.0
 

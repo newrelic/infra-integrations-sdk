@@ -24,7 +24,17 @@ const (
 	cmdTimeout       = "timeout"
 	cmdBigPayload    = "bigPayload"
 	cmdBigPayloadErr = "bigPayloadError"
+	cmdMultiline     = "multiline"
+	resultMultiline  = `{"test:type\u003dSomeType,name\u003dFoo,attr\u003dName":"Foo","test:type\u003dSomeType,name\u003dBar,attr\u003dName":"Bar"}
+{"test:type\u003dSomeType,name\u003dBaz,attr\u003dName":"Baz","test:type\u003dSomeType,name\u003dQux,attr\u003dName":"Qux"}`
 )
+
+var expectedOutputMultiline = map[string]interface{}{
+	"test:type=SomeType,name=Foo,attr=Name": "Foo",
+	"test:type=SomeType,name=Bar,attr=Name": "Bar",
+	"test:type=SomeType,name=Baz,attr=Name": "Baz",
+	"test:type=SomeType,name=Qux,attr=Name": "Qux",
+}
 
 var query2IsErr = map[string]bool{
 	cmdEmpty:   false,
@@ -63,7 +73,10 @@ func TestMain(m *testing.M) {
 			} else if command == cmdBigPayloadErr {
 				// Create a payload of more than 4M
 				fmt.Println(fmt.Sprintf("{\"first\": 1%s}", strings.Repeat(", \"s\": 2", 4*1024*1024)))
+			} else if command == cmdMultiline {
+				fmt.Println(resultMultiline)
 			}
+
 		}
 		os.Exit(0)
 	}
@@ -92,11 +105,22 @@ func TestQuery(t *testing.T) {
 	}
 }
 
+func TestQuery_multipleLines(t *testing.T) {
+	require.NoError(t, openWait("", "", "", "", openAttempts))
+
+	result, err := Query(cmdMultiline, timeoutMillis)
+	require.NoError(t, err)
+	Close()
+
+	assert.Equal(t, expectedOutputMultiline, result)
+}
+
 func TestQuery_WithSSL(t *testing.T) {
 	for q, isErr := range query2IsErr {
 		require.NoError(t, openWaitWithSSL("", "", "", "", "", "", "", "", openAttempts))
 
 		_, err := Query(q, timeoutMillis)
+
 		if isErr {
 			assert.Error(t, err, "case "+q)
 		} else {
