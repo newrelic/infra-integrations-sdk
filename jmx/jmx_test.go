@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	timeoutMillis = 1000
+	timeoutMillis = 1500
 	openAttempts  = 5
 	// jmx mock cmds
 	cmdEmpty         = "empty"
@@ -108,7 +108,7 @@ func TestQuery(t *testing.T) {
 func TestQuery_multipleLines(t *testing.T) {
 	require.NoError(t, openWait("", "", "", "", openAttempts))
 
-	result, err := Query(cmdMultiline, timeoutMillis)
+	result, err := Query(cmdMultiline, timeoutMillis*2)
 	require.NoError(t, err)
 	Close()
 
@@ -199,8 +199,8 @@ func Test_receiveResult_warningsDoNotBreakResultReception(t *testing.T) {
 
 	_, _ = receiveResult(resultCh, queryErrCh, cancelFn, "empty", outTimeout)
 
-	cmdExitErr <- fmt.Errorf("WARNING foo bar")
-	assert.Equal(t, <-cmdExitErr, fmt.Errorf("WARNING foo bar"))
+	cmdErrC <- fmt.Errorf("WARNING foo bar")
+	assert.Equal(t, <-cmdErrC, fmt.Errorf("WARNING foo bar"))
 
 	resultCh <- []byte("{foo}")
 	assert.Equal(t, string(<-resultCh), "{foo}")
