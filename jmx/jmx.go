@@ -34,7 +34,7 @@ var cmdExitErr = make(chan error, cmdStdChanLen)
 var done sync.WaitGroup
 
 var (
-	jmxCommand = "/usr/bin/nrjmx"
+	defaultNrjmxCommand = "/usr/bin/nrjmx"
 	// ErrJmxCmdRunning error returned when trying to Open and nrjmx command is still running
 	ErrJmxCmdRunning = errors.New("JMX tool is already running")
 )
@@ -52,6 +52,7 @@ type connectionConfig struct {
 	trustStorePassword    string
 	remote                bool
 	remoteJBossStandalone bool
+	executablePath        string
 }
 
 func (cfg *connectionConfig) isSSL() bool {
@@ -63,7 +64,7 @@ func (cfg *connectionConfig) command() []string {
 	if os.Getenv("NR_JMX_TOOL") != "" {
 		c = strings.Split(os.Getenv("NR_JMX_TOOL"), " ")
 	} else {
-		c = []string{jmxCommand}
+		c = []string{cfg.executablePath}
 	}
 
 	c = append(c, "--hostname", cfg.hostname, "--port", cfg.port)
@@ -94,10 +95,11 @@ func OpenNoAuth(hostname, port string, opts ...Option) error {
 // Open executes a nrjmx command using the given options.
 func Open(hostname, port, username, password string, opts ...Option) error {
 	config := &connectionConfig{
-		hostname: hostname,
-		port:     port,
-		username: username,
-		password: password,
+		hostname:       hostname,
+		port:           port,
+		username:       username,
+		password:       password,
+		executablePath: defaultNrjmxCommand,
 	}
 
 	for _, opt := range opts {
@@ -109,6 +111,14 @@ func Open(hostname, port, username, password string, opts ...Option) error {
 
 // Option sets an option on integration level.
 type Option func(config *connectionConfig)
+
+// WithNrJmxTool for specifying non standard `nrjmx` tool executable location.
+// Has less precedence than `NR_JMX_TOOL` environment variable.
+func WithNrJmxTool(executablePath string) Option {
+	return func(config *connectionConfig) {
+		config.executablePath = executablePath
+	}
+}
 
 //WithURIPath for specifying non standard(jmxrmi) path on jmx service uri
 func WithURIPath(uriPath string) Option {
