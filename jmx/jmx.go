@@ -25,6 +25,11 @@ const (
 	cmdStdChanLen        = 1000
 )
 
+// Error vars to ease Query response handling.
+var (
+	BeanPatternErr = errors.New("cannot parse bean pattern")
+)
+
 var cmd *exec.Cmd
 var cancel context.CancelFunc
 var cmdOut io.ReadCloser
@@ -233,9 +238,16 @@ func handleStdErr(ctx context.Context) {
 			log.Error(fmt.Sprintf("error reading stderr from JMX tool: %s", err.Error()))
 		}
 		if strings.HasPrefix(line, "WARNING") {
-			cmdWarnC <- line[7:]
+			msg := line[7:]
+			if strings.Contains(msg, "Can't parse bean name") {
+				cmdErrC <- BeanPatternErr
+				return
+			} else {
+				cmdWarnC <- msg
+			}
 		}
 		if err != nil {
+			cmdErrC <- err
 			return
 		}
 	}
