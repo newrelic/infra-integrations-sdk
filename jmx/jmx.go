@@ -215,13 +215,14 @@ func handleStdErr(ctx context.Context) {
 		}
 
 		line, err = scanner.ReadString('\n')
-		if err != nil && err != io.EOF {
+		// API needs re to allow stderr full read before closing
+		if err != nil && err != io.EOF && !strings.Contains(err.Error(), "file already closed") {
 			log.Error(fmt.Sprintf("error reading stderr from JMX tool: %s", err.Error()))
 		}
 		if strings.HasPrefix(line, "WARNING") {
 			log.Warn(line[7:])
 		}
-		if err == io.EOF {
+		if err != nil {
 			return
 		}
 	}
