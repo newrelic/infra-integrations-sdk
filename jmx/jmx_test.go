@@ -91,6 +91,14 @@ func TestOpenWithParameters_OnlyWorksWhenClosed(t *testing.T) {
 	assert.NoError(t, OpenNoAuth("", ""))
 }
 
+func TestOpenURL(t *testing.T) {
+	defer Close()
+
+	assert.NoError(t, OpenURL("sample.url", "", ""))
+	lastArg := cmd.Args[len(cmd.Args)-1]
+	assert.Equal(t, "sample.url", lastArg)
+}
+
 func TestQuery(t *testing.T) {
 	for q, isErr := range query2IsErr {
 		require.NoError(t, openWait("", "", "", "", openAttempts), "error on opening for query %s", q)
