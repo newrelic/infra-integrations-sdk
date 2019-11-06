@@ -77,7 +77,7 @@ func (cfg *connectionConfig) command() []string {
 	}
 
 	if cfg.connectionURL != "" {
-		c = append(c, "--connectionURL", cfg.connectionURL)
+		c = append(c, "--connURL", cfg.connectionURL)
 	} else {
 		c = append(c, "--hostname", cfg.hostname, "--port", cfg.port)
 		if cfg.uriPath != "" {
