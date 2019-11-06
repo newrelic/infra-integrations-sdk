@@ -107,7 +107,8 @@ func OpenNoAuth(hostname, port string, opts ...Option) error {
 
 // OpenURL executes a nrjmx command using the provided full connection URL and options.
 func OpenURL(connectionURL, username, password string, opts ...Option) error {
-	return Open("", "", username, password, WithConnectionURL(connectionURL))
+	opts = append(opts, WithConnectionURL(connectionURL))
+	return Open("", "", username, password, opts...)
 }
 
 // Open executes a nrjmx command using the given options.
