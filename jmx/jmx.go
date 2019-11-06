@@ -48,6 +48,7 @@ var (
 
 // connectionConfig is the configuration for the nrjmx command.
 type connectionConfig struct {
+	connectionURL         string
 	hostname              string
 	port                  string
 	uriPath               string
@@ -75,18 +76,22 @@ func (cfg *connectionConfig) command() []string {
 		c = []string{cfg.executablePath}
 	}
 
-	c = append(c, "--hostname", cfg.hostname, "--port", cfg.port)
-	if cfg.uriPath != "" {
-		c = append(c, "--uriPath", cfg.uriPath)
-	}
-	if cfg.username != "" && cfg.password != "" {
-		c = append(c, "--username", cfg.username, "--password", cfg.password)
-	}
-	if cfg.remote {
-		c = append(c, "--remote")
-	}
-	if cfg.remoteJBossStandalone {
-		c = append(c, "--remoteJBossStandalone")
+	if cfg.connectionURL != "" {
+		c = append(c, "--connectionURL", cfg.connectionURL)
+	} else {
+		c = append(c, "--hostname", cfg.hostname, "--port", cfg.port)
+		if cfg.uriPath != "" {
+			c = append(c, "--uriPath", cfg.uriPath)
+		}
+		if cfg.username != "" && cfg.password != "" {
+			c = append(c, "--username", cfg.username, "--password", cfg.password)
+		}
+		if cfg.remote {
+			c = append(c, "--remote")
+		}
+		if cfg.remoteJBossStandalone {
+			c = append(c, "--remoteJBossStandalone")
+		}
 	}
 	if cfg.isSSL() {
 		c = append(c, "--keyStore", cfg.keyStore, "--keyStorePassword", cfg.keyStorePassword, "--trustStore", cfg.trustStore, "--trustStorePassword", cfg.trustStorePassword)
@@ -98,6 +103,11 @@ func (cfg *connectionConfig) command() []string {
 // OpenNoAuth executes a nrjmx command without user/pass using the given options.
 func OpenNoAuth(hostname, port string, opts ...Option) error {
 	return Open(hostname, port, "", "", opts...)
+}
+
+// OpenURL executes a nrjmx command using the provided full connection URL and options.
+func OpenURL(connectionURL, username, password string, opts ...Option) error {
+	return Open("", "", username, password, WithConnectionURL(connectionURL))
 }
 
 // Open executes a nrjmx command using the given options.
@@ -134,6 +144,13 @@ func WithNrJmxTool(executablePath string) Option {
 func WithURIPath(uriPath string) Option {
 	return func(config *connectionConfig) {
 		config.uriPath = uriPath
+	}
+}
+
+// WithConnectionURL for specifying non standard(jmxrmi) path on jmx service uri
+func WithConnectionURL(connectionURL string) Option {
+	return func(config *connectionConfig) {
+		config.connectionURL = connectionURL
 	}
 }
 
