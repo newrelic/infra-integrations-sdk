@@ -83,15 +83,15 @@ func (cfg *connectionConfig) command() []string {
 		if cfg.uriPath != "" {
 			c = append(c, "--uriPath", cfg.uriPath)
 		}
-		if cfg.username != "" && cfg.password != "" {
-			c = append(c, "--username", cfg.username, "--password", cfg.password)
-		}
 		if cfg.remote {
 			c = append(c, "--remote")
 		}
 		if cfg.remoteJBossStandalone {
 			c = append(c, "--remoteJBossStandalone")
 		}
+	}
+	if cfg.username != "" && cfg.password != "" {
+		c = append(c, "--username", cfg.username, "--password", cfg.password)
 	}
 	if cfg.isSSL() {
 		c = append(c, "--keyStore", cfg.keyStore, "--keyStorePassword", cfg.keyStorePassword, "--trustStore", cfg.trustStore, "--trustStorePassword", cfg.trustStorePassword)
