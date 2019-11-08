@@ -309,8 +309,6 @@ func doQuery(ctx context.Context, out chan []byte, queryErrC chan error, querySt
 
 // Query executes JMX query against nrjmx tool waiting up to timeout (in milliseconds)
 func Query(objectPattern string, timeoutMillis int) (result map[string]interface{}, err error) {
-	defer Close()
-
 	ctx, cancelFn := context.WithCancel(context.Background())
 
 	lineCh := make(chan []byte, cmdStdChanLen)
