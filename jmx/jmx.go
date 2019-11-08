@@ -309,8 +309,6 @@ func doQuery(ctx context.Context, out chan []byte, queryErrC chan error, querySt
 
 // Query executes JMX query against nrjmx tool waiting up to timeout (in milliseconds)
 func Query(objectPattern string, timeoutMillis int) (result map[string]interface{}, err error) {
-	defer Close()
-
 	ctx, cancelFn := context.WithCancel(context.Background())
 
 	lineCh := make(chan []byte, cmdStdChanLen)
@@ -332,6 +330,7 @@ func receiveResult(lineCh chan []byte, queryErrors chan error, cancelFn context.
 			gotResult = true
 			if len(line) == 0 {
 				cancelFn()
+				Close()
 				log.Warn(fmt.Sprintf("empty result for query: %s", objectPattern))
 				continue
 			}
@@ -363,6 +362,7 @@ func receiveResult(lineCh chan []byte, queryErrors chan error, cancelFn context.
 		case <-time.After(timeout):
 			// In case of timeout, we want to close the command to avoid mixing up results coming up latter
 			cancelFn()
+			Close()
 			if !gotResult {
 				err = fmt.Errorf("timeout waiting for query: %s", objectPattern)
 			}
