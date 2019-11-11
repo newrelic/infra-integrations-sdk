@@ -28,6 +28,7 @@ const (
 // Error vars to ease Query response handling.
 var (
 	ErrBeanPattern = errors.New("cannot parse bean pattern")
+	ErrConnection = errors.New("cannot connect")
 )
 
 var cmd *exec.Cmd
@@ -262,6 +263,15 @@ func handleStdErr(ctx context.Context) {
 				return
 			}
 			cmdWarnC <- msg
+		}
+		if strings.HasPrefix(line, "SEVERE:") {
+			msg := line[7:]
+			if strings.Contains(msg, "jmx connection error") {
+				cmdErrC <- ErrConnection
+			} else {
+				cmdErrC <- errors.New(msg)
+			}
+			return
 		}
 		if err != nil {
 			cmdErrC <- err
