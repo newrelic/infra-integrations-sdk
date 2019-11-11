@@ -28,7 +28,7 @@ const (
 // Error vars to ease Query response handling.
 var (
 	ErrBeanPattern = errors.New("cannot parse bean pattern")
-	ErrConnection = errors.New("cannot connect")
+	ErrConnection  = errors.New("cannot connect")
 )
 
 var cmd *exec.Cmd
