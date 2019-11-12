@@ -338,6 +338,7 @@ func receiveResult(lineC chan []byte, queryErrC chan error, cancelFn context.Can
 		case line := <-lineC:
 			if len(line) == 0 {
 				cancelFn()
+				Close()
 				log.Warn(fmt.Sprintf("empty result for query: %s", objectPattern))
 				continue
 			}
