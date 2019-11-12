@@ -311,7 +311,7 @@ func doQuery(ctx context.Context, out chan []byte, queryErrC chan error, querySt
 			queryErrC <- fmt.Errorf("reading nrjmx stdout: %s", err.Error())
 		}
 		out <- b
-		if err == io.EOF {
+		if err != nil {
 			return
 		}
 	}
@@ -331,16 +331,13 @@ func Query(objectPattern string, timeoutMillis int) (result map[string]interface
 }
 
 // receiveResult checks for channels to receive result from nrjmx command.
-func receiveResult(lineCh chan []byte, queryErrors chan error, cancelFn context.CancelFunc, objectPattern string, timeout time.Duration) (result map[string]interface{}, err error) {
-	gotResult := false
+func receiveResult(lineC chan []byte, queryErrC chan error, cancelFn context.CancelFunc, objectPattern string, timeout time.Duration) (result map[string]interface{}, err error) {
 	var warn string
 	for {
 		select {
-		case line := <-lineCh:
-			gotResult = true
+		case line := <-lineC:
 			if len(line) == 0 {
 				cancelFn()
-				Close()
 				log.Warn(fmt.Sprintf("empty result for query: %s", objectPattern))
 				continue
 			}
@@ -355,27 +352,24 @@ func receiveResult(lineCh chan []byte, queryErrors chan error, cancelFn context.
 			for k, v := range r {
 				result[k] = v
 			}
+			return
 
 		case warn = <-cmdWarnC:
-			gotResult = true
+			// change on the API is required to return warnings
 			log.Warn(warn)
 			return
 
 		case err = <-cmdErrC:
-			gotResult = true
 			return
 
-		case err = <-queryErrors:
-			log.Warn("query error: " + err.Error())
-			gotResult = true
+		case err = <-queryErrC:
+			return
 
 		case <-time.After(timeout):
 			// In case of timeout, we want to close the command to avoid mixing up results coming up latter
 			cancelFn()
 			Close()
-			if !gotResult {
-				err = fmt.Errorf("timeout waiting for query: %s", objectPattern)
-			}
+			err = fmt.Errorf("timeout waiting for query: %s", objectPattern)
 			return
 		}
 	}
