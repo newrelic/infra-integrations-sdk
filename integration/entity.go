@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/newrelic/infra-integrations-sdk/data/attributes"
+	"github.com/newrelic/infra-integrations-sdk/data/attribute"
 	"github.com/newrelic/infra-integrations-sdk/data/event"
 	"github.com/newrelic/infra-integrations-sdk/data/inventory"
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
@@ -21,7 +21,7 @@ type Entity struct {
 	storer      persist.Storer
 	lock        sync.Locker
 	// CustomAttributes []metric.Attribute `json:"custom_attributes,omitempty"`
-	customAttributes []attributes.Attribute
+	customAttributes []attribute.Attribute
 }
 
 // EntityMetadata stores entity Metadata
@@ -110,7 +110,7 @@ func (e *Entity) SameAs(b *Entity) bool {
 }
 
 // NewMetricSet returns a new instance of Set with its sample attached to the integration.
-func (e *Entity) NewMetricSet(eventType string, nameSpacingAttributes ...attributes.Attribute) *metric.Set {
+func (e *Entity) NewMetricSet(eventType string, nameSpacingAttributes ...attribute.Attribute) *metric.Set {
 
 	s := metric.NewSet(eventType, e.storer, nameSpacingAttributes...)
 
@@ -148,14 +148,14 @@ func (e *Entity) SetInventoryItem(key string, field string, value interface{}) e
 }
 
 // AddAttributes adds attributes to every entity metric-set.
-func (e *Entity) AddAttributes(attributes ...attributes.Attribute) {
+func (e *Entity) AddAttributes(attributes ...attribute.Attribute) {
 	for _, a := range attributes {
 		e.setCustomAttribute(a.Key, a.Value)
 	}
 }
 
 func (e *Entity) setCustomAttribute(key string, value string) {
-	attribute := attributes.Attribute{
+	attribute := attribute.Attribute{
 		Key:   key,
 		Value: value,
 	}

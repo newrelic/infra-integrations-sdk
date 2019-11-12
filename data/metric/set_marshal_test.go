@@ -3,7 +3,7 @@ package metric
 import (
 	"testing"
 
-	"github.com/newrelic/infra-integrations-sdk/data/attributes"
+	"github.com/newrelic/infra-integrations-sdk/data/attribute"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
 )
@@ -133,7 +133,7 @@ func TestSet_MarshalMetricsMissingOrInvalidTags(t *testing.T) {
 }
 
 func newTestSet() *Set {
-	return NewSet("some-event-type", persist.NewInMemoryStore(), attributes.Attr("k", "v"))
+	return NewSet("some-event-type", persist.NewInMemoryStore(), attribute.Attr("k", "v"))
 }
 
 func assertEqualsMetrics(t *testing.T, expected map[string]interface{}, got map[string]interface{}) {

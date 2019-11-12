@@ -1,4 +1,4 @@
-package attributes
+package attribute
 
 import "fmt"
 

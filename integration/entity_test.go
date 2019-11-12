@@ -8,7 +8,7 @@ import (
 
 	"encoding/json"
 
-	"github.com/newrelic/infra-integrations-sdk/data/attributes"
+	"github.com/newrelic/infra-integrations-sdk/data/attribute"
 	"github.com/newrelic/infra-integrations-sdk/data/event"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
@@ -71,7 +71,7 @@ func TestEntity_AddAttributes(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	e.AddAttributes(attributes.Attr("key1", "val1"), attributes.Attr("key2", "val2"))
+	e.AddAttributes(attribute.Attr("key1", "val1"), attribute.Attr("key2", "val2"))
 
 	assert.Len(t, e.customAttributes, 2, "attributes should have been added to the entity")
 
@@ -93,7 +93,7 @@ func TestAddNotificationEvent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	en.customAttributes = attributes.Attributes{attributes.Attr("clusterName", "my-cluster-name")}
+	en.customAttributes = attribute.Attributes{attribute.Attr("clusterName", "my-cluster-name")}
 
 	err = en.AddEvent(event.NewNotification("TestSummary"))
 	assert.NoError(t, err)
@@ -109,7 +109,7 @@ func TestAddEventWithAttributes(t *testing.T) {
 	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore(), false)
 	require.NoError(t, err)
 
-	en.customAttributes = attributes.Attributes{attributes.Attr("clusterName", "my-cluster-name")}
+	en.customAttributes = attribute.Attributes{attribute.Attr("clusterName", "my-cluster-name")}
 	attrs := map[string]interface{}{"attrKey": "attrVal"}
 	err = en.AddEvent(event.NewWithAttributes("TestSummary", "TestCategory", attrs))
 	assert.NoError(t, err)

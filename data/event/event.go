@@ -1,6 +1,6 @@
 package event
 
-import "github.com/newrelic/infra-integrations-sdk/data/attributes"
+import "github.com/newrelic/infra-integrations-sdk/data/attribute"
 
 const (
 	// NotificationEventCategory category for notification events.
@@ -53,7 +53,7 @@ func (e *Event) setAttribute(key string, val interface{}) {
 }
 
 // AddCustomAttributes add customAttributes to the Event
-func AddCustomAttributes(e *Event, customAttributes []attributes.Attribute) {
+func AddCustomAttributes(e *Event, customAttributes []attribute.Attribute) {
 	for _, attr := range customAttributes {
 		e.setAttribute(attr.Key, attr.Value)
 	}

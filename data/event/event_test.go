@@ -3,7 +3,7 @@ package event
 import (
 	"testing"
 
-	"github.com/newrelic/infra-integrations-sdk/data/attributes"
+	"github.com/newrelic/infra-integrations-sdk/data/attribute"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,7 +38,7 @@ func TestEventsAddCustomAttributes(t *testing.T) {
 		Attributes: map[string]interface{}{"attrKey": "attrVal"},
 	}
 
-	a := attributes.Attributes{attributes.Attr("clusterName", "my-cluster")}
+	a := attribute.Attributes{attribute.Attr("clusterName", "my-cluster")}
 
 	AddCustomAttributes(e, a)
 

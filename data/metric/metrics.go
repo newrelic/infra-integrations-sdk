@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/newrelic/infra-integrations-sdk/data/attributes"
+	"github.com/newrelic/infra-integrations-sdk/data/attribute"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/pkg/errors"
 )
@@ -30,12 +30,12 @@ var (
 type Set struct {
 	storer       persist.Storer
 	Metrics      map[string]interface{}
-	nsAttributes []attributes.Attribute
+	nsAttributes []attribute.Attribute
 }
 
 // NewSet creates new metrics set, optionally related to a list of attributes. These attributes makes the metric-set unique.
 // If related attributes are used, then new attributes are added.
-func NewSet(eventType string, storer persist.Storer, attributes ...attributes.Attribute) (s *Set) {
+func NewSet(eventType string, storer persist.Storer, attributes ...attribute.Attribute) (s *Set) {
 	s = &Set{
 		Metrics:      make(map[string]interface{}),
 		storer:       storer,
@@ -52,7 +52,7 @@ func NewSet(eventType string, storer persist.Storer, attributes ...attributes.At
 }
 
 // AddCustomAttributes add customAttributes to MetricSet
-func AddCustomAttributes(metricSet *Set, customAttributes []attributes.Attribute) {
+func AddCustomAttributes(metricSet *Set, customAttributes []attribute.Attribute) {
 	for _, attr := range customAttributes {
 		metricSet.setSetAttribute(attr.Key, attr.Value)
 	}
@@ -168,7 +168,7 @@ func (ms *Set) namespace(metricName string) string {
 	separator := ""
 
 	attrs := ms.nsAttributes
-	sort.Sort(attributes.Attributes(attrs))
+	sort.Sort(attribute.Attributes(attrs))
 
 	for _, attr := range attrs {
 		ns = fmt.Sprintf("%s%s%s", ns, separator, attr.Namespace())
