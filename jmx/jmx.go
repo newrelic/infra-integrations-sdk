@@ -283,7 +283,9 @@ func handleStdErr(ctx context.Context) {
 // Close will finish the underlying nrjmx application by closing its standard
 // input and canceling the execution afterwards to clean-up.
 func Close() {
-	cancel()
+	if cancel != nil {
+		cancel()
+}
 
 	done.Wait()
 }
