@@ -27,8 +27,8 @@ const (
 
 // Error vars to ease Query response handling.
 var (
-	ErrBeanPattern = errors.New("cannot parse bean pattern")
-	ErrConnection  = errors.New("cannot connect")
+	ErrBeanPattern = errors.New("cannot parse MBean glob pattern, valid: 'DOMAIN:BEAN'")
+	ErrConnection  = errors.New("jmx endpoint connection error")
 )
 
 var cmd *exec.Cmd
@@ -285,7 +285,7 @@ func handleStdErr(ctx context.Context) {
 func Close() {
 	if cancel != nil {
 		cancel()
-}
+	}
 
 	done.Wait()
 }
