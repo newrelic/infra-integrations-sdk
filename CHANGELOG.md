@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - JMX package: fixed `nrjmx` error handling
 - JMX package: fixed `nrjmx` warning handling
-- JMX package support for `nrjmx` multi-line responses
+- JMX package support for `nrjmx` stderr multi-line responses
 
 ## 3.4.0
 
