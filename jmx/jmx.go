@@ -311,9 +311,7 @@ func doQuery(ctx context.Context, out chan []byte, queryErrC chan error, querySt
 			queryErrC <- fmt.Errorf("reading nrjmx stdout: %s", err.Error())
 		}
 		out <- b
-		if err != nil {
-			return
-		}
+		return
 	}
 }
 
