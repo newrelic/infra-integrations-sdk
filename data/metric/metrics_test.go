@@ -44,6 +44,17 @@ func TestSet_SetMetricGauge(t *testing.T) {
 	assert.Equal(t, 10.0, ms.Metrics["key"], "stored gauge should be float")
 }
 
+func TestSet_SetMetric_keepsLatestValueForSameMetricName(t *testing.T) {
+	persist.SetNow(growingTime)
+
+	ms := NewSet("some-event-type", nil)
+
+	assert.NoError(t, ms.SetMetric("key", 1, GAUGE))
+	assert.NoError(t, ms.SetMetric("key", 2, GAUGE))
+
+	assert.Equal(t, 2.0, ms.Metrics["key"], "value should be the latest one")
+}
+
 func TestSet_SetMetricAttribute(t *testing.T) {
 	persist.SetNow(growingTime)
 
