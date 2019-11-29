@@ -1,5 +1,7 @@
 package event
 
+import "github.com/newrelic/infra-integrations-sdk/data/attribute"
+
 const (
 	// NotificationEventCategory category for notification events.
 	NotificationEventCategory = "notifications"
@@ -28,8 +30,9 @@ type Event struct {
 // New creates a new event.
 func New(summary, category string) *Event {
 	return &Event{
-		Summary:  summary,
-		Category: category,
+		Summary:    summary,
+		Category:   category,
+		Attributes: make(map[string]interface{}),
 	}
 }
 
@@ -43,4 +46,15 @@ func NewWithAttributes(summary, category string, attributes map[string]interface
 	e := New(summary, category)
 	e.Attributes = attributes
 	return e
+}
+
+func (e *Event) setAttribute(key string, val interface{}) {
+	e.Attributes[key] = val
+}
+
+// AddCustomAttributes add customAttributes to the Event
+func AddCustomAttributes(e *Event, customAttributes []attribute.Attribute) {
+	for _, attr := range customAttributes {
+		e.setAttribute(attr.Key, attr.Value)
+	}
 }

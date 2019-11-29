@@ -3,16 +3,16 @@ package integration
 import (
 	"testing"
 
-	"github.com/newrelic/infra-integrations-sdk/data/metric"
-
 	"strconv"
 	"sync"
 
 	"encoding/json"
 
+	"github.com/newrelic/infra-integrations-sdk/data/attribute"
 	"github.com/newrelic/infra-integrations-sdk/data/event"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewEntity(t *testing.T) {
@@ -71,7 +71,7 @@ func TestEntity_AddAttributes(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	e.AddAttributes(metric.Attr("key1", "val1"), metric.Attr("key2", "val2"))
+	e.AddAttributes(attribute.Attr("key1", "val1"), attribute.Attr("key2", "val2"))
 
 	assert.Len(t, e.customAttributes, 2, "attributes should have been added to the entity")
 
@@ -93,6 +93,8 @@ func TestAddNotificationEvent(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	en.customAttributes = attribute.Attributes{attribute.Attr("clusterName", "my-cluster-name")}
+
 	err = en.AddEvent(event.NewNotification("TestSummary"))
 	assert.NoError(t, err)
 
@@ -101,6 +103,27 @@ func TestAddNotificationEvent(t *testing.T) {
 	if en.Events[0].Summary != "TestSummary" || en.Events[0].Category != "notifications" {
 		t.Error("malformed event")
 	}
+}
+
+func TestAddEventWithAttributes(t *testing.T) {
+	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore(), false)
+	require.NoError(t, err)
+
+	en.customAttributes = attribute.Attributes{attribute.Attr("clusterName", "my-cluster-name")}
+	attrs := map[string]interface{}{"attrKey": "attrVal"}
+	err = en.AddEvent(event.NewWithAttributes("TestSummary", "TestCategory", attrs))
+	assert.NoError(t, err)
+
+	require.Len(t, en.Events, 1)
+
+	assert.Equal(t, "TestSummary", en.Events[0].Summary)
+	assert.Equal(t, "TestCategory", en.Events[0].Category)
+
+	expectedAttrs := map[string]interface{}{
+		"attrKey":     "attrVal",
+		"clusterName": "my-cluster-name",
+	}
+	assert.Equal(t, expectedAttrs, en.Events[0].Attributes)
 }
 
 func TestAddNotificationWithEmptySummaryFails(t *testing.T) {

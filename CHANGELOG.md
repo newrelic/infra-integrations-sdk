@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - JMX no-auth connection
 - JMX constructor option to provice custom nrjmx tool executable
 - JMX full connection URL
+- Allow events that contain attributes to be decorated by the entity 
+  customAttributes.
 
 ### Changed
 
