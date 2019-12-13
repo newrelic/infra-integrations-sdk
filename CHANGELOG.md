@@ -7,13 +7,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Next
 
+### 3.6.0
+
+### Added
+
+- Allow events that contain attributes to be decorated by the entity 
+  customAttributes.
+
+### 3.5.0
+
 ### Added
 
 - JMX no-auth connection
 - JMX constructor option to provice custom nrjmx tool executable
 - JMX full connection URL
-- Allow events that contain attributes to be decorated by the entity 
-  customAttributes.
 
 ### Changed
 
