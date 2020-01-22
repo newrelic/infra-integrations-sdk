@@ -104,5 +104,5 @@ func Error(format string, args ...interface{}) {
 // Fatal logs an error at level Fatal, and makes the program exit with an error code.
 func Fatal(err error) {
 	globalLogger.prefixPrint("FATAL", "can't continue: %v", err)
-	panic(err)
+	os.Exit(1)
 }
