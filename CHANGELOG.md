@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Next
 
+### Changed
+
+- Removed panic when calling ``log.Fatal``
+
 ### 3.6.0
 
 ### Added
