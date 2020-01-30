@@ -3,6 +3,7 @@ package metric
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 
@@ -111,7 +112,20 @@ func castToFloat(value interface{}) (float64, error) {
 		return 0, nil
 	}
 
-	return strconv.ParseFloat(fmt.Sprintf("%v", value), 64)
+	parsedValue, err := strconv.ParseFloat(fmt.Sprintf("%v", value), 64)
+	if err != nil {
+		return 0, err
+	}
+
+	if isNaNOrInf(parsedValue) {
+		return 0, ErrNonNumeric
+	}
+
+	return parsedValue, nil
+}
+
+func isNaNOrInf(f float64) bool {
+	return math.IsNaN(f) || math.IsInf(f, 0) || math.IsInf(f, -1)
 }
 
 func (ms *Set) elapsedDifference(name string, absolute interface{}, sourceType SourceType) (elapsed float64, err error) {

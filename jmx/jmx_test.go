@@ -16,7 +16,7 @@ import (
 
 const (
 	timeoutMillis = 1500
-	openAttempts  = 5
+	openAttempts  = 10
 	// jmx mock cmds
 	cmdEmpty         = "empty"
 	cmdCrash         = "crash"
@@ -168,7 +168,7 @@ func openWaitWithSSL(hostname, port, username, password, keyStore, keyStorePassw
 	err := Open(hostname, port, username, password, ssl)
 	if err == ErrJmxCmdRunning && attempts > 0 {
 		attempts--
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 
 		return openWaitWithSSL(hostname, port, username, password, keyStore, keyStorePassword, trustStore, trustStorePassword, attempts)
 	}

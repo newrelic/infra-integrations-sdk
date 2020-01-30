@@ -3,6 +3,7 @@ package metric
 import (
 	"fmt"
 	"io/ioutil"
+	"math"
 	"path"
 	"testing"
 	"time"
@@ -192,6 +193,22 @@ func TestSet_MarshalJSON(t *testing.T) {
 	)
 }
 
+func TestSet_MarshalJSON_WrongValues(t *testing.T) {
+	ms := NewSet("some-event-type", persist.NewInMemoryStore(), attribute.Attr("k", "v"))
+
+	ms.SetMetric("-inf", math.Inf(-1), RATE)
+	ms.SetMetric("+inf", math.Inf(1), DELTA)
+	ms.SetMetric("nan", math.NaN(), GAUGE)
+
+	marshaled, err := ms.MarshalJSON()
+
+	assert.NoError(t, err)
+	assert.Equal(t,
+		`{"event_type":"some-event-type","k":"v"}`,
+		string(marshaled),
+	)
+}
+
 func TestSet_UnmarshalJSON(t *testing.T) {
 	ms := NewSet("some-event-type", persist.NewInMemoryStore(), attribute.Attr("k", "v"))
 
@@ -317,6 +334,19 @@ func Test_castToFloat(t *testing.T) {
 		{1.5, 1.5, false},
 		{"true", 0, true},
 		{"false", 0, true},
+
+		{"inf", 0, true},
+		{"+inf", 0, true},
+		{"+Inf", 0, true},
+		{"-inf", 0, true},
+		{"-Inf", 0, true},
+		{"nan", 0, true},
+		{"NaN", 0, true},
+		{"infinity", 0, true},
+		{"Infinity", 0, true},
+		{math.Inf(0), 0, true},
+		{math.Inf(-1), 0, true},
+		{math.NaN(), 0, true},
 	}
 
 	for _, tc := range testCases {
