@@ -202,11 +202,11 @@ func TestSet_MarshalJSON_WrongValues(t *testing.T) {
 	ms := NewSet("some-event-type", persist.NewInMemoryStore(), attribute.Attr("k", "v"))
 
 	err := ms.SetMetric("-inf", math.Inf(-1), RATE)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 	err = ms.SetMetric("+inf", math.Inf(1), DELTA)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 	err = ms.SetMetric("nan", math.NaN(), GAUGE)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 
 	marshaled, err := ms.MarshalJSON()
 

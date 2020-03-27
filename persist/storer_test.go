@@ -482,11 +482,12 @@ func TestFileStore_Save(t *testing.T) {
 	assert.Equal(t, expectedTS, ts)
 
 	// assertion 2.2: manual deserialization
-	expectedContent := fmt.Sprintf("{\"Data\":{ \"k\": { \"Timestamp\":%d, \"Value\":\"v\" } } }", nowTime.Unix())
 	var readJSON map[string]map[string][]byte
 	err = json.Unmarshal(readStore, &readJSON)
 	assert.NoError(t, err)
-	var expectedJSON map[string]map[string][]byte
+
+	expectedContent := fmt.Sprintf("{\"Data\":{ \"k\": { \"Timestamp\":%d, \"Value\":\"v\" } } }", nowTime.Unix())
+	var expectedJSON map[string]map[string]interface{}
 	err = json.Unmarshal([]byte(expectedContent), &expectedJSON)
 	assert.NoError(t, err)
 
