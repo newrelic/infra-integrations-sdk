@@ -17,7 +17,7 @@ all: lint test
 .PHONY: clean
 clean:
 	@echo "=== $(PROJECT) === [ clean ]: Removing binaries and coverage file..."
-	@rm -rfv bin
+	@rm -rf bin
 
 .PHONY: bin
 bin:
