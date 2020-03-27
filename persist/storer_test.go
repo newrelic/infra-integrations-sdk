@@ -55,7 +55,7 @@ func filePath() string {
 }
 
 func (j *diskStorerProvider) prepareToRead(s Storer) (Storer, error) {
-	s.Save()
+	_ = s.Save()
 
 	return j.new()
 }
@@ -290,7 +290,8 @@ func TestStorer_Overwrite(t *testing.T) {
 
 			// The read operation returns the last version of the record
 			var read string
-			storer.Get("my-storage-test", &read)
+			_, err = storer.Get("my-storage-test", &read)
+			assert.NoError(t, err)
 			assert.Equal(t, "overwritten value", read)
 		})
 	}
@@ -383,12 +384,14 @@ func TestFileStorer_Save(t *testing.T) {
 	storer.Set("arrayValue", []float64{0, 1, 2, 3, 4})
 	storer.Set("floatValue", 3)
 	storer.Set("deletedValue", "this won't be persisted")
-	storer.Delete("deletedValue")
+	err = storer.Delete("deletedValue")
+	assert.NoError(t, err)
 
 	stored := testStruct{555, 444}
 	storer.Set("structValue", stored)
 
-	storer.Save()
+	err = storer.Save()
+	assert.NoError(t, err)
 
 	// And a new storer opens the file
 	storer, err = NewFileStore(filePath, log.NewStdErr(true), DefaultTTL)
@@ -403,7 +406,7 @@ func TestFileStorer_Save(t *testing.T) {
 	assert.Error(t, err)
 
 	// (int arrays are unmarshalled as float arrays)
-	arrayValue := make([]interface{}, 0, 0)
+	arrayValue := make([]interface{}, 0)
 	_, err = storer.Get("arrayValue", &arrayValue)
 	assert.NoError(t, err)
 	for i, v := range arrayValue {
@@ -469,7 +472,8 @@ func TestFileStore_Save(t *testing.T) {
 
 	// assertion 2.1: using a store with value deserialization on demand by Get
 	unserializedStore := NewInMemoryStore()
-	json.Unmarshal(readStore, &unserializedStore)
+	err = json.Unmarshal(readStore, &unserializedStore)
+	assert.NoError(t, err)
 
 	var v string
 	ts, err = unserializedStore.Get("k", &v)
@@ -480,9 +484,11 @@ func TestFileStore_Save(t *testing.T) {
 	// assertion 2.2: manual deserialization
 	expectedContent := fmt.Sprintf("{\"Data\":{ \"k\": { \"Timestamp\":%d, \"Value\":\"v\" } } }", nowTime.Unix())
 	var readJSON map[string]map[string][]byte
-	json.Unmarshal(readStore, &readJSON)
+	err = json.Unmarshal(readStore, &readJSON)
+	assert.NoError(t, err)
 	var expectedJSON map[string]map[string][]byte
-	json.Unmarshal([]byte(expectedContent), &expectedJSON)
+	err = json.Unmarshal([]byte(expectedContent), &expectedJSON)
+	assert.NoError(t, err)
 
 	bytes, ok := readJSON["Data"]["k"]
 	assert.True(t, ok)

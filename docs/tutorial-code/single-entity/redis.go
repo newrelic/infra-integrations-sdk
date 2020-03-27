@@ -39,7 +39,7 @@ func queryRedisInfo(query string) (float64, error) {
 }
 
 func queryRedisConfig(query string) (string, string) {
-	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("redis-cli CONFIG GET %s", args.Hostname, args.Port, query))
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("redis-cli -h %s -p %d CONFIG GET %s", args.Hostname, args.Port, query))
 
 	output, err := cmd.CombinedOutput()
 	panicOnErr(err)

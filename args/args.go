@@ -48,9 +48,9 @@ func (d *DefaultArgumentList) HasInventory() bool {
 // HTTPClientArgumentList are meant to be used as flags from a custom integrations. With this you could
 // send this arguments from the command line.
 type HTTPClientArgumentList struct {
-	HTTPCaBundleFile string        `default: "" help: "Name of the certificate file"`
-	HTTPCaBundleDir  string        `default: "" help: "Path where the certificate exists"`
-	HTTPTimeout      time.Duration `default:30 help: "Client http timeout in seconds"`
+	HTTPCaBundleFile string        `default:"" help:"Name of the certificate file"`
+	HTTPCaBundleDir  string        `default:"" help:"Path where the certificate exists"`
+	HTTPTimeout      time.Duration `default:"30" help:"Client http timeout in seconds"`
 }
 
 func getArgsFromEnv() func(f *flag.Flag) {

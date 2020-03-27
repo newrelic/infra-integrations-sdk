@@ -69,7 +69,7 @@ func startHTTPServer(file, keyFile string) {
 	srv := &http.Server{Addr: "localhost:8080"}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "Test server\n")
+		_, _ = io.WriteString(w, "Test server\n")
 	})
 	go func() {
 		<-quit
@@ -85,13 +85,18 @@ func startHTTPServer(file, keyFile string) {
 func TestClient_NewWithCert(t *testing.T) {
 
 	file, err := ioutil.TempFile("/tmp/", "ca.pem")
-	file.WriteString(caCert)
 	assert.NoError(t, err)
-	defer os.Remove(file.Name())
+
+	_, err = file.WriteString(caCert)
+	assert.NoError(t, err)
+	defer func() { _ = os.Remove(file.Name()) }()
+
 	keyFile, err := ioutil.TempFile("/tmp/", "key.pem")
-	keyFile.WriteString(privateKey)
 	assert.NoError(t, err)
-	defer os.Remove(keyFile.Name())
+
+	_, err = keyFile.WriteString(privateKey)
+	assert.NoError(t, err)
+	defer func() { _ = os.Remove(keyFile.Name()) }()
 
 	signal.Notify(quit, os.Interrupt)
 
@@ -114,6 +119,7 @@ func TestClient_NewWithCert(t *testing.T) {
 	}
 
 	_, err = ioutil.ReadAll(resp.Body)
+	assert.NoError(t, err)
 	// Stop http server
 	<-done
 }
