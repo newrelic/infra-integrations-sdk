@@ -1,10 +1,8 @@
 GO_VERSION = $(shell go version | sed 's/[^0-9.]*\([0-9.]*\).*/\1/')
 
 GOTOOLS = github.com/axw/gocov/gocov \
-          github.com/AlekSi/gocov-xml \
+          github.com/AlekSi/gocov-xml
 
-# golint only supports the last two Go versions, update the value when its not supported anymore.
-GOLINT_MIN_GO_VERSION = 1.9
 GOLANGCILINT_VERSION = v1.24.0
 GOLANGCILINT_BIN = bin/golangci-lint
 
