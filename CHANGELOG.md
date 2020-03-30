@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - Removed panic when calling ``log.Fatal``
+- Prevent from trying to json marshall `inf` float values 
 
 ### 3.6.0
 
