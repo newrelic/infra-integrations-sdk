@@ -112,7 +112,7 @@ func TestConcurrentModeHasNoDataRace(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		go func(i int) {
-			in.Entity(fmt.Sprintf("entity%v", i), "test")
+			_, _ = in.Entity(fmt.Sprintf("entity%v", i), "test")
 		}(i)
 	}
 }
@@ -136,14 +136,14 @@ func (m *fakeStorer) Save() error {
 	return nil
 }
 
-func (fakeStorer) Set(key string, value interface{}) int64 {
+func (fakeStorer) Set(_ string, _ interface{}) int64 {
 	return 0
 }
 
-func (fakeStorer) Get(key string, valuePtr interface{}) (int64, error) {
+func (fakeStorer) Get(_ string, _ interface{}) (int64, error) {
 	return 0, nil
 }
 
-func (fakeStorer) Delete(key string) error {
+func (fakeStorer) Delete(_ string) error {
 	return nil
 }

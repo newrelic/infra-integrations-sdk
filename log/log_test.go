@@ -84,7 +84,7 @@ func TestSetupLoggingVerbose(t *testing.T) {
 	defer func() {
 		os.Stderr = back
 	}()
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 
 	SetupLogging(true)
 
@@ -93,7 +93,8 @@ func TestSetupLoggingVerbose(t *testing.T) {
 	assert.NoError(t, w.Close())
 
 	stdErrBytes := new(bytes.Buffer)
-	stdErrBytes.ReadFrom(r)
+	_, err = stdErrBytes.ReadFrom(r)
+	assert.NoError(t, err)
 	assert.Contains(t, stdErrBytes.String(), "hello everybody")
 	assert.Contains(t, stdErrBytes.String(), "goodbye friend")
 }
@@ -107,7 +108,7 @@ func TestSetupLoggingNotVerbose(t *testing.T) {
 	defer func() {
 		os.Stderr = back
 	}()
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 
 	SetupLogging(false)
 
@@ -116,7 +117,8 @@ func TestSetupLoggingNotVerbose(t *testing.T) {
 	assert.NoError(t, w.Close())
 
 	stdErrBytes := new(bytes.Buffer)
-	stdErrBytes.ReadFrom(r)
+	_, err = stdErrBytes.ReadFrom(r)
+	assert.NoError(t, err)
 	assert.NotContains(t, stdErrBytes.String(), "hello everybody")
 	assert.Contains(t, stdErrBytes.String(), "goodbye friend")
 }

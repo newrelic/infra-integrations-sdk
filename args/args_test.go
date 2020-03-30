@@ -22,7 +22,7 @@ func TestSetupArgsDefault(t *testing.T) {
 	}
 	var args argumentList
 
-	os.Setenv("HOSTNAME", "")
+	_ = os.Setenv("HOSTNAME", "")
 	defer os.Clearenv()
 	os.Args = []string{"cmd"}
 
@@ -52,7 +52,7 @@ func TestSetupArgsCommandLine(t *testing.T) {
 	}
 	var args argumentList
 
-	os.Setenv("HOSTNAME", "")
+	_ = os.Setenv("HOSTNAME", "")
 	defer os.Clearenv()
 	os.Args = []string{
 		"cmd",
@@ -95,11 +95,11 @@ func TestSetupArgsEnvironment(t *testing.T) {
 	}
 	var args argumentList
 
-	os.Setenv("USERNAME", "")
-	os.Setenv("VERBOSE", "true")
-	os.Setenv("HOSTNAME", "otherhost")
-	os.Setenv("PORT", "1234")
-	os.Setenv("CONFIG", "{\"arg1\": 2}")
+	_ = os.Setenv("USERNAME", "")
+	_ = os.Setenv("VERBOSE", "true")
+	_ = os.Setenv("HOSTNAME", "otherhost")
+	_ = os.Setenv("PORT", "1234")
+	_ = os.Setenv("CONFIG", "{\"arg1\": 2}")
 	defer os.Clearenv()
 	os.Args = []string{"cmd"}
 
@@ -120,7 +120,7 @@ func TestCliArgsOverrideEnvironmentArgs(t *testing.T) {
 		Verbose bool `default:"false" help:"Print more information to logs."`
 	}
 
-	os.Setenv("VERBOSE", "false")
+	_ = os.Setenv("VERBOSE", "false")
 	defer os.Clearenv()
 	os.Args = []string{
 		"cmd",
@@ -162,7 +162,7 @@ func TestClusterFlagViaCli(t *testing.T) {
 func TestClusterFlagViaEnvVar(t *testing.T) {
 	var args sdk_args.DefaultArgumentList
 
-	os.Setenv("NRI_CLUSTER", "bar")
+	_ = os.Setenv("NRI_CLUSTER", "bar")
 	defer os.Clearenv()
 	os.Args = []string{"cmd"}
 	clearFlagSet()
@@ -188,7 +188,7 @@ func TestServiceFlagViaCli(t *testing.T) {
 func TestServiceFlagViaEnvVar(t *testing.T) {
 	var args sdk_args.DefaultArgumentList
 
-	os.Setenv("NRI_SERVICE", "bar")
+	_ = os.Setenv("NRI_SERVICE", "bar")
 	defer os.Clearenv()
 	os.Args = []string{"cmd"}
 

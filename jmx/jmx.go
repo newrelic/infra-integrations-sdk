@@ -70,7 +70,7 @@ func (cfg *connectionConfig) isSSL() bool {
 }
 
 func (cfg *connectionConfig) command() []string {
-	c := make([]string, 0)
+	var c []string
 	if os.Getenv("NR_JMX_TOOL") != "" {
 		c = strings.Split(os.Getenv("NR_JMX_TOOL"), " ")
 	} else {
@@ -313,7 +313,6 @@ func doQuery(ctx context.Context, out chan []byte, queryErrC chan error, querySt
 			queryErrC <- fmt.Errorf("reading nrjmx stdout: %s", err.Error())
 		}
 		out <- b
-		return
 	}
 }
 

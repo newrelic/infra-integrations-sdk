@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -35,7 +36,7 @@ func queryGaugeRedisInfo(query string, port int) (float64, error) {
 	}
 	splittedLine := strings.Split(string(output), ":")
 	if len(splittedLine) != 2 {
-		return 0, fmt.Errorf("Cannot split the output line")
+		return 0, errors.New("cannot split the output line")
 	}
 	return strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
 }

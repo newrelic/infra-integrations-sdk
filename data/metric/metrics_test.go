@@ -61,7 +61,8 @@ func TestSet_SetMetricAttribute(t *testing.T) {
 
 	ms := NewSet("some-event-type", nil)
 
-	ms.SetMetric("key", "some-attribute", ATTRIBUTE)
+	err := ms.SetMetric("key", "some-attribute", ATTRIBUTE)
+	assert.NoError(t, err)
 
 	if ms.Metrics["key"] != "some-attribute" {
 		t.Errorf("metric stored not valid: %v", ms.Metrics["key"])
@@ -79,7 +80,8 @@ func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 		for _, tt := range rateAndDeltaTests {
 			// user should not store different types under the same key
 			key := fmt.Sprintf("%s:%d", tt.key, sourceType)
-			ms.SetMetric(key, tt.value, sourceType)
+			err := ms.SetMetric(key, tt.value, sourceType)
+			assert.NoError(t, err)
 
 			if ms.Metrics[key] != tt.out {
 				t.Errorf("setting %s %s source-type %d and value %v returned: %v, expected: %v",
@@ -87,7 +89,7 @@ func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 			}
 
 			var v interface{}
-			_, err := storer.Get(ms.namespace(key), &v)
+			_, err = storer.Get(ms.namespace(key), &v)
 			if err == persist.ErrNotFound {
 				t.Errorf("key %s not in cache for case %s", tt.key, tt.testCase)
 			} else if tt.cache != v {
@@ -179,13 +181,16 @@ func TestSet_SetMetric_IncorrectMetricType(t *testing.T) {
 func TestSet_MarshalJSON(t *testing.T) {
 	ms := NewSet("some-event-type", persist.NewInMemoryStore(), attribute.Attr("k", "v"))
 
-	ms.SetMetric("foo", 1, RATE)
-	ms.SetMetric("bar", 1, DELTA)
-	ms.SetMetric("baz", 1, GAUGE)
-	ms.SetMetric("quux", "bar", ATTRIBUTE)
+	err := ms.SetMetric("foo", 1, RATE)
+	assert.NoError(t, err)
+	err = ms.SetMetric("bar", 1, DELTA)
+	assert.NoError(t, err)
+	err = ms.SetMetric("baz", 1, GAUGE)
+	assert.NoError(t, err)
+	err = ms.SetMetric("quux", "bar", ATTRIBUTE)
+	assert.NoError(t, err)
 
 	marshaled, err := ms.MarshalJSON()
-
 	assert.NoError(t, err)
 	assert.Equal(t,
 		`{"bar":0,"baz":1,"event_type":"some-event-type","foo":0,"k":"v","quux":"bar"}`,
@@ -196,9 +201,12 @@ func TestSet_MarshalJSON(t *testing.T) {
 func TestSet_MarshalJSON_WrongValues(t *testing.T) {
 	ms := NewSet("some-event-type", persist.NewInMemoryStore(), attribute.Attr("k", "v"))
 
-	ms.SetMetric("-inf", math.Inf(-1), RATE)
-	ms.SetMetric("+inf", math.Inf(1), DELTA)
-	ms.SetMetric("nan", math.NaN(), GAUGE)
+	err := ms.SetMetric("-inf", math.Inf(-1), RATE)
+	assert.Error(t, err)
+	err = ms.SetMetric("+inf", math.Inf(1), DELTA)
+	assert.Error(t, err)
+	err = ms.SetMetric("nan", math.NaN(), GAUGE)
+	assert.Error(t, err)
 
 	marshaled, err := ms.MarshalJSON()
 
@@ -298,7 +306,7 @@ func TestNewSet_Attr_SolvesCacheCollision(t *testing.T) {
 func TestSet_namespace(t *testing.T) {
 	s := NewSet("type", persist.NewInMemoryStore(), attribute.Attr("k", "v"))
 
-	assert.Equal(t, fmt.Sprintf("k==v::foo"), s.namespace("foo"))
+	assert.Equal(t, "k==v::foo", s.namespace("foo"))
 
 	// several attributed are supported
 	s = NewSet(
@@ -308,7 +316,7 @@ func TestSet_namespace(t *testing.T) {
 		attribute.Attr("k2", "v2"),
 	)
 
-	assert.Equal(t, fmt.Sprintf("k1==v1::k2==v2::foo"), s.namespace("foo"))
+	assert.Equal(t, "k1==v1::k2==v2::foo", s.namespace("foo"))
 
 	// provided attributes order does not matter
 	s = NewSet(
@@ -318,7 +326,7 @@ func TestSet_namespace(t *testing.T) {
 		attribute.Attr("k1", "v1"),
 	)
 
-	assert.Equal(t, fmt.Sprintf("k1==v1::k2==v2::foo"), s.namespace("foo"))
+	assert.Equal(t, "k1==v1::k2==v2::foo", s.namespace("foo"))
 }
 
 func Test_castToFloat(t *testing.T) {

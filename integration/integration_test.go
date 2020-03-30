@@ -54,7 +54,7 @@ func TestDefaultIntegrationWritesToStdout(t *testing.T) {
 	assert.NoError(t, i.Publish())
 
 	// integration published metadata to stdout
-	f.Close()
+	_ = f.Close()
 	payload, err := ioutil.ReadFile(f.Name())
 	assert.NoError(t, err)
 	assert.Equal(t, `{"name":"integration","protocol_version":"3","integration_version":"4.0","data":[]}`+"\n", string(payload))
@@ -148,8 +148,8 @@ func TestDefaultArguments(t *testing.T) {
 func TestClusterAndServiceArgumentsAreAddedToMetadata(t *testing.T) {
 	al := sdk_args.DefaultArgumentList{}
 
-	os.Setenv("NRI_CLUSTER", "foo")
-	os.Setenv("NRI_SERVICE", "bar")
+	_ = os.Setenv("NRI_CLUSTER", "foo")
+	_ = os.Setenv("NRI_SERVICE", "bar")
 	defer os.Clearenv()
 	os.Args = []string{"cmd"}
 	flag.CommandLine = flag.NewFlagSet("cmd", flag.ContinueOnError)
@@ -229,7 +229,7 @@ func TestVerboseLog(t *testing.T) {
 	defer func() {
 		os.Stderr = back
 	}()
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 
 	var al argumentList
 	i, err := New("TestIntegration", "1.0", Args(&al))
@@ -241,7 +241,8 @@ func TestVerboseLog(t *testing.T) {
 
 	// The message is correctly submitted to the standard error
 	stdErrBytes := new(bytes.Buffer)
-	stdErrBytes.ReadFrom(r)
+	_, err = stdErrBytes.ReadFrom(r)
+	assert.NoError(t, err)
 	assert.Contains(t, stdErrBytes.String(), "hello everybody")
 }
 
@@ -262,7 +263,7 @@ func TestNonVerboseLog(t *testing.T) {
 	defer func() {
 		os.Stderr = back
 	}()
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 
 	var al argumentList
 	i, err := New("TestIntegration", "1.0", Args(&al))
@@ -276,7 +277,8 @@ func TestNonVerboseLog(t *testing.T) {
 
 	// The standard error shows all the message levels but debug
 	stdErrBytes := new(bytes.Buffer)
-	stdErrBytes.ReadFrom(r)
+	_, err = stdErrBytes.ReadFrom(r)
+	assert.NoError(t, err)
 	assert.Contains(t, stdErrBytes.String(), "this is an error")
 	assert.Contains(t, stdErrBytes.String(), "this is an info")
 	assert.NotContains(t, stdErrBytes.String(), "this is a debug")
