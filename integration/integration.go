@@ -39,7 +39,7 @@ type Integration struct {
 	Name               string    `json:"name"`
 	ProtocolVersion    string    `json:"protocol_version"`
 	IntegrationVersion string    `json:"integration_version"`
-	Entities           []*entity `json:"data"`
+	Entities           []*Entity `json:"data"`
 	locker             sync.Locker
 	storer             persist.Storer
 	prettyOutput       bool
@@ -65,7 +65,7 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 		Name:               name,
 		ProtocolVersion:    protocolVersion,
 		IntegrationVersion: version,
-		Entities:           []*entity{},
+		Entities:           []*Entity{},
 		writer:             os.Stdout,
 		locker:             &sync.Mutex{},
 	}
@@ -108,7 +108,7 @@ func (i *Integration) EntityReportedBy(
 	reportingEntityName string,
 	reportedEntityDisplayName string,
 	reportedEntityType string,
-	tags ...metadata.Tag) (e *entity, err error) {
+	tags ...metadata.Tag) (e *Entity, err error) {
 
 	e, err = i.NewEntity(reportingEntityName, reportedEntityDisplayName, reportedEntityType, tags...)
 	if err != nil {
@@ -125,7 +125,7 @@ func (i *Integration) EntityReportedVia(
 	reportingEntityName string,
 	reportedEntityDisplayName string,
 	reportedEntityType string,
-	tags ...metadata.Tag) (e *entity, err error) {
+	tags ...metadata.Tag) (e *Entity, err error) {
 
 	e, err = i.NewEntity(reportingEntityName, reportedEntityDisplayName, reportedEntityType, tags...)
 	if err != nil {
@@ -138,7 +138,7 @@ func (i *Integration) EntityReportedVia(
 
 // NewEntity method creates a new Entity or retrieves an already created entity.
 // The name of the Entity must be unique for the account otherwise it will cause conflicts
-func (i *Integration) NewEntity(name string, displayName, entityType string, tags ...metadata.Tag) (e *entity, err error) {
+func (i *Integration) NewEntity(name string, displayName, entityType string, tags ...metadata.Tag) (e *Entity, err error) {
 	i.locker.Lock()
 	defer i.locker.Unlock()
 
@@ -207,7 +207,7 @@ func (i *Integration) Publish() error {
 func (i *Integration) Clear() {
 	i.locker.Lock()
 	defer i.locker.Unlock()
-	i.Entities = []*entity{} // empty array preferred instead of null on marshaling.
+	i.Entities = []*Entity{} // empty array preferred instead of null on marshaling.
 }
 
 // MarshalJSON serializes integration to JSON, fulfilling Marshaler interface.

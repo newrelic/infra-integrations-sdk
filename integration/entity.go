@@ -13,7 +13,7 @@ import (
 )
 
 // Entity is the producer of the data. Entity could be a host, a container, a pod, or whatever unit of meaning.
-type entity struct {
+type Entity struct {
 	Common    *Common              `json:"common"`
 	Metadata  *metadata.Metadata   `json:"entity,omitempty"`
 	Metrics   []*metric.Set        `json:"metrics"`
@@ -27,7 +27,7 @@ type entity struct {
 type Common struct{}
 
 // SameAs return true when is same entity
-func (e *entity) SameAs(b *entity) bool {
+func (e *Entity) SameAs(b *Entity) bool {
 	if e.Metadata == nil || b.Metadata == nil {
 		return false
 	}
@@ -36,7 +36,7 @@ func (e *entity) SameAs(b *entity) bool {
 }
 
 // NewMetricSet returns a new instance of Set with its sample attached to the integration.
-func (e *entity) NewMetricSet(eventType string, nameSpacingAttributes ...attribute.Attribute) *metric.Set {
+func (e *Entity) NewMetricSet(eventType string, nameSpacingAttributes ...attribute.Attribute) *metric.Set {
 
 	s := metric.NewSet(eventType, e.storer, nameSpacingAttributes...)
 
@@ -47,7 +47,7 @@ func (e *entity) NewMetricSet(eventType string, nameSpacingAttributes ...attribu
 }
 
 // AddEvent method adds a new Event.
-func (e *entity) AddEvent(event *event.Event) error {
+func (e *Entity) AddEvent(event *event.Event) error {
 	if event.Summary == "" {
 		return errors.New("summary of the event cannot be empty")
 	}
@@ -59,19 +59,19 @@ func (e *entity) AddEvent(event *event.Event) error {
 }
 
 // SetInventoryItem method sets the inventory item (only one allowed).
-func (e *entity) SetInventoryItem(key string, field string, value interface{}) error {
+func (e *Entity) SetInventoryItem(key string, field string, value interface{}) error {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 	return e.Inventory.SetItem(key, field, value)
 }
 
 // Tags return the Entity tags
-func (e *entity) Tags() metadata.Tags {
+func (e *Entity) Tags() metadata.Tags {
 	return e.Metadata.Tags
 }
 
 // AddTags adds tags to the entity.
-func (e *entity) AddTags(tags ...metadata.Tag) {
+func (e *Entity) AddTags(tags ...metadata.Tag) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
@@ -81,20 +81,20 @@ func (e *entity) AddTags(tags ...metadata.Tag) {
 }
 
 // AddTag adds a new tag to the entity
-func (e *entity) AddTag(key string, value string) {
+func (e *Entity) AddTag(key string, value string) {
 	e.Metadata.AddTag(key, value)
 }
 
 // Name is the unique entity identifier within a New Relic customer account.
-func (e *entity) Name() string {
+func (e *Entity) Name() string {
 	return e.Metadata.Name
 }
 
 //--- private
 
 // newAnonymousEntity creates a entity without metadata.
-func newAnonymousEntity(storer persist.Storer, addHostnameToMetadata bool) *entity {
-	return &entity{
+func newAnonymousEntity(storer persist.Storer, addHostnameToMetadata bool) *Entity {
+	return &Entity{
 		Common:   &Common{},
 		Metadata: nil,
 		// empty array or object preferred instead of null on marshaling.
@@ -107,7 +107,7 @@ func newAnonymousEntity(storer persist.Storer, addHostnameToMetadata bool) *enti
 }
 
 // isAnonymousEntity returns true if entity has no metadata
-func (e *entity) isAnonymousEntity() bool {
+func (e *Entity) isAnonymousEntity() bool {
 	return e.Metadata == nil || e.Metadata.Name == ""
 }
 
@@ -118,7 +118,7 @@ func newEntity(
 	entityType string,
 	storer persist.Storer,
 	tags ...metadata.Tag,
-) (*entity, error) {
+) (*Entity, error) {
 
 	if name == "" || entityType == "" {
 		return nil, errors.New("entity name and type cannot be empty")
@@ -128,7 +128,7 @@ func newEntity(
 		tags = metadata.Tags{}
 	}
 
-	d := &entity{
+	d := &Entity{
 		// empty array or object preferred instead of null on marshaling.
 		Common: &Common{},
 		Metadata: &metadata.Metadata{
