@@ -54,7 +54,7 @@ func main() {
 	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
 	panicOnErr(err)
 
-	entity := i.LocalEntity()
+	entity, err := i.NewEntity("redis_01", "my-redis", "RedisServer")
 	panicOnErr(err)
 
 	// Add Event

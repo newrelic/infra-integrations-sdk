@@ -8,92 +8,62 @@ import (
 
 	"encoding/json"
 
-	"github.com/newrelic/infra-integrations-sdk/data/attribute"
 	"github.com/newrelic/infra-integrations-sdk/data/event"
+	"github.com/newrelic/infra-integrations-sdk/data/metadata"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewEntity(t *testing.T) {
-	e, err := newEntity("name", "type", persist.NewInMemoryStore(), false)
+
+	e, err := newEntity("name", "displayName", "type", persist.NewInMemoryStore())
 
 	assert.NoError(t, err)
 	assert.Equal(t, "name", e.Metadata.Name)
-	assert.Equal(t, "type", e.Metadata.Namespace)
-	assert.False(t, e.AddHostname)
-	assert.Empty(t, e.Metadata.IDAttrs)
+	assert.Equal(t, "displayName", e.Metadata.DisplayName)
+	assert.Equal(t, "type", e.Metadata.EntityType)
+	assert.Empty(t, e.Metadata.Tags)
+	assert.Empty(t, e.Events)
+	assert.Empty(t, e.Metrics)
+	assert.NotNil(t, e.Inventory)
+	assert.Empty(t, e.Inventory.Items())
+
 }
 
-func TestNewEntityWithIdentifierAttributes(t *testing.T) {
-	attr1 := NewIDAttribute("env", "prod")
-	attr2 := NewIDAttribute("srv", "auth")
-	e, err := newEntity(
-		"name",
-		"type",
-		persist.NewInMemoryStore(),
-		true,
-		attr1,
-		attr2,
-	)
+func Test_NewEntityWithTags(t *testing.T) {
+	attr1 := metadata.NewTag("env", "prod")
+	attr2 := metadata.NewTag("srv", "auth")
+	e, err := newEntity("name", "displayName", "type", persist.NewInMemoryStore(), attr1, attr2)
 
 	assert.NoError(t, err)
-	assert.True(t, e.AddHostname)
-	assert.Len(t, e.Metadata.IDAttrs, 2)
-	assert.Equal(t, e.Metadata.IDAttrs[0], attr1)
-	assert.Equal(t, e.Metadata.IDAttrs[1], attr2)
+	assert.Len(t, e.Metadata.Tags, 2)
+	assert.Equal(t, e.Metadata.Tags[0], attr1)
+	assert.Equal(t, e.Metadata.Tags[1], attr2)
 }
 
-func TestNewEntityWithOneIdentifierAttribute(t *testing.T) {
-	attr1 := NewIDAttribute("env", "prod")
-	e, err := newEntity(
-		"name",
-		"type",
-		persist.NewInMemoryStore(),
-		true,
-		attr1,
-	)
-
-	assert.NoError(t, err)
-	assert.True(t, e.AddHostname)
-	assert.Len(t, e.Metadata.IDAttrs, 1)
-	assert.Equal(t, e.Metadata.IDAttrs[0], attr1)
-}
-
-func TestEntity_AddAttributes(t *testing.T) {
-	idAttr := NewIDAttribute("env", "prod")
-	e, err := newEntity(
-		"name",
-		"type",
-		persist.NewInMemoryStore(),
-		false,
-		idAttr,
-	)
+func TestEntity_AddTags(t *testing.T) {
+	tag := metadata.NewTag("env", "prod")
+	e, err := newEntity("name", "", "type", persist.NewInMemoryStore(), tag)
 	assert.NoError(t, err)
 
-	e.AddAttributes(attribute.Attr("key1", "val1"), attribute.Attr("key2", "val2"))
+	e.AddTag("key1", "val1")
+	assert.Len(t, e.Tags(), 2, "attributes should have been added to the entity")
 
-	assert.Len(t, e.customAttributes, 2, "attributes should have been added to the entity")
-
-	ms := e.NewMetricSet("event-type")
-
-	assert.Equal(t, "val1", ms.Metrics["key1"])
-	assert.Equal(t, "val2", ms.Metrics["key2"])
 }
 
-func TestEntitiesRequireNameAndType(t *testing.T) {
-	_, err := newEntity("", "", nil, false)
+func Test_NameAndTypeCannotBeEmpty(t *testing.T) {
+	_, err := newEntity("", "", "", nil)
 
 	assert.Error(t, err)
 }
 
 func TestAddNotificationEvent(t *testing.T) {
-	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore(), false)
+	en, err := newEntity("Entity1", "", "Type1", persist.NewInMemoryStore())
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	en.customAttributes = attribute.Attributes{attribute.Attr("clusterName", "my-cluster-name")}
+	en.AddTag("clusterName", "my-cluster-name")
 
 	err = en.AddEvent(event.NewNotification("TestSummary"))
 	assert.NoError(t, err)
@@ -105,11 +75,10 @@ func TestAddNotificationEvent(t *testing.T) {
 	}
 }
 
-func TestAddEventWithAttributes(t *testing.T) {
-	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore(), false)
+func Test_AddEventWithAttributes(t *testing.T) {
+	en, err := newEntity("Entity1", "displayName", "Type1", persist.NewInMemoryStore())
 	require.NoError(t, err)
 
-	en.customAttributes = attribute.Attributes{attribute.Attr("clusterName", "my-cluster-name")}
 	attrs := map[string]interface{}{"attrKey": "attrVal"}
 	err = en.AddEvent(event.NewWithAttributes("TestSummary", "TestCategory", attrs))
 	assert.NoError(t, err)
@@ -120,14 +89,14 @@ func TestAddEventWithAttributes(t *testing.T) {
 	assert.Equal(t, "TestCategory", en.Events[0].Category)
 
 	expectedAttrs := map[string]interface{}{
-		"attrKey":     "attrVal",
-		"clusterName": "my-cluster-name",
+		"attrKey": "attrVal",
+		//"clusterName": "my-cluster-name", TODO: should this be added to the event?
 	}
 	assert.Equal(t, expectedAttrs, en.Events[0].Attributes)
 }
 
-func TestAddNotificationWithEmptySummaryFails(t *testing.T) {
-	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore(), false)
+func Test_AddNotificationWithEmptySummaryFails(t *testing.T) {
+	en, err := newEntity("Entity1", "displayName", "Type1", persist.NewInMemoryStore())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,7 +108,7 @@ func TestAddNotificationWithEmptySummaryFails(t *testing.T) {
 }
 
 func TestAddEvent_Entity(t *testing.T) {
-	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore(), false)
+	en, err := newEntity("Entity1", "displayName", "Type1", persist.NewInMemoryStore())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,7 +128,7 @@ func TestAddEvent_Entity(t *testing.T) {
 }
 
 func TestAddEvent(t *testing.T) {
-	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore(), false)
+	en, err := newEntity("Entity1", "displayname", "Type1", persist.NewInMemoryStore())
 	assert.NoError(t, err)
 
 	err = en.AddEvent(event.New("TestSummary", ""))
@@ -172,7 +141,7 @@ func TestAddEvent(t *testing.T) {
 }
 
 func TestAddEvent_Entity_EmptySummary_Error(t *testing.T) {
-	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore(), false)
+	en, err := newEntity("Entity1", "displayName", "Type1", persist.NewInMemoryStore())
 	assert.NoError(t, err)
 
 	err = en.AddEvent(event.New("", "TestCategory"))
@@ -182,7 +151,7 @@ func TestAddEvent_Entity_EmptySummary_Error(t *testing.T) {
 }
 
 func TestEntity_AddInventoryConcurrent(t *testing.T) {
-	en, err := newEntity("Entity1", "Type1", persist.NewInMemoryStore(), false)
+	en, err := newEntity("Entity1", "displayName", "Type1", persist.NewInMemoryStore())
 	assert.NoError(t, err)
 
 	itemsAmount := 100
@@ -200,49 +169,29 @@ func TestEntity_AddInventoryConcurrent(t *testing.T) {
 }
 
 func TestEntity_DefaultEntityIsNotSerialized(t *testing.T) {
-	e := newLocalEntity(persist.NewInMemoryStore(), false)
+	e := newAnonymousEntity(persist.NewInMemoryStore(), false)
 	j, err := json.Marshal(e)
 
 	assert.NoError(t, err)
-	assert.Equal(t, `{"metrics":[],"inventory":{},"events":[]}`, string(j))
+	assert.Equal(t, `{"common":{},"metrics":[],"inventory":{},"events":[]}`, string(j))
 }
 
 func TestEntity_IsDefaultEntity(t *testing.T) {
-	e := newLocalEntity(persist.NewInMemoryStore(), false)
+	e := newAnonymousEntity(persist.NewInMemoryStore(), false)
 
 	assert.Empty(t, e.Metadata, "default entity should have no identifier")
-	assert.True(t, e.isLocalEntity())
-}
-
-func TestEntity_Key(t *testing.T) {
-	e, err := newEntity("entity", "ns", persist.NewInMemoryStore(), false)
-	assert.NoError(t, err)
-
-	k, err := e.Key()
-	assert.NoError(t, err)
-	assert.Equal(t, "ns:entity", k.String())
-}
-
-func TestEntity_Key_WithIDAttrs(t *testing.T) {
-	attr1 := NewIDAttribute("env", "prod")
-	attr2 := NewIDAttribute("srv", "auth")
-	e, err := newEntity("entity", "ns", persist.NewInMemoryStore(), false, attr1, attr2)
-	assert.NoError(t, err)
-
-	k, err := e.Key()
-	assert.NoError(t, err)
-	assert.Equal(t, "ns:entity:env=prod:srv=auth", k.String())
+	assert.True(t, e.isAnonymousEntity())
 }
 
 func TestEntity_SameAs(t *testing.T) {
-	attr := NewIDAttribute("env", "prod")
-	e1, err := newEntity("entity", "ns", persist.NewInMemoryStore(), false, attr)
+	attr := metadata.NewTag("env", "prod")
+	e1, err := newEntity("entity", "", "ns", persist.NewInMemoryStore(), attr)
 	assert.NoError(t, err)
 
-	e2, err := newEntity("entity", "ns", persist.NewInMemoryStore(), false, attr)
+	e2, err := newEntity("entity", "", "ns", persist.NewInMemoryStore(), attr)
 	assert.NoError(t, err)
 
-	e3, err := newEntity("entity", "ns", persist.NewInMemoryStore(), false)
+	e3, err := newEntity("entity", "", "ns", persist.NewInMemoryStore())
 	assert.NoError(t, err)
 
 	assert.True(t, e1.SameAs(e2))

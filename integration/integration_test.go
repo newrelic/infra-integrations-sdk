@@ -10,8 +10,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/newrelic/infra-integrations-sdk/data/attribute"
 	"github.com/newrelic/infra-integrations-sdk/data/event"
+	"github.com/newrelic/infra-integrations-sdk/data/metadata"
 
 	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
@@ -24,16 +24,16 @@ var (
 	integrationVersion = "1.0"
 )
 
-func TestCreation(t *testing.T) {
+func Test_CreateIntegration_InitializesCorrectly(t *testing.T) {
 	i := newTestIntegration(t)
 
 	assert.Equal(t, "TestIntegration", i.Name)
 	assert.Equal(t, "1.0", i.IntegrationVersion)
-	assert.Equal(t, "3", i.ProtocolVersion)
+	assert.Equal(t, "4", i.ProtocolVersion)
 	assert.Len(t, i.Entities, 0)
 }
 
-func TestDefaultIntegrationWritesToStdout(t *testing.T) {
+func Test_DefaultIntegrationWritesToStdout(t *testing.T) {
 	// capture stdout to file
 	f, err := ioutil.TempFile("", "stdout")
 	assert.NoError(t, err)
@@ -48,7 +48,7 @@ func TestDefaultIntegrationWritesToStdout(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "integration", i.Name)
 	assert.Equal(t, "4.0", i.IntegrationVersion)
-	assert.Equal(t, "3", i.ProtocolVersion)
+	assert.Equal(t, "4", i.ProtocolVersion)
 	assert.Equal(t, 0, len(i.Entities))
 
 	assert.NoError(t, i.Publish())
@@ -57,41 +57,58 @@ func TestDefaultIntegrationWritesToStdout(t *testing.T) {
 	_ = f.Close()
 	payload, err := ioutil.ReadFile(f.Name())
 	assert.NoError(t, err)
-	assert.Equal(t, `{"name":"integration","protocol_version":"3","integration_version":"4.0","data":[]}`+"\n", string(payload))
+	assert.Equal(t, `{"name":"integration","protocol_version":"4","integration_version":"4.0","data":[]}`+"\n", string(payload))
 }
 
-func TestIntegration_LocalEntity(t *testing.T) {
+func Test_EntitiesWithSameBasicMetadataAreEqual(t *testing.T) {
 	i := newTestIntegration(t)
 
-	e1 := i.LocalEntity()
-	e2 := i.LocalEntity()
+	e1, err := i.NewEntity("name", "displayName", "type")
+	assert.NoError(t, err)
+
+	e2, err := i.NewEntity("name", "displayName", "type")
+	assert.NoError(t, err)
+
 	assert.Equal(t, e1, e2)
 }
 
-func TestIntegration_Entity(t *testing.T) {
+func Test_EntitiesWithSameMetadataAreEqual(t *testing.T) {
 	i := newTestIntegration(t)
 
-	e1, err := i.Entity("name", "ns")
+	tag := metadata.NewTag("key", "value")
+	e1, err := i.NewEntity("name", "displayName", "type", tag)
 	assert.NoError(t, err)
-	e2, err := i.Entity("name2", "ns")
+
+	e2, err := i.NewEntity("name", "displayName", "type", tag)
 	assert.NoError(t, err)
-	e3, err := i.Entity("name", "ns")
+
+	assert.Equal(t, e1, e2)
+}
+
+func TestIntegration_EntitiesWithDifferentMetadataAreNotEqual(t *testing.T) {
+	i := newTestIntegration(t)
+
+	e1, err := i.NewEntity("name", "", "ns")
+	assert.NoError(t, err)
+	e2, err := i.NewEntity("name2", "", "ns")
+	assert.NoError(t, err)
+	e3, err := i.NewEntity("name", "", "ns")
 	assert.NoError(t, err)
 
 	assert.NotEqual(t, e1, e2, "Different names create different entities")
-	assert.Equal(t, e1, e3, "Same namespace & name create/retrieve same entity")
+	assert.Equal(t, e1, e3, "Same type & name create same entity")
 }
 
-func TestIntegration_Entity_WithIDAttrs(t *testing.T) {
+func TestIntegration_EntitiesWithDifferentTagsAreNotEqula(t *testing.T) {
 	i := newTestIntegration(t)
 
-	idAttr := NewIDAttribute("k", "v")
+	tag := metadata.NewTag("k", "v")
 
-	e1, err := i.Entity("name", "ns", idAttr)
+	e1, err := i.NewEntity("name", "", "ns", tag)
 	assert.NoError(t, err)
-	e2, err := i.Entity("name", "ns")
+	e2, err := i.NewEntity("name", "", "ns")
 	assert.NoError(t, err)
-	e3, err := i.Entity("name", "ns", idAttr)
+	e3, err := i.NewEntity("name", "", "ns", tag)
 	assert.NoError(t, err)
 
 	assert.NotEqual(t, e1, e2, "Different id-attributes create different entities")
@@ -105,7 +122,7 @@ func TestIntegration_EntityReportedBy(t *testing.T) {
 	assert.NoError(t, err)
 
 	reportingEntityExists := false
-	for _, a := range e.customAttributes {
+	for _, a := range e.Tags() {
 		if a.Key == AttrReportingEntity {
 			reportingEntityExists = true
 			assert.Equal(t, a.Value, "reporting:entity:key")
@@ -117,11 +134,11 @@ func TestIntegration_EntityReportedBy(t *testing.T) {
 func TestIntegration_EntityReportedVia(t *testing.T) {
 	i := newTestIntegration(t)
 
-	e, err := i.EntityReportedVia("reporting.endpoint:123", "name", "ns")
+	e, err := i.EntityReportedVia("reporting.endpoint:123", "name", "", "ns")
 	assert.NoError(t, err)
 
 	reportingEndpointExists := false
-	for _, a := range e.customAttributes {
+	for _, a := range e.Tags() {
 		if a.Key == AttrReportingEndpoint {
 			reportingEndpointExists = true
 			assert.Equal(t, a.Value, "reporting.endpoint:123")
@@ -138,7 +155,7 @@ func TestDefaultArguments(t *testing.T) {
 
 	assert.Equal(t, "TestIntegration", i.Name)
 	assert.Equal(t, "1.0", i.IntegrationVersion)
-	assert.Equal(t, "3", i.ProtocolVersion)
+	assert.Equal(t, "4", i.ProtocolVersion)
 	assert.Len(t, i.Entities, 0)
 	assert.True(t, al.All())
 	assert.False(t, al.Pretty)
@@ -157,10 +174,10 @@ func TestClusterAndServiceArgumentsAreAddedToMetadata(t *testing.T) {
 	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
 	assert.NoError(t, err)
 
-	e, err := i.Entity("name", "ns")
+	e, err := i.NewEntity("name", "", "ns")
 	assert.NoError(t, err)
 
-	assert.Equal(t, []attribute.Attribute{
+	assert.Equal(t, metadata.Tags{
 		{
 			Key:   CustomAttrCluster,
 			Value: "foo",
@@ -169,24 +186,7 @@ func TestClusterAndServiceArgumentsAreAddedToMetadata(t *testing.T) {
 			Key:   CustomAttrService,
 			Value: "bar",
 		},
-	}, e.customAttributes)
-}
-
-func TestAddHostnameFlagDecoratesEntities(t *testing.T) {
-	al := sdk_args.DefaultArgumentList{}
-
-	os.Args = []string{"cmd", "-nri_add_hostname"}
-	flag.CommandLine = flag.NewFlagSet("cmd", flag.ContinueOnError)
-
-	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
-	assert.NoError(t, err)
-
-	assert.True(t, i.LocalEntity().AddHostname)
-
-	e, err := i.Entity("name", "ns")
-	assert.NoError(t, err)
-
-	assert.True(t, e.AddHostname)
+	}, e.Tags())
 }
 
 func TestCustomArguments(t *testing.T) {
@@ -290,14 +290,16 @@ func TestIntegration_Publish(t *testing.T) {
 			expectedOutputRaw := []byte(`
 			{
 			  "name": "TestIntegration",
-			  "protocol_version": "3",
+			  "protocol_version": "4",
 			  "integration_version": "1.0",
 			  "data": [
 				{
+				  "common":{},
 				  "entity": {
 					"name": "EntityOne",
+					"displayName":"",
 					"type": "test",
-					"id_attributes": [
+					"tags": [
 					  {
 						"Key":"env",
 						"Value":"prod"
@@ -329,10 +331,12 @@ func TestIntegration_Publish(t *testing.T) {
 				  ]
 				},
 				{
+				  "common":{},
 				  "entity": {
 					"name": "EntityTwo",
+					"displayName":"",
 					"type": "test",
-					"id_attributes": []
+					"tags": []
 				  },
 				  "metrics": [
 					{
@@ -341,13 +345,6 @@ func TestIntegration_Publish(t *testing.T) {
 					}
 				  ],
 				  "inventory": {},
-				  "events": []
-				},
-				{
-				  "metrics": [],
-                  "inventory":{
-			        "inv":{"key":"val"}
-                  },
 				  "events": []
 				}
 			  ]
@@ -361,13 +358,12 @@ func TestIntegration_Publish(t *testing.T) {
 	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(w))
 	assert.NoError(t, err)
 
-	e, err := i.Entity("EntityOne", "test", NewIDAttribute("env", "prod"))
+	e, err := i.NewEntity("EntityOne", "", "test", metadata.NewTag("env", "prod"))
 	assert.NoError(t, err)
 	ms := e.NewMetricSet("EventTypeForEntityOne")
 	assert.NoError(t, ms.SetMetric("metricOne", 1, metric.GAUGE))
 	assert.NoError(t, ms.SetMetric("metricTwo", "test", metric.ATTRIBUTE))
 	assert.NoError(t, ms.SetMetric("metricBool", true, metric.GAUGE))
-
 	assert.NoError(t, e.AddEvent(event.NewWithAttributes(
 		"evnt1sum",
 		"evnt1cat",
@@ -378,14 +374,12 @@ func TestIntegration_Publish(t *testing.T) {
 	)))
 	assert.NoError(t, e.AddEvent(event.New("evnt2sum", "evnt2cat")))
 
-	e2, err := i.Entity("EntityTwo", "test")
+	e2, err := i.NewEntity("EntityTwo", "", "test")
 	assert.NoError(t, err)
 	ms = e2.NewMetricSet("EventTypeForEntityTwo")
 	assert.NoError(t, ms.SetMetric("metricOne", 2, metric.GAUGE))
 
-	e3 := i.LocalEntity()
-	assert.NoError(t, e3.SetInventoryItem("inv", "key", "val"))
-
+	// TODO support anonymous entities
 	assert.NoError(t, i.Publish())
 }
 
@@ -402,12 +396,12 @@ func stripBlanks(b []byte) string {
 func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
 	i := newTestIntegration(t)
 
-	e1, err := i.Entity("Entity1", "test")
+	e1, err := i.NewEntity("Entity1", "", "test")
 	if err != nil {
 		t.Fail()
 	}
 
-	e2, err := i.Entity("Entity1", "test")
+	e2, err := i.NewEntity("Entity1", "", "test")
 	if err != nil {
 		t.Fail()
 	}
@@ -446,10 +440,10 @@ func TestIntegration_CreateLocalAndRemoteEntities(t *testing.T) {
 	i, err := New(integrationName, integrationVersion)
 	assert.NoError(t, err)
 
-	local := i.LocalEntity()
+	local, _ := i.NewEntity("some-entity", "", "some-type")
 	assert.NotEqual(t, local, nil)
 
-	remote, err := i.Entity("Entity1", "test")
+	remote, err := i.NewEntity("Entity1", "", "test")
 	assert.NoError(t, err)
 	assert.NotEqual(t, remote, nil)
 }

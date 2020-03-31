@@ -60,7 +60,7 @@ func main() {
 	panicOnErr(err)
 
 	// Create Entity, entities name must be unique
-	e1, err := i.Entity("instance-1", "redis")
+	e1, err := i.NewEntity("instance-1", "instance-1", "redis")
 	panicOnErr(err)
 	// Add event when redis starts
 	if args.All() || args.Events {
@@ -95,7 +95,7 @@ func main() {
 	}
 
 	// Create another Entity
-	e2, err := i.Entity("instance-2", "redis")
+	e2, err := i.NewEntity("instance-2", "my-instance", "redis")
 	panicOnErr(err)
 
 	// Add event when redis starts

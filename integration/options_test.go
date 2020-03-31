@@ -25,7 +25,7 @@ func TestWriter(t *testing.T) {
 
 	assert.NoError(t, i.Publish())
 
-	assert.Equal(t, `{"name":"integration","protocol_version":"3","integration_version":"7.0","data":[]}`+"\n", w.String())
+	assert.Equal(t, `{"name":"integration","protocol_version":"4","integration_version":"7.0","data":[]}`+"\n", w.String())
 }
 
 func TestArgs(t *testing.T) {
@@ -112,7 +112,7 @@ func TestConcurrentModeHasNoDataRace(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		go func(i int) {
-			_, _ = in.Entity(fmt.Sprintf("entity%v", i), "test")
+			_, _ = in.NewEntity(fmt.Sprintf("entity%v", i), "", "test")
 		}(i)
 	}
 }
