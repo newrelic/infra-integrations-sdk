@@ -17,38 +17,23 @@ const (
 	GAUGE   SourceType = iota
 	COUNT   SourceType = iota
 	SUMMARY SourceType = iota
-	// RATE is an ever-growing value which might be reset. The package calculates the change rate.
-	RATE SourceType = iota
-	// DELTA is an ever-growing value which might be reset. The package calculates the difference between samples.
-	DELTA SourceType = iota
-	// ATTRIBUTE is any string value
-	ATTRIBUTE SourceType = iota
-	// PRATE is a version of RATE that only allows positive values.
-	PRATE SourceType = iota
-	// PDELTA is a version of DELTA that only allows positive values.
-	PDELTA SourceType = iota
+	PDELTA  SourceType = iota
 )
 
 // SourcesTypeToName metric sources list mapping its type to readable name.
 var SourcesTypeToName = map[SourceType]string{
-	GAUGE:     "gauge",
-	COUNT:     "count",
-	SUMMARY:   "summary",
-	RATE:      "rate",
-	DELTA:     "delta",
-	ATTRIBUTE: "attribute",
+	GAUGE:   "gauge",
+	COUNT:   "count",
+	SUMMARY: "summary",
+	PDELTA:  "pdelta",
 }
 
 // SourcesNameToType metric sources list mapping its name to type.
 var SourcesNameToType = map[string]SourceType{
-	"gauge":     GAUGE,
-	"count":     COUNT,
-	"summary":   SUMMARY,
-	"rate":      RATE,
-	"delta":     DELTA,
-	"prate":     PRATE,
-	"pdelta":    PDELTA,
-	"attribute": ATTRIBUTE,
+	"gauge":   GAUGE,
+	"count":   COUNT,
+	"summary": SUMMARY,
+	"pdelta":  PDELTA,
 }
 
 // String fulfills stringer interface, returning empty string on invalid source types.
@@ -63,7 +48,7 @@ func (t SourceType) String() string {
 // IsPositive checks that the `SourceType` belongs to the positive only
 // list of `SourceType`s
 func (t SourceType) IsPositive() bool {
-	return t == PRATE || t == PDELTA
+	return t == COUNT || t == PDELTA
 }
 
 // SourceTypeForName does a case insensitive conversion from a string to a SourceType.
