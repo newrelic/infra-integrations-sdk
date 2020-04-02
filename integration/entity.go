@@ -65,16 +65,6 @@ func (e *Entity) Tags() metadata.TagMap {
 	return e.Metadata.GetTags()
 }
 
-// AddTags adds tags to the entity.
-func (e *Entity) AddTags(tags ...metadata.Tag) {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-
-	for _, a := range tags {
-		e.AddTag(a.Key, a.Value)
-	}
-}
-
 // AddTag adds a new tag to the entity
 func (e *Entity) AddTag(key string, value interface{}) {
 	e.Metadata.AddTag(key, value)

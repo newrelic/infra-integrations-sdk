@@ -2,6 +2,9 @@ package metadata
 
 import "reflect"
 
+// TagMap stores the tags for the entity
+type TagMap map[string]interface{}
+
 // Metadata stores entity Metadata. Serialized as "entity"
 type Metadata struct {
 	// TODO: not a fan of having the fields exposed
