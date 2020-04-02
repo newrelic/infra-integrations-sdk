@@ -48,16 +48,16 @@ func Test_Metric_AddAttribute(t *testing.T) {
 	attrVal := "value"
 	g := NewGauge(now, "gauge", 1)
 
-	g.AddAttribute(attrKey, attrVal)
-	assert.Len(t, g.Attributes(), 1)
+	g.AddDimension(attrKey, attrVal)
+	assert.Len(t, g.GetDimensions(), 1)
 }
 
 func Test_Metric_AttributeReturnsTheAttributeValue(t *testing.T) {
 	attrKey := "test"
 	attrVal := "value"
 	g := NewGauge(now, "gauge", 1)
-	g.AddAttribute(attrKey, attrVal)
+	g.AddDimension(attrKey, attrVal)
 
-	val := g.Attribute(attrKey)
+	val := g.Dimension(attrKey)
 	assert.Equal(t, attrVal, val)
 }

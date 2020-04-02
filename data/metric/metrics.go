@@ -12,9 +12,9 @@ type Set []Metric
 
 // Metric is the common interface for all metric types
 type Metric interface {
-	AddAttribute(key string, value string)
-	Attribute(key string) string
-	Attributes() Dimensions
+	AddDimension(key string, value string)
+	Dimension(key string) string
+	GetDimensions() Dimensions
 }
 
 type metricBase struct {
@@ -94,18 +94,17 @@ func NewSummary(timestamp time.Time, interval time.Duration, name string, count 
 	}
 }
 
-// AddAttribute adds an attribute (dimension) to the metric instance
-func (m *metricBase) AddAttribute(key string, value string) {
+// AddDimension adds a dimension to the metric instance
+func (m *metricBase) AddDimension(key string, value string) {
 	m.Dimensions[key] = value
 }
 
-// Attribute returns an attribute by key
-func (m *metricBase) Attribute(key string) string {
+// Dimension returns an attribute by key
+func (m *metricBase) Dimension(key string) string {
 	return m.Dimensions[key]
 }
 
-// Attributes returns all the dimensions of the metric
-func (m *metricBase) Attributes() Dimensions {
-	// TODO evaluate locking and making a copy instead
+// GetDimensions gets all the dimensions
+func (m *metricBase) GetDimensions() Dimensions {
 	return m.Dimensions
 }

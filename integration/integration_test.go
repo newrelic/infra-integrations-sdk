@@ -277,11 +277,11 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	gauge := Gauge(time.Unix(10000000, 0), "metric-gauge", 1)
 	interval, _ := time.ParseDuration("1m")
 	count := Count(time.Unix(10000000, 0), interval, "metric-count", 100)
-	count.AddAttribute("cpu", "amd")
+	count.AddDimension("cpu", "amd")
 	summary := Summary(time.Unix(10000000, 0), interval, "metric-summary", 1, 10, 100, 1, 100)
 	// attributes should be ordered by key in lexicographic order
-	summary.AddAttribute("os", "linux")
-	summary.AddAttribute("distribution", "debian")
+	summary.AddDimension("os", "linux")
+	summary.AddDimension("distribution", "debian")
 	// add metrics to entity 1
 	e.AddMetric(gauge)
 	e.AddMetric(count)
@@ -305,7 +305,7 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	assert.NoError(t, err)
 	// add metric to entity 2
 	gauge = Gauge(time.Unix(10000000, 0), "metricOne", 2)
-	gauge.AddAttribute("processName", "java")
+	gauge.AddDimension("processName", "java")
 	e2.AddMetric(gauge)
 	// add entity 2 to integration
 	i.AddEntity(e2)
