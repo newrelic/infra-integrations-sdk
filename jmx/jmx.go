@@ -39,6 +39,7 @@ var cmdIn io.WriteCloser
 var cmdErrC = make(chan error, cmdStdChanLen)
 var cmdWarnC = make(chan string, cmdStdChanLen)
 var done sync.WaitGroup
+var stdErrScanner stderrScan
 
 var (
 	// DefaultNrjmxExec default nrjmx tool executable path
@@ -46,6 +47,17 @@ var (
 	// ErrJmxCmdRunning error returned when trying to Open and nrjmx command is still running
 	ErrJmxCmdRunning = errors.New("JMX tool is already running")
 )
+type stderrScan struct {
+	l  sync.Mutex
+	rd *bufio.Reader
+}
+
+func (s *stderrScan) ReadLine() (string, error) {
+	s.l.Lock()
+	defer s.l.Unlock()
+
+	return s.rd.ReadString('\n')
+}
 
 // connectionConfig is the configuration for the nrjmx command.
 type connectionConfig struct {
@@ -216,6 +228,10 @@ func openConnection(config *connectionConfig) (err error) {
 	if cmdError, err = cmd.StderrPipe(); err != nil {
 		return err
 	}
+	stdErrScanner = stderrScan{
+		rd: bufio.NewReaderSize(cmdError, jmxLineInitialBuffer),
+		l:  sync.Mutex{},
+	}
 
 	go handleStdErr(ctx)
 
@@ -225,13 +241,8 @@ func openConnection(config *connectionConfig) (err error) {
 
 	go func() {
 		if err = cmd.Wait(); err != nil {
-			if strings.HasPrefix(err.Error(), "SEVERE:") {
-				if strings.Contains(err.Error()[7:], "jmx connection error") {
-					cmdErrC <- ErrConnection
-				} else {
-					cmdErrC <- fmt.Errorf("nrjmx error: %s [proc-state: %s]", err, cmd.ProcessState)
-				}
-			}
+			cmdErrC <- fmt.Errorf("nrjmx error: %s [proc-state: %s]", err, cmd.ProcessState)
+			//handleStdErr(context.Background())
 		}
 
 		cmd = nil
@@ -243,7 +254,10 @@ func openConnection(config *connectionConfig) (err error) {
 }
 
 func handleStdErr(ctx context.Context) {
-	scanner := bufio.NewReaderSize(cmdError, jmxLineInitialBuffer)
+	_handleStdErr(ctx)
+}
+
+func _handleStdErr(ctx context.Context) {
 
 	var line string
 	var err error
@@ -255,7 +269,7 @@ func handleStdErr(ctx context.Context) {
 			break
 		}
 
-		line, err = scanner.ReadString('\n')
+		line, err = stdErrScanner.ReadLine()
 		// API needs re to allow stderr full read before closing
 		if err != nil && err != io.EOF && !strings.Contains(err.Error(), "file already closed") {
 			log.Error(fmt.Sprintf("error reading stderr from JMX tool: %s", err.Error()))
