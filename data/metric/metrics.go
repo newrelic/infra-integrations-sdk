@@ -1,14 +1,12 @@
 package metric
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
-	"sort"
 	"strconv"
+	"time"
 
 	"github.com/newrelic/infra-integrations-sdk/data/attribute"
-	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/pkg/errors"
 )
 
@@ -28,82 +26,88 @@ var (
 )
 
 // Set is the basic structure for storing metrics.
-type Set struct {
-	storer       persist.Storer
-	Metrics      map[string]interface{}
-	nsAttributes []attribute.Attribute
+type Set []Metric
+
+type Metric interface {
+	AddAttribute(key string, value string)
 }
 
-// NewSet creates new metrics set, optionally related to a list of attributes. These attributes makes the metric-set unique.
-// If related attributes are used, then new attributes are added.
-func NewSet(eventType string, storer persist.Storer, attributes ...attribute.Attribute) (s *Set) {
-	s = &Set{
-		Metrics:      make(map[string]interface{}),
-		storer:       storer,
-		nsAttributes: attributes,
+type MetricBase struct {
+	Timestamp  int64                `json:"timestamp"`
+	Name       string               `json:"name"`
+	Type       string               `json:"type"`
+	Dimensions attribute.Attributes `json:"attributes"`
+}
+
+type Gauge struct {
+	MetricBase
+	Value float64 `json:"value"`
+}
+
+type Count struct {
+	MetricBase
+	Interval int64 `json:"interval.ms"`
+	Count    int64 `json:"count"`
+}
+
+type Summary struct {
+	MetricBase
+	Interval int64   `json:"interval.ms"`
+	Count    int64   `json:"count"`
+	Average  float64 `json:"average"`
+	Sum      float64 `json:"sum"`
+	Min      float64 `json:"min"`
+	Max      float64 `json:"max"`
+}
+
+func NewGauge(timestamp time.Time, name string, value float64) Metric {
+	return &Gauge{
+		MetricBase: MetricBase{
+			Timestamp:  timestamp.Unix(),
+			Name:       name,
+			Type:       SourcesTypeToName[GAUGE],
+			Dimensions: attribute.Attributes{},
+		},
+		Value: value,
 	}
-
-	s.setSetAttribute("event_type", eventType)
-
-	for _, attr := range attributes {
-		s.setSetAttribute(attr.Key, attr.Value)
-	}
-
-	return
 }
 
-// AddCustomAttributes add customAttributes to MetricSet
-func AddCustomAttributes(metricSet *Set, customAttributes []attribute.Attribute) {
-	for _, attr := range customAttributes {
-		metricSet.setSetAttribute(attr.Key, attr.Value)
+func NewCount(timestamp time.Time, interval time.Duration, name string, count int64) Metric {
+	return &Count{
+		MetricBase: MetricBase{
+			Timestamp:  timestamp.Unix(),
+			Name:       name,
+			Type:       SourcesTypeToName[COUNT],
+			Dimensions: attribute.Attributes{},
+		},
+		Interval: interval.Milliseconds(),
+		Count:    count,
 	}
 }
 
-// SetMetric adds a metric to the Set object or updates the metric value if the metric already exists.
-// It calculates elapsed difference for RATE and DELTA types.
-func (ms *Set) SetMetric(name string, value interface{}, sourceType SourceType) (err error) {
-	var errElapsed error
-	var newValue = value
-
-	// Only sample metrics of numeric type
-	switch sourceType {
-	case RATE, DELTA, PRATE, PDELTA:
-		if len(ms.nsAttributes) == 0 {
-			err = ErrDeltaWithNoAttrs
-			return
-		}
-		newValue, errElapsed = ms.elapsedDifference(name, value, sourceType)
-		if errElapsed != nil {
-			return errors.Wrapf(errElapsed, "cannot calculate elapsed difference for metric: %s value %v", name, value)
-		}
-	case GAUGE:
-		newValue, err = castToFloat(value)
-		if err != nil {
-			return fmt.Errorf("non-numeric value for gauge metric: %s value: %v", name, value)
-		}
-	case ATTRIBUTE:
-		strVal, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("non-string source type for attribute %s", name)
-		}
-		for _, attr := range ms.nsAttributes {
-			if name == attr.Key && strVal == attr.Value {
-				return ErrOverrideSetAttrs
-			}
-		}
-	default:
-		return fmt.Errorf("unknown source type for key %s", name)
+func NewSummary(timestamp time.Time, interval time.Duration, name string, count int64, average float64, sum float64,
+	min float64, max float64) Metric {
+	return &Summary{
+		MetricBase: MetricBase{
+			Timestamp:  timestamp.Unix(),
+			Name:       name,
+			Type:       SourcesTypeToName[SUMMARY],
+			Dimensions: attribute.Attributes{},
+		},
+		Interval: interval.Milliseconds(),
+		Count:    count,
+		Average:  average,
+		Sum:      sum,
+		Min:      min,
+		Max:      max,
 	}
-
-	ms.Metrics[name] = newValue
-
-	return
 }
 
-func (ms *Set) setSetAttribute(name string, value string) {
-	ms.Metrics[name] = value
+func (m *MetricBase) AddAttribute(key string, value string) {
+	m.Dimensions[key] = value
 }
 
+//--- private
 func castToFloat(value interface{}) (float64, error) {
 	if b, ok := value.(bool); ok {
 		if b {
@@ -128,76 +132,61 @@ func isNaNOrInf(f float64) bool {
 	return math.IsNaN(f) || math.IsInf(f, 0) || math.IsInf(f, -1)
 }
 
-func (ms *Set) elapsedDifference(name string, absolute interface{}, sourceType SourceType) (elapsed float64, err error) {
-	if ms.storer == nil {
-		err = ErrNoStoreToCalcDiff
-		return
-	}
+//
+//func (ms *Set) elapsedDifference(name string, absolute interface{}, sourceType SourceType) (elapsed float64, err error) {
+//	if ms.storer == nil {
+//		err = ErrNoStoreToCalcDiff
+//		return
+//	}
+//
+//	newValue, err := castToFloat(absolute)
+//	if err != nil {
+//		err = ErrNonNumeric
+//		return
+//	}
+//
+//	// Fetch last value & time
+//	var oldValue float64
+//	oldTime, err := ms.storer.Get(ms.namespace(name), &oldValue)
+//	if err != nil && err != persist.ErrNotFound {
+//		return
+//	}
+//
+//	// Store new value & time (no IO flush until Save)
+//	newTime := ms.storer.Set(ms.namespace(name), newValue)
+//
+//	// First value
+//	if err == persist.ErrNotFound {
+//		return 0, nil
+//	}
+//
+//	// Time constraints
+//	duration := newTime - oldTime
+//	if duration == 0 {
+//		err = ErrTooCloseSamples
+//		return
+//	}
+//
+//	elapsed = newValue - oldValue
+//
+//	if elapsed < 0 && sourceType.IsPositive() {
+//		err = ErrNegativeDiff
+//		return
+//	}
+//
+//	if sourceType == RATE {
+//		elapsed = elapsed / float64(duration)
+//	}
+//
+//	return
+//}
 
-	newValue, err := castToFloat(absolute)
-	if err != nil {
-		err = ErrNonNumeric
-		return
-	}
-
-	// Fetch last value & time
-	var oldValue float64
-	oldTime, err := ms.storer.Get(ms.namespace(name), &oldValue)
-	if err != nil && err != persist.ErrNotFound {
-		return
-	}
-
-	// Store new value & time (no IO flush until Save)
-	newTime := ms.storer.Set(ms.namespace(name), newValue)
-
-	// First value
-	if err == persist.ErrNotFound {
-		return 0, nil
-	}
-
-	// Time constraints
-	duration := newTime - oldTime
-	if duration == 0 {
-		err = ErrTooCloseSamples
-		return
-	}
-
-	elapsed = newValue - oldValue
-
-	if elapsed < 0 && sourceType.IsPositive() {
-		err = ErrNegativeDiff
-		return
-	}
-
-	if sourceType == RATE {
-		elapsed = elapsed / float64(duration)
-	}
-
-	return
-}
-
-// prefix a metric name with a namespace based on the alphabetical order of the set related attributes.
-func (ms *Set) namespace(metricName string) string {
-	ns := ""
-	separator := ""
-
-	attrs := ms.nsAttributes
-	sort.Sort(attribute.Attributes(attrs))
-
-	for _, attr := range attrs {
-		ns = fmt.Sprintf("%s%s%s", ns, separator, attr.Namespace())
-		separator = nsSeparator
-	}
-
-	return fmt.Sprintf("%s%s%s", ns, separator, metricName)
-}
-
-// MarshalJSON adapts the internal structure of the metrics Set to the payload that is compliant with the protocol
-func (ms *Set) MarshalJSON() ([]byte, error) {
-	return json.Marshal(ms.Metrics)
-}
-
-// UnmarshalJSON unserializes protocol compliant JSON metrics into the metric set.
-func (ms *Set) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &ms.Metrics)
-}
+//// MarshalJSON adapts the internal structure of the metrics Set to the payload that is compliant with the protocol
+//func (ms *Set) MarshalJSON() ([]byte, error) {
+//	return json.Marshal(ms.Metrics)
+//}
+//
+//// UnmarshalJSON unserializes protocol compliant JSON metrics into the metric set.
+//func (ms *Set) UnmarshalJSON(data []byte) error {
+//	return json.Unmarshal(data, &ms.Metrics)
+//}

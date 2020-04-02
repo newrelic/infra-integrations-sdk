@@ -1,20 +1,15 @@
 package integration
 
 import (
-	"bytes"
-	"flag"
+	"github.com/newrelic/infra-integrations-sdk/persist"
 	"io/ioutil"
+	"math/rand"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/newrelic/infra-integrations-sdk/data/event"
-	"github.com/newrelic/infra-integrations-sdk/data/metadata"
-
-	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,7 +19,7 @@ var (
 	integrationVersion = "1.0"
 )
 
-func Test_CreateIntegration_InitializesCorrectly(t *testing.T) {
+func Test_Integration_CreateIntegrationInitializesCorrectly(t *testing.T) {
 	i := newTestIntegration(t)
 
 	assert.Equal(t, "TestIntegration", i.Name)
@@ -33,13 +28,14 @@ func Test_CreateIntegration_InitializesCorrectly(t *testing.T) {
 	assert.Len(t, i.Entities, 0)
 }
 
-func Test_DefaultIntegrationWritesToStdout(t *testing.T) {
+func Test_Integration_DefaultIntegrationWritesToStdout(t *testing.T) {
 	// capture stdout to file
 	f, err := ioutil.TempFile("", "stdout")
 	assert.NoError(t, err)
 	back := os.Stdout
 	defer func() {
 		os.Stdout = back
+		_ = os.Remove(f.Name())
 	}()
 	os.Stdout = f
 
@@ -60,7 +56,7 @@ func Test_DefaultIntegrationWritesToStdout(t *testing.T) {
 	assert.Equal(t, `{"name":"integration","protocol_version":"4","integration_version":"4.0","data":[]}`+"\n", string(payload))
 }
 
-func Test_EntitiesWithSameBasicMetadataAreEqual(t *testing.T) {
+func Test_Integration_EntitiesWithSameBasicMetadataAreEqual(t *testing.T) {
 	i := newTestIntegration(t)
 
 	e1, err := i.NewEntity("name", "displayName", "type")
@@ -72,219 +68,84 @@ func Test_EntitiesWithSameBasicMetadataAreEqual(t *testing.T) {
 	assert.Equal(t, e1, e2)
 }
 
-func Test_EntitiesWithSameMetadataAreEqual(t *testing.T) {
+func Test_Integration_EntitiesWithSameMetadataAreEqual(t *testing.T) {
 	i := newTestIntegration(t)
 
-	tag := metadata.NewTag("key", "value")
-	e1, err := i.NewEntity("name", "displayName", "type", tag)
+	e1, err := i.NewEntity("name", "displayName", "type")
 	assert.NoError(t, err)
 
-	e2, err := i.NewEntity("name", "displayName", "type", tag)
+	e2, err := i.NewEntity("name", "displayName", "type")
 	assert.NoError(t, err)
 
 	assert.Equal(t, e1, e2)
 }
 
-func TestIntegration_EntitiesWithDifferentMetadataAreNotEqual(t *testing.T) {
+func Test_Integration_EntitiesWithDifferentMetadataAreNotEqual(t *testing.T) {
 	i := newTestIntegration(t)
 
-	e1, err := i.NewEntity("name", "", "ns")
+	e1, err := i.NewEntity("name", "ns", "")
 	assert.NoError(t, err)
-	e2, err := i.NewEntity("name2", "", "ns")
+	e2, err := i.NewEntity("name2", "ns", "")
 	assert.NoError(t, err)
-	e3, err := i.NewEntity("name", "", "ns")
+	e3, err := i.NewEntity("name", "ns", "")
 	assert.NoError(t, err)
 
 	assert.NotEqual(t, e1, e2, "Different names create different entities")
 	assert.Equal(t, e1, e3, "Same type & name create same entity")
 }
 
-func TestIntegration_EntitiesWithDifferentTagsAreNotEqula(t *testing.T) {
+func Test_Integration_EntitiesWithDifferentTagsAreNotEqual(t *testing.T) {
 	i := newTestIntegration(t)
 
-	tag := metadata.NewTag("k", "v")
+	e1, err := i.NewEntity("name", "ns", "")
+	assert.NoError(t, err)
+	e1.AddTag("k","v")
 
-	e1, err := i.NewEntity("name", "", "ns", tag)
-	assert.NoError(t, err)
-	e2, err := i.NewEntity("name", "", "ns")
-	assert.NoError(t, err)
-	e3, err := i.NewEntity("name", "", "ns", tag)
+	e2, err := i.NewEntity("name", "ns", "")
 	assert.NoError(t, err)
 
-	assert.NotEqual(t, e1, e2, "Different id-attributes create different entities")
-	assert.Equal(t, e1, e3, "Same namespace, name and id-attributes create/retrieve same entity")
+	e3, err := i.NewEntity("name", "ns", "")
+	assert.NoError(t, err)
+	e3.AddTag("k","v")
+
+	assert.False(t, e1.SameAs(e2), "Different tags create different entities")
+	assert.True(t, e1.SameAs(e3), "Same metadata creates/retrieves same entity")
 }
 
-func TestIntegration_EntityReportedBy(t *testing.T) {
+func Test_Integration_NewEntityReturnsExistingEntity(t *testing.T) {
 	i := newTestIntegration(t)
 
-	e, err := i.EntityReportedBy("reporting:entity:key", "name", "ns")
+	e1, err := i.NewEntity("Entity1", "test", "")
 	assert.NoError(t, err)
 
-	reportingEntityExists := false
-	for _, a := range e.Tags() {
-		if a.Key == AttrReportingEntity {
-			reportingEntityExists = true
-			assert.Equal(t, a.Value, "reporting:entity:key")
-		}
-	}
-	require.True(t, reportingEntityExists)
+	e2, err := i.NewEntity("Entity1", "test", "")
+	assert.NoError(t, err)
+
+	assert.True(t, e1.SameAs(e2))
+
+	i.AddEntity(e1)
+	i.AddEntity(e2)
+
+	assert.Len(t, i.Entities, 2)
 }
 
-func TestIntegration_EntityReportedVia(t *testing.T) {
-	i := newTestIntegration(t)
-
-	e, err := i.EntityReportedVia("reporting.endpoint:123", "name", "", "ns")
+func Test_Integration_LoggerReturnsDefaultLogger(t *testing.T) {
+	i, err := New(integrationName, integrationVersion)
 	assert.NoError(t, err)
 
-	reportingEndpointExists := false
-	for _, a := range e.Tags() {
-		if a.Key == AttrReportingEndpoint {
-			reportingEndpointExists = true
-			assert.Equal(t, a.Value, "reporting.endpoint:123")
-		}
-	}
-	require.True(t, reportingEndpointExists)
+	assert.Equal(t, i.logger, i.Logger())
 }
 
-func TestDefaultArguments(t *testing.T) {
-	al := sdk_args.DefaultArgumentList{}
+func Test_Integration_LoggerReturnsInjectedInstance(t *testing.T) {
+	l := log.NewStdErr(false)
 
-	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
+	i, err := New(integrationName, integrationVersion, Logger(l))
 	assert.NoError(t, err)
 
-	assert.Equal(t, "TestIntegration", i.Name)
-	assert.Equal(t, "1.0", i.IntegrationVersion)
-	assert.Equal(t, "4", i.ProtocolVersion)
-	assert.Len(t, i.Entities, 0)
-	assert.True(t, al.All())
-	assert.False(t, al.Pretty)
-	assert.False(t, al.Verbose)
+	assert.Equal(t, l, i.Logger())
 }
 
-func TestClusterAndServiceArgumentsAreAddedToMetadata(t *testing.T) {
-	al := sdk_args.DefaultArgumentList{}
-
-	_ = os.Setenv("NRI_CLUSTER", "foo")
-	_ = os.Setenv("NRI_SERVICE", "bar")
-	defer os.Clearenv()
-	os.Args = []string{"cmd"}
-	flag.CommandLine = flag.NewFlagSet("cmd", flag.ContinueOnError)
-
-	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
-	assert.NoError(t, err)
-
-	e, err := i.NewEntity("name", "", "ns")
-	assert.NoError(t, err)
-
-	assert.Equal(t, metadata.Tags{
-		{
-			Key:   CustomAttrCluster,
-			Value: "foo",
-		},
-		{
-			Key:   CustomAttrService,
-			Value: "bar",
-		},
-	}, e.Tags())
-}
-
-func TestCustomArguments(t *testing.T) {
-	type argumentList struct {
-		sdk_args.DefaultArgumentList
-	}
-
-	os.Args = []string{"cmd", "--pretty", "--verbose"}
-	flag.CommandLine = flag.NewFlagSet("name", 0)
-
-	var al argumentList
-	_, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
-	assert.NoError(t, err)
-
-	if !al.All() {
-		t.Error()
-	}
-	if !al.Pretty {
-		t.Error()
-	}
-	if !al.Verbose {
-		t.Error()
-	}
-}
-
-func TestVerboseLog(t *testing.T) {
-	type argumentList struct {
-		sdk_args.DefaultArgumentList
-	}
-
-	// Given an integration set in verbose mode
-	os.Args = []string{"cmd", "--verbose"}
-	flag.CommandLine = flag.NewFlagSet("name", 0)
-
-	// Whose log messages are written in the standard error
-	r, w, err := os.Pipe()
-	assert.NoError(t, err)
-	back := os.Stderr
-	os.Stderr = w
-	defer func() {
-		os.Stderr = back
-	}()
-	defer func() { _ = r.Close() }()
-
-	var al argumentList
-	i, err := New("TestIntegration", "1.0", Args(&al))
-	assert.NoError(t, err)
-
-	// When logging a debug message
-	i.logger.Debugf("hello everybody")
-	assert.NoError(t, w.Close())
-
-	// The message is correctly submitted to the standard error
-	stdErrBytes := new(bytes.Buffer)
-	_, err = stdErrBytes.ReadFrom(r)
-	assert.NoError(t, err)
-	assert.Contains(t, stdErrBytes.String(), "hello everybody")
-}
-
-func TestNonVerboseLog(t *testing.T) {
-	type argumentList struct {
-		sdk_args.DefaultArgumentList
-	}
-
-	// Given an integration set in non-verbose mode
-	os.Args = []string{"cmd"}
-	flag.CommandLine = flag.NewFlagSet("name", 0)
-
-	// Whose log messages are written in the standard error
-	r, w, err := os.Pipe()
-	assert.NoError(t, err)
-	back := os.Stderr
-	os.Stderr = w
-	defer func() {
-		os.Stderr = back
-	}()
-	defer func() { _ = r.Close() }()
-
-	var al argumentList
-	i, err := New("TestIntegration", "1.0", Args(&al))
-	assert.NoError(t, err)
-
-	// When logging info, error and debug messages
-	i.logger.Debugf("this is a debug")
-	i.logger.Infof("this is an info")
-	i.logger.Errorf("this is an error")
-	assert.NoError(t, w.Close())
-
-	// The standard error shows all the message levels but debug
-	stdErrBytes := new(bytes.Buffer)
-	_, err = stdErrBytes.ReadFrom(r)
-	assert.NoError(t, err)
-	assert.Contains(t, stdErrBytes.String(), "this is an error")
-	assert.Contains(t, stdErrBytes.String(), "this is an info")
-	assert.NotContains(t, stdErrBytes.String(), "this is a debug")
-}
-
-func TestIntegration_Publish(t *testing.T) {
+func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	w := testWriter{
 		func(integrationBytes []byte) {
 			expectedOutputRaw := []byte(`
@@ -299,24 +160,52 @@ func TestIntegration_Publish(t *testing.T) {
 					"name": "EntityOne",
 					"displayName":"",
 					"type": "test",
-					"tags": [
-					  {
-						"Key":"env",
-						"Value":"prod"
+					"tags": {
+						"env":"prod"
 					  }
-					]
 				  },
 				  "metrics": [
 					{
-					  "event_type": "EventTypeForEntityOne",
-					  "metricBool": 1,
-					  "metricOne": 1,
-					  "metricTwo": "test"
+						"timestamp": 10000000,
+						"name": "metric-gauge",
+						"type": "gauge",
+						"attributes": {},
+						"value": 1
+					},
+					{
+						"timestamp": 10000000,
+						"name": "metric-count",
+						"type": "count",
+						"attributes": {
+							"cpu": "amd"
+						},
+						"interval.ms": 60000,
+					  	"count": 100
+					},
+					{	
+						"timestamp": 10000000,
+						"name": "metric-summary",
+						"type": "summary",
+						"attributes": {
+							"distribution": "debian",							
+							"os": "linux"	
+						},
+						"interval.ms": 60000,
+					  	"count": 1,
+						"average": 10,
+						"sum": 100,
+						"min": 1,
+						"max": 100
 					}
 				  ],
-				  "inventory": {},
+				  "inventory": {
+					"custom/example": {
+						"version": "1.2.3"
+					}
+                  },
 				  "events": [
 					{
+                      "timestamp": 10000000,
 					  "summary": "evnt1sum",
 					  "category": "evnt1cat",
 						"attributes": {
@@ -325,6 +214,7 @@ func TestIntegration_Publish(t *testing.T) {
 						}
 					},
 					{
+ 					  "timestamp": 10000000,
 					  "summary": "evnt2sum",
 					  "category": "evnt2cat"
 					}
@@ -336,17 +226,38 @@ func TestIntegration_Publish(t *testing.T) {
 					"name": "EntityTwo",
 					"displayName":"",
 					"type": "test",
-					"tags": []
+					"tags": {}
 				  },
 				  "metrics": [
 					{
-					  "event_type": "EventTypeForEntityTwo",
-					  "metricOne": 2
+						"timestamp": 10000000,
+						"name": "metricOne",
+						"type": "gauge",
+						"attributes": {
+							"processName": "java"
+						},
+						"value": 2
 					}
 				  ],
 				  "inventory": {},
 				  "events": []
-				}
+				},
+				{
+				  "common": {},
+                  "metrics": [],
+				  "inventory": {
+				    "some-inventory": {
+					  "some-field": "some-value"
+					}
+				  },
+				  "events": [
+				  {
+				   "timestamp": 10000000,
+				   "summary": "evnt2sum",
+				   "category": "evnt2cat"
+				  }
+				 ]
+                }
 			  ]
 			}`)
 
@@ -355,32 +266,121 @@ func TestIntegration_Publish(t *testing.T) {
 		},
 	}
 
-	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(w))
+	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(w), InMemoryStore())
 	assert.NoError(t, err)
 
-	e, err := i.NewEntity("EntityOne", "", "test", metadata.NewTag("env", "prod"))
+	e, err := i.NewEntity("EntityOne", "test", "")
 	assert.NoError(t, err)
-	ms := e.NewMetricSet("EventTypeForEntityOne")
-	assert.NoError(t, ms.SetMetric("metricOne", 1, metric.GAUGE))
-	assert.NoError(t, ms.SetMetric("metricTwo", "test", metric.ATTRIBUTE))
-	assert.NoError(t, ms.SetMetric("metricBool", true, metric.GAUGE))
-	assert.NoError(t, e.AddEvent(event.NewWithAttributes(
-		"evnt1sum",
-		"evnt1cat",
-		map[string]interface{}{
-			"attr1": "attr1Val",
-			"attr2": 42,
-		},
-	)))
-	assert.NoError(t, e.AddEvent(event.New("evnt2sum", "evnt2cat")))
+	e.AddTag("env", "prod")
 
-	e2, err := i.NewEntity("EntityTwo", "", "test")
+	gauge := Gauge(time.Unix(10000000, 0), "metric-gauge", 1)
+	interval, _ := time.ParseDuration("1m")
+	count := Count(time.Unix(10000000, 0), interval, "metric-count", 100)
+	count.AddAttribute("cpu", "amd")
+	summary:= Summary(time.Unix(10000000, 0), interval , "metric-summary", 1, 10, 100, 1, 100)
+	// attributes should be ordered by key in lexicographic order
+	summary.AddAttribute("os", "linux")
+	summary.AddAttribute("distribution", "debian")
+	// add metrics to entity 1
+	e.AddMetric(gauge)
+	e.AddMetric(count)
+	e.AddMetric(summary)
+	// add 1st event to entity 1
+	ev1 := i.NewEvent(time.Unix(10000000, 0), "evnt1sum", "evnt1cat")
+	ev1.AddAttribute("attr1", "attr1Val")
+	ev1.AddAttribute("attr2", 42)
+	assert.NoError(t, e.AddEvent(ev1))
+	// add 2nd event to entity 1
+	ev2 := i.NewEvent(time.Unix(10000000, 0), "evnt2sum", "evnt2cat")
+	assert.NoError(t, e.AddEvent(ev2))
+	// add inventory to entity 1. only one because order is not guaranteed and the test is comparing with a static string
+	err = e.AddInventoryItem("custom/example", "version", "1.2.3")
 	assert.NoError(t, err)
-	ms = e2.NewMetricSet("EventTypeForEntityTwo")
-	assert.NoError(t, ms.SetMetric("metricOne", 2, metric.GAUGE))
+	// add entity 1 to integration
+	i.AddEntity(e)
 
-	// TODO support anonymous entities
+	// add entity 2
+	e2, err := i.NewEntity("EntityTwo", "test", "")
+	assert.NoError(t, err)
+	// add metric to entity 2
+	gauge = Gauge(time.Unix(10000000, 0), "metricOne", 2)
+	gauge.AddAttribute("processName", "java")
+	e2.AddMetric(gauge)
+	// add entity 2 to integration
+	i.AddEntity(e2)
+
+	// add inventory to "the" anonymous entity (will create one)
+	err = i.AddInventoryItem("some-inventory", "some-field", "some-value")
+	assert.NoError(t, err)
+
+	// add event to the anonymous entity (will not create one, inventory before already created it)
+	ev3 := i.NewEvent(time.Unix(10000000, 0), "evnt2sum", "evnt2cat")
+	assert.NoError(t, i.AddEvent(ev3))
+
 	assert.NoError(t, i.Publish())
+}
+
+func Test_Integration_PublishStoresOnDiskByDefault(t *testing.T) {
+	i, err := New(integrationName, integrationVersion)
+	assert.NoError(t, err)
+
+	// TODO maybe not use the storer directly
+	i.storer.Set("hello", 12.33)
+
+	err = i.Publish()
+	assert.NoError(t, err)
+
+	// assert data has been flushed to disk
+	c, err := persist.NewFileStore(persist.DefaultPath(integrationName), log.NewStdErr(true), persist.DefaultTTL)
+	assert.NoError(t, err)
+
+	var v float64
+	ts, err := c.Get("hello", &v)
+	assert.NoError(t, err)
+	assert.NotEqual(t, 0, ts)
+	assert.InDelta(t, 12.33, v, 0.1)
+}
+
+func Test_Integration_InMemoryStoreDoesNotPersistOnDisk(t *testing.T) {
+	randomName := strconv.Itoa(rand.Int())
+
+	i, err := New(randomName, integrationVersion, InMemoryStore())
+	assert.NoError(t, err)
+
+	i.storer.Set("hello", 12.33)
+
+	assert.NoError(t, i.Publish())
+
+	// assert data has not been flushed to disk
+
+	// create folder in case it does not exists to enable store creation
+	path := persist.DefaultPath(randomName)
+	assert.NoError(t, os.MkdirAll(path, 0755))
+
+	s, err := persist.NewFileStore(path, log.Discard, persist.DefaultTTL)
+	assert.NoError(t, err)
+
+	var v float64
+	_, err = s.Get("hello", &v)
+	assert.Equal(t, persist.ErrNotFound, err)
+}
+
+func Test_Integration_PublishAutomaticallyCallsStorerSave(t *testing.T) {
+	customStorer := fakeStorer{}
+	i, err := New("cool-integration", "1.0", Writer(ioutil.Discard), Storer(&customStorer))
+	assert.NoError(t, err)
+
+	assert.NoError(t, i.Publish())
+
+	assert.True(t, customStorer.saved, "data has not been saved")
+}
+
+//--- helpers
+func newTestIntegration(t *testing.T) *Integration {
+	i, err := New(integrationName, integrationVersion, Logger(log.Discard), Writer(ioutil.Discard), InMemoryStore())
+	assert.NoError(t, err)
+
+	return i
 }
 
 func stripBlanks(b []byte) string {
@@ -393,61 +393,6 @@ func stripBlanks(b []byte) string {
 		"\t", "", -1)
 }
 
-func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
-	i := newTestIntegration(t)
-
-	e1, err := i.NewEntity("Entity1", "", "test")
-	if err != nil {
-		t.Fail()
-	}
-
-	e2, err := i.NewEntity("Entity1", "", "test")
-	if err != nil {
-		t.Fail()
-	}
-
-	assert.Equal(t, e1, e2)
-
-	if len(i.Entities) > 1 {
-		t.Error()
-	}
-}
-
-func TestIntegration_LoggerReturnsDefaultLogger(t *testing.T) {
-	i, err := New(integrationName, integrationVersion)
-	assert.NoError(t, err)
-
-	assert.Equal(t, i.logger, i.Logger())
-}
-
-func TestIntegration_LoggerReturnsInjectedInstance(t *testing.T) {
-	l := log.NewStdErr(false)
-
-	i, err := New(integrationName, integrationVersion, Logger(l))
-	assert.NoError(t, err)
-
-	assert.Equal(t, l, i.Logger())
-}
-
-func newTestIntegration(t *testing.T) *Integration {
-	i, err := New(integrationName, integrationVersion, Logger(log.Discard), Writer(ioutil.Discard), InMemoryStore())
-	assert.NoError(t, err)
-
-	return i
-}
-
-func TestIntegration_CreateLocalAndRemoteEntities(t *testing.T) {
-	i, err := New(integrationName, integrationVersion)
-	assert.NoError(t, err)
-
-	local, _ := i.NewEntity("some-entity", "", "some-type")
-	assert.NotEqual(t, local, nil)
-
-	remote, err := i.NewEntity("Entity1", "", "test")
-	assert.NoError(t, err)
-	assert.NotEqual(t, remote, nil)
-}
-
 type testWriter struct {
 	testFunc func([]byte)
 }
@@ -456,4 +401,25 @@ func (w testWriter) Write(p []byte) (n int, err error) {
 	w.testFunc(p)
 
 	return len(p), err
+}
+
+type fakeStorer struct {
+	saved bool
+}
+
+func (m *fakeStorer) Save() error {
+	m.saved = true
+	return nil
+}
+
+func (fakeStorer) Set(_ string, _ interface{}) int64 {
+	return 0
+}
+
+func (fakeStorer) Get(_ string, _ interface{}) (int64, error) {
+	return 0, nil
+}
+
+func (fakeStorer) Delete(_ string) error {
+	return nil
 }

@@ -66,7 +66,7 @@ func main() {
 		}
 		panicOnErr(err)
 		if uptime < 60 {
-			err = entity.AddEvent(event.New("Redis Server recently started", "redis-server"))
+			err = entity.AddEvent(event.New()
 		}
 		panicOnErr(err)
 	}

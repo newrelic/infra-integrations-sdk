@@ -29,7 +29,8 @@ func (i *Inventory) MarshalJSON() ([]byte, error) {
 	return json.Marshal(i.items)
 }
 
-// SetItem stores a value into the inventory, key is limited to 375 characters.
+// SetItem stores a value into the inventory, updating if already exists an item with the same key
+// key is limited to 375 characters.
 func (i *Inventory) SetItem(key string, field string, value interface{}) error {
 	if len(key) > MaxKeyLen {
 		return fmt.Errorf("maximum inventory key length is %d, current key %s has %d characters", MaxKeyLen, key, len(key))

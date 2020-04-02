@@ -153,7 +153,7 @@ func (j *inMemoryStore) Save() error {
 
 // Set stores a value for a given key. Implementors must save also the time when it was stored.
 // This implementation adds a restriction to the key name: it must be a valid file name (without extension).
-func (j inMemoryStore) Set(key string, value interface{}) int64 {
+func (j *inMemoryStore) Set(key string, value interface{}) int64 {
 	j.locker.Lock()
 	defer j.locker.Unlock()
 
@@ -168,7 +168,7 @@ func (j inMemoryStore) Set(key string, value interface{}) int64 {
 // Get gets the value associated to a given key and stores it in the value referenced by the pointer passed as
 // second argument
 // This implementation adds a restriction to the key name: it must be a valid file name (without extension).
-func (j inMemoryStore) Get(key string, valuePtr interface{}) (int64, error) {
+func (j *inMemoryStore) Get(key string, valuePtr interface{}) (int64, error) {
 	j.locker.Lock()
 	defer j.locker.Unlock()
 
@@ -234,7 +234,7 @@ func (j *fileStore) loadFromDisk() error {
 
 // Delete removes the cached data for the given key. If the data does not exist, the system does not return
 // any error.
-func (j inMemoryStore) Delete(key string) error {
+func (j *inMemoryStore) Delete(key string) error {
 	j.locker.Lock()
 	defer j.locker.Unlock()
 

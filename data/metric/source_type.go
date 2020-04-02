@@ -14,7 +14,9 @@ type SourceType int
 // If any more SourceTypes are added update maps: SourcesTypeToName & SourcesNameToType.
 const (
 	// GAUGE is a value that may increase and decrease. It is stored as-is.
-	GAUGE SourceType = iota
+	GAUGE   SourceType = iota
+	COUNT   SourceType = iota
+	SUMMARY SourceType = iota
 	// RATE is an ever-growing value which might be reset. The package calculates the change rate.
 	RATE SourceType = iota
 	// DELTA is an ever-growing value which might be reset. The package calculates the difference between samples.
@@ -30,6 +32,8 @@ const (
 // SourcesTypeToName metric sources list mapping its type to readable name.
 var SourcesTypeToName = map[SourceType]string{
 	GAUGE:     "gauge",
+	COUNT:     "count",
+	SUMMARY:   "summary",
 	RATE:      "rate",
 	DELTA:     "delta",
 	ATTRIBUTE: "attribute",
@@ -38,6 +42,8 @@ var SourcesTypeToName = map[SourceType]string{
 // SourcesNameToType metric sources list mapping its name to type.
 var SourcesNameToType = map[string]SourceType{
 	"gauge":     GAUGE,
+	"count":     COUNT,
+	"summary":   SUMMARY,
 	"rate":      RATE,
 	"delta":     DELTA,
 	"prate":     PRATE,

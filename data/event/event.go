@@ -1,6 +1,8 @@
 package event
 
-import "github.com/newrelic/infra-integrations-sdk/data/attribute"
+import (
+	"time"
+)
 
 const (
 	// NotificationEventCategory category for notification events.
@@ -11,6 +13,7 @@ const (
 // activities on a system. Ex:
 //
 // Event{
+//   Timestamp: 12312323,
 //   Category: "gear",
 //   Summary:  "gear has been changed",
 //   Attributes: map[string]interface{}{
@@ -20,6 +23,7 @@ const (
 //   },
 // }
 type Event struct {
+	Timestamp int64 `json:"timestamp"`
 	Summary  string `json:"summary"`
 	Category string `json:"category,omitempty"`
 	// Attributes are optional, they represent additional information that
@@ -28,8 +32,9 @@ type Event struct {
 }
 
 // New creates a new event.
-func New(summary, category string) *Event {
+func New(timestamp time.Time, summary, category string) *Event {
 	return &Event{
+		Timestamp: timestamp.Unix(),
 		Summary:    summary,
 		Category:   category,
 		Attributes: make(map[string]interface{}),
@@ -38,23 +43,16 @@ func New(summary, category string) *Event {
 
 // NewNotification creates a new notification event.
 func NewNotification(summary string) *Event {
-	return New(summary, NotificationEventCategory)
+	return New(time.Now(), summary, NotificationEventCategory)
 }
 
-// NewWithAttributes creates a new event with the given attributes
-func NewWithAttributes(summary, category string, attributes map[string]interface{}) *Event {
-	e := New(summary, category)
-	e.Attributes = attributes
-	return e
+// AddAttribute adds an attribute to the Event
+func (e *Event) AddAttribute(key string, value interface{}) {
+	// TODO validate value type (bool, number, string)
+	e.setAttribute(key, value)
 }
 
 func (e *Event) setAttribute(key string, val interface{}) {
+	// TODO validate value type (bool, number, string)
 	e.Attributes[key] = val
-}
-
-// AddCustomAttributes add customAttributes to the Event
-func AddCustomAttributes(e *Event, customAttributes []attribute.Attribute) {
-	for _, attr := range customAttributes {
-		e.setAttribute(attr.Key, attr.Value)
-	}
 }

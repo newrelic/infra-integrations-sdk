@@ -4,14 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/newrelic/infra-integrations-sdk/data/event"
+	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"io"
 	"os"
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/data/metadata"
 	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 )
@@ -21,12 +23,6 @@ const (
 	CustomAttrPrefix  = "NRI_"
 	CustomAttrCluster = "cluster_name"
 	CustomAttrService = "service_name"
-)
-
-// Standard attributes
-const (
-	AttrReportingEntity   = "reportingEntityKey"
-	AttrReportingEndpoint = "reportingEndpoint"
 )
 
 // NR infrastructure agent protocol version
@@ -103,81 +99,52 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 	return
 }
 
-// EntityReportedBy entity being reported from another entity that is not producing the actual entity data.
-func (i *Integration) EntityReportedBy(
-	reportingEntityName string,
-	reportedEntityDisplayName string,
-	reportedEntityType string,
-	tags ...metadata.Tag) (e *Entity, err error) {
-
-	e, err = i.NewEntity(reportingEntityName, reportedEntityDisplayName, reportedEntityType, tags...)
-	if err != nil {
-		return
-	}
-
-	e.AddTag(AttrReportingEntity, reportingEntityName)
-	return
-}
-
-// EntityReportedVia entity being reported from a known endpoint.
-func (i *Integration) EntityReportedVia(
-	endpoint string,
-	reportingEntityName string,
-	reportedEntityDisplayName string,
-	reportedEntityType string,
-	tags ...metadata.Tag) (e *Entity, err error) {
-
-	e, err = i.NewEntity(reportingEntityName, reportedEntityDisplayName, reportedEntityType, tags...)
-	if err != nil {
-		return
-	}
-
-	e.AddTag(AttrReportingEndpoint, endpoint)
-	return
-}
-
-// NewEntity method creates a new Entity or retrieves an already created entity.
-// The name of the Entity must be unique for the account otherwise it will cause conflicts
-func (i *Integration) NewEntity(name string, displayName, entityType string, tags ...metadata.Tag) (e *Entity, err error) {
+// NewEntity method creates a new (uniquely named) Entity.
+// The `name` of the Entity must be unique for the account otherwise it will cause conflicts
+func (i *Integration) NewEntity(name string, entityType string, displayName string) (e *Entity, err error) {
 	i.locker.Lock()
 	defer i.locker.Unlock()
 
-	e, err = newEntity(name, displayName, entityType, i.storer, tags...)
+	e, err = newEntity(name, entityType, displayName, i.storer)
 	if err != nil {
 		return nil, err
 	}
 
-	// check if the an "equal" entity alrady exists and return it instead
-	for _, entity := range i.Entities {
-		if e.SameAs(entity) {
-			return entity, nil
-		}
-	}
-
-	defaultArgs := args.GetDefaultArgs(i.args)
-
-	// get env vars values for "custom" prefixed vars (NRIA_) and add them as attributes to the entity
-	if defaultArgs.Metadata {
-		for _, element := range os.Environ() {
-			variable := strings.Split(element, "=")
-			prefix := fmt.Sprintf("%s%s_", CustomAttrPrefix, strings.ToUpper(i.Name))
-			if strings.HasPrefix(variable[0], prefix) {
-				e.AddTag(strings.TrimPrefix(variable[0], prefix), variable[1])
-			}
-		}
-	}
-
-	// TODO: should these custom "attributes" be added to "common", "metrics" and "events"?
-	if defaultArgs.NriCluster != "" {
-		e.AddTag(CustomAttrCluster, defaultArgs.NriCluster)
-	}
-	if defaultArgs.NriService != "" {
-		e.AddTag(CustomAttrService, defaultArgs.NriService)
-	}
-
-	i.Entities = append(i.Entities, e)
+	i.addDefaultAttributes(e)
 
 	return e, nil
+}
+
+// AddEntity adds an entity to the list of entities. No check for "duplicates" is performed
+func (i *Integration) AddEntity(e *Entity) {
+	i.Entities = append(i.Entities, e)
+}
+
+// AddInventoryItem adds the item to the anonymous entity (if it exists, otherwise creates one)
+// To add Inventory to an entity, use the AddInventoryItem method in an Entity instance
+func (i *Integration) AddInventoryItem(key string, field string, value interface{}) error {
+	e := i.getAnonymousEntity()
+	if e == nil {
+		e = newAnonymousEntity(i.storer)
+		i.AddEntity(e)
+	}
+	err := e.AddInventoryItem(key, field, value)
+	return err
+}
+
+// NewEvent creates a new event
+func (i *Integration) NewEvent(timestamp time.Time, summary string, category string) *event.Event {
+	return event.New(timestamp, summary, category)
+}
+
+// AddEvent adds the specified event to the anonymous entity  (if it exists, otherwise creates one)
+func (i *Integration) AddEvent(ev *event.Event) error {
+	e := i.getAnonymousEntity()
+	if e == nil {
+		e = newAnonymousEntity(i.storer)
+		i.AddEntity(e)
+	}
+	return e.AddEvent(ev)
 }
 
 // Publish runs all necessary tasks before publishing the data. Currently, it
@@ -235,6 +202,20 @@ func (i *Integration) Logger() log.Logger {
 	return i.logger
 }
 
+func Gauge(timestamp time.Time, metricName string, value float64) metric.Metric {
+	return metric.NewGauge(timestamp, metricName, value)
+}
+
+func Count(timestamp time.Time, interval time.Duration, metricName string, value int64) metric.Metric {
+	return metric.NewCount(timestamp, interval, metricName, value)
+}
+
+func Summary(timestamp time.Time, interval time.Duration, metricName string, count int64,
+	average float64, sum float64, min float64, max float64) metric.Metric {
+	return metric.NewSummary(timestamp, interval, metricName, count, average, sum, min, max)
+}
+
+// -- private
 func (i *Integration) checkArguments() error {
 	if i.args == nil {
 		i.args = new(struct{})
@@ -247,4 +228,39 @@ func (i *Integration) checkArguments() error {
 	}
 
 	return errors.New("arguments must be a pointer to a struct (or nil)")
+}
+
+func (i *Integration) getAnonymousEntity() *Entity {
+	i.locker.Lock()
+	defer i.locker.Unlock()
+
+	for _, e := range i.Entities {
+		if e.isAnonymousEntity() {
+			return e
+		}
+	}
+	return nil
+}
+
+func (i *Integration) addDefaultAttributes(e *Entity)  {
+	defaultArgs := args.GetDefaultArgs(i.args)
+
+	// get env vars values for "custom" prefixed vars (NRIA_) and add them as attributes to the entity
+	if defaultArgs.Metadata {
+		for _, element := range os.Environ() {
+			variable := strings.Split(element, "=")
+			prefix := fmt.Sprintf("%s%s_", CustomAttrPrefix, strings.ToUpper(i.Name))
+			if strings.HasPrefix(variable[0], prefix) {
+				e.AddTag(strings.TrimPrefix(variable[0], prefix), variable[1])
+			}
+		}
+	}
+
+	// TODO: should these custom "attributes" be added to "common", "metrics" and "events"?
+	if defaultArgs.NriCluster != "" {
+		e.AddTag(CustomAttrCluster, defaultArgs.NriCluster)
+	}
+	if defaultArgs.NriService != "" {
+		e.AddTag(CustomAttrService, defaultArgs.NriService)
+	}
 }
