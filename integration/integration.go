@@ -152,8 +152,10 @@ func (i *Integration) Publish() error {
 		}
 	}
 
-	// add the anon entity to the list of entity to be serialized
-	i.Entities = append(i.Entities, i.anonEntity)
+	// add the anon entity to the list of entity to be serialized, if not empty
+	if notEmpty(i.anonEntity) {
+		i.Entities = append(i.Entities, i.anonEntity)
+	}
 	output, err := i.toJSON(i.prettyOutput)
 	if err != nil {
 		return err
@@ -162,6 +164,10 @@ func (i *Integration) Publish() error {
 	_, err = i.writer.Write(output)
 
 	return err
+}
+
+func notEmpty(entity *Entity) bool {
+	return len(entity.Events) > 0 || len(entity.Metrics) > 0 || len(entity.Inventory.Items()) > 0
 }
 
 // Clear re-initializes the Inventory, Metrics and Events for this integration.

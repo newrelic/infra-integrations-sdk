@@ -7,8 +7,8 @@ import (
 )
 
 func TestSourceType_String(t *testing.T) {
-	st := RATE
-	assert.Equal(t, "rate", st.String())
+	st := COUNT
+	assert.Equal(t, "count", st.String())
 }
 
 func TestSourceType_Positive(t *testing.T) {
@@ -18,9 +18,8 @@ func TestSourceType_Positive(t *testing.T) {
 		isPositive bool
 	}{
 		{GAUGE, false},
-		{RATE, false},
-		{DELTA, false},
-		{PRATE, true},
+		{COUNT, true},
+		{SUMMARY, false},
 		{PDELTA, true},
 	}
 
@@ -32,14 +31,14 @@ func TestSourceType_Positive(t *testing.T) {
 }
 
 func TestSourceTypeForName(t *testing.T) {
-	name, err := SourceTypeForName("delta")
+	name, err := SourceTypeForName("gauge")
 	assert.NoError(t, err)
-	assert.Equal(t, DELTA, name)
+	assert.Equal(t, GAUGE, name)
 
 	// ignore case
-	name, err = SourceTypeForName("RATE")
+	name, err = SourceTypeForName("count")
 	assert.NoError(t, err)
-	assert.Equal(t, RATE, name)
+	assert.Equal(t, COUNT, name)
 
 	// error
 	_, err = SourceTypeForName("invalid")
