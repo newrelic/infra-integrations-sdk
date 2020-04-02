@@ -49,10 +49,5 @@ func NewNotification(summary string) *Event {
 // AddAttribute adds an attribute to the Event
 func (e *Event) AddAttribute(key string, value interface{}) {
 	// TODO validate value type (bool, number, string)
-	e.setAttribute(key, value)
-}
-
-func (e *Event) setAttribute(key string, val interface{}) {
-	// TODO validate value type (bool, number, string)
-	e.Attributes[key] = val
+	e.Attributes[key] = value
 }
