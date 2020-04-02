@@ -11,8 +11,7 @@ The Go SDK v4 contains the following changes:
 * New metric data types: `count` and `summary`.
 * Removed support for `RATE`, `PRATE` and `DELTA` metric types.
 * Local entities have been removed.
-* Metrics, Events and Inventory can be attached either to Entities or an
-  Integration.
+* Metrics, Events and Inventory can be attached either to Entities or an Integration.
 * Support for Go Modules
 * Removed support for protocols prior to v4.x.
 
@@ -131,7 +130,11 @@ In this SDK v4 we introduce some new metric types while removing some others.
 
 * PDELTA
 
-  The positive delta metric type `pdelta` still exists.
+  This metric type still exists and works in the same manner.
+  
+* ATTRIBUTES
+
+  This metric type has been removed. Now every metric can have attributes, called dimensions, attached to it.
 
 * COUNT
 
@@ -205,29 +208,29 @@ To add a metric to an Integrations just call the method inside the `integration`
 
 #### Metrics summary
 
-| type       | v3 | v4 | method                                                                          |
+| type       | v3 | v4 | mapping                                                                          |
 |------------|----|----|---------------------------------------------------------------------------------|
 | gauge      | ✅  | ✅  | integration.Gauge(timestamp, name, value)                                     |
 | rate/prate | ✅  | ❌  | use a gauge and the NRQL rate function                                        |
 | delta      | ✅  | ❌  | use a gauge and calculate the delta                                           |
 | pdelta     | ✅  | ✅  | integration.PDelta(timestamp, name, value)                                    |
+| attribute  | ✅  | ❌  | add dimensions to the metrics                                                 |
 | count      | ❌  | ✅  | integration.Count(timestamp, interval, name, count)                           |
 | summary    | ❌  | ✅  | integration.Summary(timestamp, interval, name, count, average, sum, min, max) |
 
 ### Events
 
-The API for creating events has changed a little bit. Now you need to create an Event which can be attached to an
-Entity or Integration.
+The API for creating events has changed a little bit. Events can be attached to an Entity or Integration.
 
 In SDK v3, events were created like this
 
 `func New(summary, category string) *Event`
 
-Now, for creating an event, you need to call this method inside the `integration` namespace
+Now, for creating an event, you need to call this method inside the `integration` package
 
 `func NewEvent(timestamp time.Time, summary, category string) *Event`
 
-The parameter are the same as before with the exception of the `timestamp`. `summary` cannot be empty.
+The parameters are the same as before with the exception of the `timestamp`. `summary` cannot be empty.
  
 #### Adding attributes to an Event
 
@@ -258,8 +261,7 @@ can call this method
 
 ### Inventory
 
-The API for creating inventory has changed a little bit. Now you need to create an Inventory which can be attached to an
-Entity or Integration.
+The API for creating inventory is almost the same. Inventory can be attached to an Entity or Integration.
 
 In SDK v3, an inventory item was added like this
 
@@ -273,7 +275,7 @@ Basically you just need to replace `SetInventoryItem` with `AddInventoryItem`.
 
 #### Adding inventory to an Integration
 
-Inventory can also be added to an Integration. The previous call can be used on Integrations 
+Inventory can also be added to an Integration. The previous call can be used on an Integration 
 
 `func (e *Integration) AddInventoryItem(key string, field string, value interface{}) error`
 
