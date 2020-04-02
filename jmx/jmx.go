@@ -233,7 +233,7 @@ func openConnection(config *connectionConfig) (err error) {
 		l:  sync.Mutex{},
 	}
 
-	go handleStdErr(ctx)
+	go handleStdErr(ctx, false)
 
 	if err = cmd.Start(); err != nil {
 		return err
@@ -242,7 +242,7 @@ func openConnection(config *connectionConfig) (err error) {
 	go func() {
 		if err = cmd.Wait(); err != nil {
 			cmdErrC <- fmt.Errorf("nrjmx error: %s [proc-state: %s]", err, cmd.ProcessState)
-			//handleStdErr(context.Background())
+			handleStdErr(context.Background(), true)
 		}
 
 		cmd = nil
@@ -253,11 +253,7 @@ func openConnection(config *connectionConfig) (err error) {
 	return nil
 }
 
-func handleStdErr(ctx context.Context) {
-	_handleStdErr(ctx)
-}
-
-func _handleStdErr(ctx context.Context) {
+func handleStdErr(ctx context.Context, singleRead bool) {
 
 	var line string
 	var err error
@@ -293,6 +289,9 @@ func _handleStdErr(ctx context.Context) {
 		}
 		if err != nil {
 			cmdErrC <- err
+			return
+		}
+		if singleRead {
 			return
 		}
 	}
