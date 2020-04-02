@@ -319,6 +319,9 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	assert.NoError(t, i.AddEvent(ev3))
 
 	assert.NoError(t, i.Publish())
+
+	// check integration  was reset
+	assert.Empty(t, i.Entities)
 }
 
 func Test_Integration_PublishStoresOnDiskByDefault(t *testing.T) {

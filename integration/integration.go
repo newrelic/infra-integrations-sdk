@@ -37,6 +37,7 @@ type Integration struct {
 	ProtocolVersion    string    `json:"protocol_version"`
 	IntegrationVersion string    `json:"integration_version"`
 	Entities           []*Entity `json:"data"`
+	anonEntity         *Entity   // anonEntity is the equivalent to "local entity", ie, no metadata.
 	locker             sync.Locker
 	storer             persist.Storer
 	prettyOutput       bool
@@ -97,6 +98,8 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 		}
 	}
 
+	i.anonEntity = newAnonymousEntity(i.storer)
+
 	return
 }
 
@@ -124,13 +127,7 @@ func (i *Integration) AddEntity(e *Entity) {
 // AddInventoryItem adds the item to the anonymous entity (if it exists, otherwise creates one)
 // To add Inventory to an entity, use the AddInventoryItem method in an Entity instance
 func (i *Integration) AddInventoryItem(key string, field string, value interface{}) error {
-	e := i.getAnonymousEntity()
-	if e == nil {
-		e = newAnonymousEntity(i.storer)
-		i.AddEntity(e)
-	}
-	err := e.AddInventoryItem(key, field, value)
-	return err
+	return i.anonEntity.AddInventoryItem(key, field, value)
 }
 
 // NewEvent creates a new event
@@ -140,13 +137,7 @@ func (i *Integration) NewEvent(timestamp time.Time, summary string, category str
 
 // AddEvent adds the specified event to the anonymous entity  (if it exists, otherwise creates one)
 func (i *Integration) AddEvent(ev *event.Event) error {
-	//TODO this should probably be locked
-	e := i.getAnonymousEntity()
-	if e == nil {
-		e = newAnonymousEntity(i.storer)
-		i.AddEntity(e)
-	}
-	return e.AddEvent(ev)
+	return i.anonEntity.AddEvent(ev)
 }
 
 // Publish runs all necessary tasks before publishing the data. Currently, it
@@ -154,19 +145,21 @@ func (i *Integration) AddEvent(ev *event.Event) error {
 // and re-initializes the integration object (allowing re-use it during the
 // execution of your code).
 func (i *Integration) Publish() error {
+	defer i.Clear()
 	if i.storer != nil {
 		if err := i.storer.Save(); err != nil {
 			return err
 		}
 	}
 
+	// add the anon entity to the list of entity to be serialized
+	i.Entities = append(i.Entities, i.anonEntity)
 	output, err := i.toJSON(i.prettyOutput)
 	if err != nil {
 		return err
 	}
 	output = append(output, []byte{'\n'}...)
 	_, err = i.writer.Write(output)
-	defer i.Clear()
 
 	return err
 }
@@ -177,6 +170,8 @@ func (i *Integration) Clear() {
 	i.locker.Lock()
 	defer i.locker.Unlock()
 	i.Entities = []*Entity{} // empty array preferred instead of null on marshaling.
+	// reset the anon entity
+	i.anonEntity = newAnonymousEntity(i.storer)
 }
 
 // MarshalJSON serializes integration to JSON, fulfilling Marshaler interface.
@@ -233,18 +228,6 @@ func (i *Integration) checkArguments() error {
 	}
 
 	return errors.New("arguments must be a pointer to a struct (or nil)")
-}
-
-func (i *Integration) getAnonymousEntity() *Entity {
-	i.locker.Lock()
-	defer i.locker.Unlock()
-
-	for _, e := range i.Entities {
-		if e.isAnonymousEntity() {
-			return e
-		}
-	}
-	return nil
 }
 
 func (i *Integration) addDefaultAttributes(e *Entity) {
