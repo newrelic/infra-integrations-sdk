@@ -33,15 +33,15 @@ type Gauge struct {
 // Count is a metric of type count
 type Count struct {
 	metricBase
-	Interval int64 `json:"interval.ms"`
-	Count    int64 `json:"count"`
+	Interval int64  `json:"interval.ms"`
+	Count    uint64 `json:"count"`
 }
 
 // Summary is a metric of type summary.
 type Summary struct {
 	metricBase
 	Interval int64   `json:"interval.ms"`
-	Count    int64   `json:"count"`
+	Count    uint64  `json:"count"`
 	Average  float64 `json:"average"`
 	Sum      float64 `json:"sum"`
 	Min      float64 `json:"min"`
@@ -62,7 +62,7 @@ func NewGauge(timestamp time.Time, name string, value float64) Metric {
 }
 
 // NewCount creates a new metric of type Count
-func NewCount(timestamp time.Time, interval time.Duration, name string, count int64) Metric {
+func NewCount(timestamp time.Time, interval time.Duration, name string, count uint64) Metric {
 	return &Count{
 		metricBase: metricBase{
 			Timestamp:  timestamp.Unix(),
@@ -76,7 +76,7 @@ func NewCount(timestamp time.Time, interval time.Duration, name string, count in
 }
 
 // NewSummary creates a new metric of type Summary
-func NewSummary(timestamp time.Time, interval time.Duration, name string, count int64, average float64, sum float64,
+func NewSummary(timestamp time.Time, interval time.Duration, name string, count uint64, average float64, sum float64,
 	min float64, max float64) Metric {
 	return &Summary{
 		metricBase: metricBase{

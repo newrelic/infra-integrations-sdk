@@ -140,6 +140,7 @@ func (i *Integration) NewEvent(timestamp time.Time, summary string, category str
 
 // AddEvent adds the specified event to the anonymous entity  (if it exists, otherwise creates one)
 func (i *Integration) AddEvent(ev *event.Event) error {
+	//TODO this should probably be locked
 	e := i.getAnonymousEntity()
 	if e == nil {
 		e = newAnonymousEntity(i.storer)
@@ -209,12 +210,12 @@ func Gauge(timestamp time.Time, metricName string, value float64) metric.Metric 
 }
 
 // Count creates a metric of type count
-func Count(timestamp time.Time, interval time.Duration, metricName string, value int64) metric.Metric {
+func Count(timestamp time.Time, interval time.Duration, metricName string, value uint64) metric.Metric {
 	return metric.NewCount(timestamp, interval, metricName, value)
 }
 
 // Summary creates a metric of type summary
-func Summary(timestamp time.Time, interval time.Duration, metricName string, count int64,
+func Summary(timestamp time.Time, interval time.Duration, metricName string, count uint64,
 	average float64, sum float64, min float64, max float64) metric.Metric {
 	return metric.NewSummary(timestamp, interval, metricName, count, average, sum, min, max)
 }

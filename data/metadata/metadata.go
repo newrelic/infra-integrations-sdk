@@ -20,7 +20,7 @@ func New(name string, entityType string, displayName string) *Metadata {
 		Name:        name,
 		DisplayName: displayName,
 		EntityType:  entityType,
-		Tags:        map[string]interface{}{},
+		Tags:        TagMap{},
 	}
 }
 
