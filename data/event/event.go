@@ -23,9 +23,9 @@ const (
 //   },
 // }
 type Event struct {
-	Timestamp int64 `json:"timestamp"`
-	Summary  string `json:"summary"`
-	Category string `json:"category,omitempty"`
+	Timestamp int64  `json:"timestamp"`
+	Summary   string `json:"summary"`
+	Category  string `json:"category,omitempty"`
 	// Attributes are optional, they represent additional information that
 	// can be attached to an event.
 	Attributes map[string]interface{} `json:"attributes,omitempty"`
@@ -34,7 +34,7 @@ type Event struct {
 // New creates a new event.
 func New(timestamp time.Time, summary, category string) *Event {
 	return &Event{
-		Timestamp: timestamp.Unix(),
+		Timestamp:  timestamp.Unix(),
 		Summary:    summary,
 		Category:   category,
 		Attributes: make(map[string]interface{}),

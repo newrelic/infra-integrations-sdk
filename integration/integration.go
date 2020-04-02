@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/newrelic/infra-integrations-sdk/data/event"
-	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"io"
 	"os"
 	"reflect"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/newrelic/infra-integrations-sdk/data/event"
+	"github.com/newrelic/infra-integrations-sdk/data/metric"
 
 	"github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/log"
@@ -202,14 +203,17 @@ func (i *Integration) Logger() log.Logger {
 	return i.logger
 }
 
+// Gauge creates a metric of type gauge
 func Gauge(timestamp time.Time, metricName string, value float64) metric.Metric {
 	return metric.NewGauge(timestamp, metricName, value)
 }
 
+// Count creates a metric of type count
 func Count(timestamp time.Time, interval time.Duration, metricName string, value int64) metric.Metric {
 	return metric.NewCount(timestamp, interval, metricName, value)
 }
 
+// Summary creates a metric of type summary
 func Summary(timestamp time.Time, interval time.Duration, metricName string, count int64,
 	average float64, sum float64, min float64, max float64) metric.Metric {
 	return metric.NewSummary(timestamp, interval, metricName, count, average, sum, min, max)
@@ -242,7 +246,7 @@ func (i *Integration) getAnonymousEntity() *Entity {
 	return nil
 }
 
-func (i *Integration) addDefaultAttributes(e *Entity)  {
+func (i *Integration) addDefaultAttributes(e *Entity) {
 	defaultArgs := args.GetDefaultArgs(i.args)
 
 	// get env vars values for "custom" prefixed vars (NRIA_) and add them as attributes to the entity

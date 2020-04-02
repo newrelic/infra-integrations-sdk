@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"github.com/newrelic/infra-integrations-sdk/persist"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -9,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/newrelic/infra-integrations-sdk/persist"
 
 	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/stretchr/testify/assert"
@@ -99,14 +100,14 @@ func Test_Integration_EntitiesWithDifferentTagsAreNotEqual(t *testing.T) {
 
 	e1, err := i.NewEntity("name", "ns", "")
 	assert.NoError(t, err)
-	e1.AddTag("k","v")
+	e1.AddTag("k", "v")
 
 	e2, err := i.NewEntity("name", "ns", "")
 	assert.NoError(t, err)
 
 	e3, err := i.NewEntity("name", "ns", "")
 	assert.NoError(t, err)
-	e3.AddTag("k","v")
+	e3.AddTag("k", "v")
 
 	assert.False(t, e1.SameAs(e2), "Different tags create different entities")
 	assert.True(t, e1.SameAs(e3), "Same metadata creates/retrieves same entity")
@@ -277,7 +278,7 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	interval, _ := time.ParseDuration("1m")
 	count := Count(time.Unix(10000000, 0), interval, "metric-count", 100)
 	count.AddAttribute("cpu", "amd")
-	summary:= Summary(time.Unix(10000000, 0), interval , "metric-summary", 1, 10, 100, 1, 100)
+	summary := Summary(time.Unix(10000000, 0), interval, "metric-summary", 1, 10, 100, 1, 100)
 	// attributes should be ordered by key in lexicographic order
 	summary.AddAttribute("os", "linux")
 	summary.AddAttribute("distribution", "debian")

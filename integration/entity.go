@@ -33,7 +33,7 @@ func (e *Entity) SameAs(b *Entity) bool {
 	return e.Metadata.EqualsTo(b.Metadata)
 }
 
-// NewMetricSet returns a new instance of Set with its sample attached to the integration.
+// AddMetric returns a new instance of Set with its sample attached to the integration.
 func (e *Entity) AddMetric(metric metric.Metric) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
@@ -53,14 +53,14 @@ func (e *Entity) AddEvent(event *event.Event) error {
 	return nil
 }
 
-// SetInventoryItem method sets the inventory item (only one allowed).
+// AddInventoryItem method sets the inventory item (only one allowed).
 func (e *Entity) AddInventoryItem(key string, field string, value interface{}) error {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 	return e.Inventory.SetItem(key, field, value)
 }
 
-// TagMap return the Entity tags
+// Tags returns all the Entity tags
 func (e *Entity) Tags() metadata.TagMap {
 	return e.Metadata.GetTags()
 }
