@@ -59,7 +59,7 @@ type Summary struct {
 // NewGauge creates a new metric of type gauge
 func NewGauge(timestamp time.Time, name string, value float64) (Metric, error) {
 	if len(name) == 0 {
-		return nil, err.ErrParameterCannotBeEmpty("name")
+		return nil, err.ParameterCannotBeEmpty("name")
 	}
 
 	return &Gauge{
@@ -76,7 +76,7 @@ func NewGauge(timestamp time.Time, name string, value float64) (Metric, error) {
 // NewPDelta creates a new metric of type pdelta
 func NewPDelta(timestamp time.Time, name string, value float64) (Metric, error) {
 	if len(name) == 0 {
-		return nil, err.ErrParameterCannotBeEmpty("name")
+		return nil, err.ParameterCannotBeEmpty("name")
 	}
 
 	return &PDelta{
@@ -93,7 +93,7 @@ func NewPDelta(timestamp time.Time, name string, value float64) (Metric, error) 
 // NewCount creates a new metric of type count
 func NewCount(timestamp time.Time, interval time.Duration, name string, count uint64) (Metric, error) {
 	if len(name) == 0 {
-		return nil, err.ErrParameterCannotBeEmpty("name")
+		return nil, err.ParameterCannotBeEmpty("name")
 	}
 
 	return &Count{
@@ -112,7 +112,7 @@ func NewCount(timestamp time.Time, interval time.Duration, name string, count ui
 func NewSummary(timestamp time.Time, interval time.Duration, name string, count uint64, average float64, sum float64,
 	min float64, max float64) (Metric, error) {
 	if len(name) == 0 {
-		return nil, err.ErrParameterCannotBeEmpty("name")
+		return nil, err.ParameterCannotBeEmpty("name")
 	}
 
 	return &Summary{
@@ -134,7 +134,7 @@ func NewSummary(timestamp time.Time, interval time.Duration, name string, count 
 // AddDimension adds a dimension to the metric instance
 func (m *metricBase) AddDimension(key string, value string) error {
 	if len(key) == 0 {
-		return err.ErrParameterCannotBeEmpty("name")
+		return err.ParameterCannotBeEmpty("name")
 	}
 
 	m.Dimensions[key] = value

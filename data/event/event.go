@@ -1,7 +1,6 @@
 package event
 
 import (
-	"errors"
 	"time"
 
 	err "github.com/newrelic/infra-integrations-sdk/data/errors"
@@ -42,7 +41,7 @@ type Event struct {
 // New creates a new event.
 func New(timestamp time.Time, summary, category string) (*Event, error) {
 	if len(summary) == 0 {
-		return nil, errors.New("summary cannot be empty")
+		return nil, err.ParameterCannotBeEmpty("summary")
 	}
 	return &Event{
 		Timestamp:  timestamp.Unix(),
@@ -60,7 +59,7 @@ func NewNotification(summary string) (*Event, error) {
 // AddAttribute adds an attribute to the Event
 func (e *Event) AddAttribute(key string, value interface{}) error {
 	if len(key) == 0 {
-		return err.ErrParameterCannotBeEmpty("key")
+		return err.ParameterCannotBeEmpty("key")
 	}
 	// TODO validate value type (bool, number, string) ?
 	e.Attributes[key] = value
