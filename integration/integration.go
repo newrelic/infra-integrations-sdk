@@ -16,7 +16,6 @@ import (
 
 	"github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/log"
-	"github.com/newrelic/infra-integrations-sdk/persist"
 )
 
 // Custom attribute keys:
@@ -39,7 +38,6 @@ type Integration struct {
 	Entities           []*Entity `json:"data"`
 	anonEntity         *Entity   // anonEntity is the equivalent to "local entity", ie, no metadata.
 	locker             sync.Locker
-	storer             persist.Storer
 	prettyOutput       bool
 	writer             io.Writer
 	logger             log.Logger
@@ -90,14 +88,6 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 		i.logger = log.NewStdErr(defaultArgs.Verbose)
 	}
 
-	if i.storer == nil {
-		var err error
-		i.storer, err = persist.NewFileStore(persist.DefaultPath(i.Name), i.logger, persist.DefaultTTL)
-		if err != nil {
-			return nil, fmt.Errorf("can't create store: %s", err)
-		}
-	}
-
 	i.anonEntity = newAnonymousEntity()
 
 	return
@@ -146,11 +136,6 @@ func (i *Integration) AddEvent(ev *event.Event) {
 // execution of your code).
 func (i *Integration) Publish() error {
 	defer i.Clear()
-	if i.storer != nil {
-		if err := i.storer.Save(); err != nil {
-			return err
-		}
-	}
 
 	// add the anon entity to the list of entity to be serialized, if not empty
 	if notEmpty(i.anonEntity) {

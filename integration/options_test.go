@@ -19,7 +19,7 @@ import (
 func Test_PublishWritesUsingSelectedWriter(t *testing.T) {
 	var w bytes.Buffer
 
-	i, err := New("integration", "7.0", Writer(&w), InMemoryStore())
+	i, err := New("integration", "7.0", Writer(&w))
 	assert.NoError(t, err)
 
 	assert.NoError(t, i.Publish())
@@ -36,7 +36,7 @@ func Test_PrettyPrintWritesPrettifiedResult(t *testing.T) {
 	// capture output
 	var writer bytes.Buffer
 
-	i, err := New("integration", "7.0", Args(&arguments), Writer(&writer), InMemoryStore())
+	i, err := New("integration", "7.0", Args(&arguments), Writer(&writer))
 	assert.NoError(t, err)
 
 	assert.NoError(t, i.Publish())

@@ -2,14 +2,10 @@ package integration
 
 import (
 	"io/ioutil"
-	"math/rand"
 	"os"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/newrelic/infra-integrations-sdk/persist"
 
 	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/stretchr/testify/assert"
@@ -40,7 +36,7 @@ func Test_Integration_DefaultIntegrationWritesToStdout(t *testing.T) {
 	}()
 	os.Stdout = f
 
-	i, err := New("integration", "4.0", InMemoryStore())
+	i, err := New("integration", "4.0")
 
 	assert.NoError(t, err)
 	assert.Equal(t, "integration", i.Name)
@@ -276,7 +272,7 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 		},
 	}
 
-	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(w), InMemoryStore())
+	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(w))
 	assert.NoError(t, err)
 
 	e, err := i.NewEntity("EntityOne", "test", "")
@@ -340,64 +336,9 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	assert.Empty(t, i.Entities)
 }
 
-func Test_Integration_PublishStoresOnDiskByDefault(t *testing.T) {
-	i, err := New(integrationName, integrationVersion)
-	assert.NoError(t, err)
-
-	// TODO maybe not use the storer directly
-	i.storer.Set("hello", 12.33)
-
-	err = i.Publish()
-	assert.NoError(t, err)
-
-	// assert data has been flushed to disk
-	c, err := persist.NewFileStore(persist.DefaultPath(integrationName), log.NewStdErr(true), persist.DefaultTTL)
-	assert.NoError(t, err)
-
-	var v float64
-	ts, err := c.Get("hello", &v)
-	assert.NoError(t, err)
-	assert.NotEqual(t, 0, ts)
-	assert.InDelta(t, 12.33, v, 0.1)
-}
-
-func Test_Integration_InMemoryStoreDoesNotPersistOnDisk(t *testing.T) {
-	randomName := strconv.Itoa(rand.Int())
-
-	i, err := New(randomName, integrationVersion, InMemoryStore())
-	assert.NoError(t, err)
-
-	i.storer.Set("hello", 12.33)
-
-	assert.NoError(t, i.Publish())
-
-	// assert data has not been flushed to disk
-
-	// create folder in case it does not exists to enable store creation
-	path := persist.DefaultPath(randomName)
-	assert.NoError(t, os.MkdirAll(path, 0755))
-
-	s, err := persist.NewFileStore(path, log.Discard, persist.DefaultTTL)
-	assert.NoError(t, err)
-
-	var v float64
-	_, err = s.Get("hello", &v)
-	assert.Equal(t, persist.ErrNotFound, err)
-}
-
-func Test_Integration_PublishAutomaticallyCallsStorerSave(t *testing.T) {
-	customStorer := fakeStorer{}
-	i, err := New("cool-integration", "1.0", Writer(ioutil.Discard), Storer(&customStorer))
-	assert.NoError(t, err)
-
-	assert.NoError(t, i.Publish())
-
-	assert.True(t, customStorer.saved, "data has not been saved")
-}
-
 //--- helpers
 func newTestIntegration(t *testing.T) *Integration {
-	i, err := New(integrationName, integrationVersion, Logger(log.Discard), Writer(ioutil.Discard), InMemoryStore())
+	i, err := New(integrationName, integrationVersion, Logger(log.Discard), Writer(ioutil.Discard))
 	assert.NoError(t, err)
 
 	return i
@@ -421,25 +362,4 @@ func (w testWriter) Write(p []byte) (n int, err error) {
 	w.testFunc(p)
 
 	return len(p), err
-}
-
-type fakeStorer struct {
-	saved bool
-}
-
-func (m *fakeStorer) Save() error {
-	m.saved = true
-	return nil
-}
-
-func (fakeStorer) Set(_ string, _ interface{}) int64 {
-	return 0
-}
-
-func (fakeStorer) Get(_ string, _ interface{}) (int64, error) {
-	return 0, nil
-}
-
-func (fakeStorer) Delete(_ string) error {
-	return nil
 }
