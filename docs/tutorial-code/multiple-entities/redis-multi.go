@@ -67,11 +67,13 @@ func main() {
 		uptime, err := queryGaugeRedisInfo("uptime_in_seconds:", instanceOnePort)
 		panicOnErr(err)
 		if uptime < 60 {
-			err = e1.AddEvent(event.NewNotification("Redis Server recently started"))
+			ev, _ := event.NewNotification("Redis Server recently started")
+			e1.AddEvent(ev)
 		}
 		panicOnErr(err)
 		if uptime < 60 {
-			err = e1.AddEvent(event.New(time.Now(), "summary", "category"))
+			ev, _ := event.New(time.Now(), "summary", "category")
+			e1.AddEvent(ev)
 		}
 		panicOnErr(err)
 	}
@@ -89,7 +91,8 @@ func main() {
 	if args.All() || args.Metrics {
 		metricValue, err := queryGaugeRedisInfo("instantaneous_ops_per_sec:", instanceOnePort)
 		panicOnErr(err)
-		e1.AddMetric(integration.Gauge(time.Now(), "query.instantaneousOpsPerSecond", metricValue))
+		g, _ := integration.Gauge(time.Now(), "query.instantaneousOpsPerSecond", metricValue)
+		e1.AddMetric(g)
 	}
 
 	// Create another Entity
@@ -101,11 +104,13 @@ func main() {
 		uptime, err := queryGaugeRedisInfo("uptime_in_seconds:", instanceOnePort)
 		panicOnErr(err)
 		if uptime < 60 {
-			err = e2.AddEvent(event.NewNotification("Redis Server recently started"))
+			ev, _ := event.NewNotification("Redis Server recently started")
+			e2.AddEvent(ev)
 		}
 		panicOnErr(err)
 		if uptime < 60 {
-			err = e2.AddEvent(event.New(time.Now(), "summary", "category"))
+			ev, _ := event.New(time.Now(), "summary", "category")
+			e2.AddEvent(ev)
 		}
 		panicOnErr(err)
 	}
@@ -122,7 +127,8 @@ func main() {
 	if args.All() || args.Metrics {
 		metricValue, err := queryGaugeRedisInfo("instantaneous_ops_per_sec:", instanceTwoPort)
 		panicOnErr(err)
-		e2.AddMetric(integration.Gauge(time.Now(), "query.instantaneousOpsPerSecond", metricValue))
+		g, _ := integration.Gauge(time.Now(), "query.instantaneousOpsPerSecond", metricValue)
+		e2.AddMetric(g)
 	}
 
 	panicOnErr(i.Publish())

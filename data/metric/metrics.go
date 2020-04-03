@@ -2,17 +2,19 @@ package metric
 
 import (
 	"time"
+
+	err "github.com/newrelic/infra-integrations-sdk/data/errors"
 )
 
 // Dimensions stores the metric dimensions
 type Dimensions map[string]string
 
-// Set is the basic structure for storing metrics.
-type Set []Metric
+// Metrics is the basic structure for storing metrics.
+type Metrics []Metric
 
 // Metric is the common interface for all metric types
 type Metric interface {
-	AddDimension(key string, value string)
+	AddDimension(key string, value string) error
 	Dimension(key string) string
 	GetDimensions() Dimensions
 }
@@ -55,7 +57,11 @@ type Summary struct {
 }
 
 // NewGauge creates a new metric of type gauge
-func NewGauge(timestamp time.Time, name string, value float64) Metric {
+func NewGauge(timestamp time.Time, name string, value float64) (Metric, error) {
+	if len(name) == 0 {
+		return nil, err.ErrParameterCannotBeEmpty("name")
+	}
+
 	return &Gauge{
 		metricBase: metricBase{
 			Timestamp:  timestamp.Unix(),
@@ -64,11 +70,15 @@ func NewGauge(timestamp time.Time, name string, value float64) Metric {
 			Dimensions: Dimensions{},
 		},
 		Value: value,
-	}
+	}, nil
 }
 
 // NewPDelta creates a new metric of type pdelta
-func NewPDelta(timestamp time.Time, name string, value float64) Metric {
+func NewPDelta(timestamp time.Time, name string, value float64) (Metric, error) {
+	if len(name) == 0 {
+		return nil, err.ErrParameterCannotBeEmpty("name")
+	}
+
 	return &PDelta{
 		metricBase: metricBase{
 			Timestamp:  timestamp.Unix(),
@@ -77,11 +87,15 @@ func NewPDelta(timestamp time.Time, name string, value float64) Metric {
 			Dimensions: Dimensions{},
 		},
 		Value: value,
-	}
+	}, nil
 }
 
 // NewCount creates a new metric of type count
-func NewCount(timestamp time.Time, interval time.Duration, name string, count uint64) Metric {
+func NewCount(timestamp time.Time, interval time.Duration, name string, count uint64) (Metric, error) {
+	if len(name) == 0 {
+		return nil, err.ErrParameterCannotBeEmpty("name")
+	}
+
 	return &Count{
 		metricBase: metricBase{
 			Timestamp:  timestamp.Unix(),
@@ -91,12 +105,16 @@ func NewCount(timestamp time.Time, interval time.Duration, name string, count ui
 		},
 		Interval: interval.Milliseconds(),
 		Count:    count,
-	}
+	}, nil
 }
 
 // NewSummary creates a new metric of type summary
 func NewSummary(timestamp time.Time, interval time.Duration, name string, count uint64, average float64, sum float64,
-	min float64, max float64) Metric {
+	min float64, max float64) (Metric, error) {
+	if len(name) == 0 {
+		return nil, err.ErrParameterCannotBeEmpty("name")
+	}
+
 	return &Summary{
 		metricBase: metricBase{
 			Timestamp:  timestamp.Unix(),
@@ -110,12 +128,17 @@ func NewSummary(timestamp time.Time, interval time.Duration, name string, count 
 		Sum:      sum,
 		Min:      min,
 		Max:      max,
-	}
+	}, nil
 }
 
 // AddDimension adds a dimension to the metric instance
-func (m *metricBase) AddDimension(key string, value string) {
+func (m *metricBase) AddDimension(key string, value string) error {
+	if len(key) == 0 {
+		return err.ErrParameterCannotBeEmpty("name")
+	}
+
 	m.Dimensions[key] = value
+	return nil
 }
 
 // Dimension returns an attribute by key

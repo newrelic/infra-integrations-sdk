@@ -62,11 +62,13 @@ func main() {
 		uptime, err := queryRedisInfo("uptime_in_seconds:")
 		panicOnErr(err)
 		if uptime < 60 {
-			err = entity.AddEvent(event.NewNotification("Redis Server recently started"))
+			ev, _ := event.NewNotification("Redis Server recently started")
+			entity.AddEvent(ev)
 		}
 		panicOnErr(err)
 		if uptime < 60 {
-			err = entity.AddEvent(event.New(time.Now(), "summary", "category"))
+			ev, _ := event.New(time.Now(), "summary", "category")
+			entity.AddEvent(ev)
 		}
 		panicOnErr(err)
 	}
@@ -86,11 +88,8 @@ func main() {
 	if args.All() || args.Metrics {
 		metricValue, err := queryRedisInfo("instantaneous_ops_per_sec:")
 		panicOnErr(err)
-		entity.AddMetric(integration.Gauge(time.Now(), "query.instantaneousOpsPerSecond", metricValue))
-		//TODO do we support this?
-		//metricValue1, err := queryRedisInfo("total_connections_received:")
-		//panicOnErr(err)
-		//err = entity.AddMetric("net.connectionsReceivedPerSecond", metricValue1, metric.RATE)
+		g, _ := integration.Gauge(time.Now(), "query.instantaneousOpsPerSecond", metricValue)
+		entity.AddMetric(g)
 	}
 
 	panicOnErr(i.Publish())

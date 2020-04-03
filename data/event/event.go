@@ -1,7 +1,10 @@
 package event
 
 import (
+	"errors"
 	"time"
+
+	err "github.com/newrelic/infra-integrations-sdk/data/errors"
 )
 
 const (
@@ -22,6 +25,11 @@ const (
 //     "transmission": "manual",
 //   },
 // }
+
+// Events stores events
+type Events []*Event
+
+// Event defines the structure of an event
 type Event struct {
 	Timestamp int64  `json:"timestamp"`
 	Summary   string `json:"summary"`
@@ -32,22 +40,29 @@ type Event struct {
 }
 
 // New creates a new event.
-func New(timestamp time.Time, summary, category string) *Event {
+func New(timestamp time.Time, summary, category string) (*Event, error) {
+	if len(summary) == 0 {
+		return nil, errors.New("summary cannot be empty")
+	}
 	return &Event{
 		Timestamp:  timestamp.Unix(),
 		Summary:    summary,
 		Category:   category,
 		Attributes: make(map[string]interface{}),
-	}
+	}, nil
 }
 
 // NewNotification creates a new notification event.
-func NewNotification(summary string) *Event {
+func NewNotification(summary string) (*Event, error) {
 	return New(time.Now(), summary, NotificationEventCategory)
 }
 
 // AddAttribute adds an attribute to the Event
-func (e *Event) AddAttribute(key string, value interface{}) {
-	// TODO validate value type (bool, number, string)
+func (e *Event) AddAttribute(key string, value interface{}) error {
+	if len(key) == 0 {
+		return err.ErrParameterCannotBeEmpty("key")
+	}
+	// TODO validate value type (bool, number, string) ?
 	e.Attributes[key] = value
+	return nil
 }

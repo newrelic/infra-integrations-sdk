@@ -8,17 +8,15 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/data/inventory"
 	"github.com/newrelic/infra-integrations-sdk/data/metadata"
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
-	"github.com/newrelic/infra-integrations-sdk/persist"
 )
 
 // Entity is the producer of the data. Entity could be a host, a container, a pod, or whatever unit of meaning.
 type Entity struct {
 	Common    *Common              `json:"common"`
 	Metadata  *metadata.Metadata   `json:"entity,omitempty"`
-	Metrics   metric.Set           `json:"metrics"`
+	Metrics   metric.Metrics       `json:"metrics"`
 	Inventory *inventory.Inventory `json:"inventory"`
-	Events    []*event.Event       `json:"events"`
-	storer    persist.Storer
+	Events    event.Events         `json:"events"`
 	lock      sync.Locker
 }
 
@@ -30,10 +28,11 @@ func (e *Entity) SameAs(b *Entity) bool {
 	if e.Metadata == nil || b.Metadata == nil {
 		return false
 	}
+
 	return e.Metadata.EqualsTo(b.Metadata)
 }
 
-// AddMetric returns a new instance of Set with its sample attached to the integration.
+// AddMetric adds a new metric to the entity metrics list
 func (e *Entity) AddMetric(metric metric.Metric) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
@@ -42,19 +41,18 @@ func (e *Entity) AddMetric(metric metric.Metric) {
 }
 
 // AddEvent method adds a new Event.
-func (e *Entity) AddEvent(event *event.Event) error {
-	if event.Summary == "" {
-		return errors.New("summary of the event cannot be empty")
-	}
-
+func (e *Entity) AddEvent(event *event.Event) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
+
 	e.Events = append(e.Events, event)
-	return nil
 }
 
 // AddInventoryItem method sets the inventory item (only one allowed).
 func (e *Entity) AddInventoryItem(key string, field string, value interface{}) error {
+	if len(key) == 0 || len(field) == 0 {
+		return errors.New("key or field cannot be empty")
+	}
 	e.lock.Lock()
 	defer e.lock.Unlock()
 	return e.Inventory.SetItem(key, field, value)
@@ -66,8 +64,12 @@ func (e *Entity) Tags() metadata.TagMap {
 }
 
 // AddTag adds a new tag to the entity
-func (e *Entity) AddTag(key string, value interface{}) {
+func (e *Entity) AddTag(key string, value interface{}) error {
+	if len(key) == 0 {
+		return errors.New("key cannot be empty")
+	}
 	e.Metadata.AddTag(key, value)
+	return nil
 }
 
 // Name is the unique entity identifier within a New Relic customer account.
@@ -78,15 +80,14 @@ func (e *Entity) Name() string {
 //--- private
 
 // newAnonymousEntity creates a entity without metadata.
-func newAnonymousEntity(storer persist.Storer) *Entity {
+func newAnonymousEntity() *Entity {
 	return &Entity{
 		Common:   &Common{},
 		Metadata: nil,
 		// empty array or object preferred instead of null on marshaling.
-		Metrics:   metric.Set{},
+		Metrics:   metric.Metrics{},
 		Inventory: inventory.New(),
-		Events:    []*event.Event{},
-		storer:    storer,
+		Events:    event.Events{},
 		lock:      &sync.Mutex{},
 	}
 }
@@ -100,9 +101,7 @@ func (e *Entity) isAnonymousEntity() bool {
 func newEntity(
 	name,
 	entityType string,
-	displayName string,
-	storer persist.Storer,
-) (*Entity, error) {
+	displayName string) (*Entity, error) {
 
 	if name == "" || entityType == "" {
 		return nil, errors.New("entity name and type cannot be empty")
@@ -112,10 +111,9 @@ func newEntity(
 		// empty array or object preferred instead of null on marshaling.
 		Common:    &Common{},
 		Metadata:  metadata.New(name, entityType, displayName),
-		Metrics:   metric.Set{},
+		Metrics:   metric.Metrics{},
 		Inventory: inventory.New(),
 		Events:    []*event.Event{},
-		storer:    storer,
 		lock:      &sync.Mutex{},
 	}
 	return e, nil

@@ -98,7 +98,7 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 		}
 	}
 
-	i.anonEntity = newAnonymousEntity(i.storer)
+	i.anonEntity = newAnonymousEntity()
 
 	return
 }
@@ -109,14 +109,14 @@ func (i *Integration) NewEntity(name string, entityType string, displayName stri
 	i.locker.Lock()
 	defer i.locker.Unlock()
 
-	e, err = newEntity(name, entityType, displayName, i.storer)
+	e, err = newEntity(name, entityType, displayName)
 	if err != nil {
 		return nil, err
 	}
 
-	i.addDefaultAttributes(e)
+	err = i.addDefaultAttributes(e)
 
-	return e, nil
+	return e, err
 }
 
 // AddEntity adds an entity to the list of entities. No check for "duplicates" is performed
@@ -131,13 +131,13 @@ func (i *Integration) AddInventoryItem(key string, field string, value interface
 }
 
 // NewEvent creates a new event
-func (i *Integration) NewEvent(timestamp time.Time, summary string, category string) *event.Event {
+func (i *Integration) NewEvent(timestamp time.Time, summary string, category string) (*event.Event, error) {
 	return event.New(timestamp, summary, category)
 }
 
 // AddEvent adds the specified event to the anonymous entity  (if it exists, otherwise creates one)
-func (i *Integration) AddEvent(ev *event.Event) error {
-	return i.anonEntity.AddEvent(ev)
+func (i *Integration) AddEvent(ev *event.Event) {
+	i.anonEntity.AddEvent(ev)
 }
 
 // Publish runs all necessary tasks before publishing the data. Currently, it
@@ -173,7 +173,7 @@ func (i *Integration) Clear() {
 	defer i.locker.Unlock()
 	i.Entities = []*Entity{} // empty array preferred instead of null on marshaling.
 	// reset the anon entity
-	i.anonEntity = newAnonymousEntity(i.storer)
+	i.anonEntity = newAnonymousEntity()
 }
 
 // MarshalJSON serializes integration to JSON, fulfilling Marshaler interface.
@@ -202,23 +202,23 @@ func (i *Integration) Logger() log.Logger {
 }
 
 // Gauge creates a metric of type gauge
-func Gauge(timestamp time.Time, metricName string, value float64) metric.Metric {
+func Gauge(timestamp time.Time, metricName string, value float64) (metric.Metric, error) {
 	return metric.NewGauge(timestamp, metricName, value)
 }
 
 // PDelta creates a metric of type pdelta
-func PDelta(timestamp time.Time, metricName string, value float64) metric.Metric {
+func PDelta(timestamp time.Time, metricName string, value float64) (metric.Metric, error) {
 	return metric.NewPDelta(timestamp, metricName, value)
 }
 
 // Count creates a metric of type count
-func Count(timestamp time.Time, interval time.Duration, metricName string, value uint64) metric.Metric {
+func Count(timestamp time.Time, interval time.Duration, metricName string, value uint64) (metric.Metric, error) {
 	return metric.NewCount(timestamp, interval, metricName, value)
 }
 
 // Summary creates a metric of type summary
 func Summary(timestamp time.Time, interval time.Duration, metricName string, count uint64,
-	average float64, sum float64, min float64, max float64) metric.Metric {
+	average float64, sum float64, min float64, max float64) (metric.Metric, error) {
 	return metric.NewSummary(timestamp, interval, metricName, count, average, sum, min, max)
 }
 
@@ -242,7 +242,7 @@ func (i *Integration) checkArguments() error {
 	return errors.New("arguments must be a pointer to a struct (or nil)")
 }
 
-func (i *Integration) addDefaultAttributes(e *Entity) {
+func (i *Integration) addDefaultAttributes(e *Entity) error {
 	defaultArgs := args.GetDefaultArgs(i.args)
 
 	// get env vars values for "custom" prefixed vars (NRIA_) and add them as attributes to the entity
@@ -251,16 +251,21 @@ func (i *Integration) addDefaultAttributes(e *Entity) {
 			variable := strings.Split(element, "=")
 			prefix := fmt.Sprintf("%s%s_", CustomAttrPrefix, strings.ToUpper(i.Name))
 			if strings.HasPrefix(variable[0], prefix) {
-				e.AddTag(strings.TrimPrefix(variable[0], prefix), variable[1])
+				err := e.AddTag(strings.TrimPrefix(variable[0], prefix), variable[1])
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
 
 	// TODO: should these custom "attributes" be added to "common", "metrics" and "events"?
 	if defaultArgs.NriCluster != "" {
-		e.AddTag(CustomAttrCluster, defaultArgs.NriCluster)
+		_ = e.AddTag(CustomAttrCluster, defaultArgs.NriCluster)
 	}
 	if defaultArgs.NriService != "" {
-		e.AddTag(CustomAttrService, defaultArgs.NriService)
+		_ = e.AddTag(CustomAttrService, defaultArgs.NriService)
 	}
+
+	return nil
 }

@@ -29,34 +29,60 @@ var _ = []struct {
 }
 
 func Test_Metric_CreateGauge(t *testing.T) {
-	g := NewGauge(now, "gauge", 1)
+	g, _ := NewGauge(now, "gauge", 1)
 	assert.NotNil(t, g)
 }
 
+func Test_Metric_CannotCreateGaugeWithEmptyName(t *testing.T) {
+	g, err := NewGauge(now, "", 1)
+	assert.Nil(t, g)
+	assert.Error(t, err)
+}
+
 func Test_Metric_CreateCount(t *testing.T) {
-	c := NewCount(now, time.Minute, "count", 1)
+	c, _ := NewCount(now, time.Minute, "count", 1)
 	assert.NotNil(t, c)
 }
 
+func Test_Metric_CannotCreateCountWithEmptyName(t *testing.T) {
+	c, err := NewCount(now, time.Minute, "", 1)
+	assert.Nil(t, c)
+	assert.Error(t, err)
+}
+
 func Test_Metric_CreateSummary(t *testing.T) {
-	s := NewSummary(now, time.Minute, "summary", 1, 0.5, 1, 0, 1)
+	s, _ := NewSummary(now, time.Minute, "summary", 1, 0.5, 1, 0, 1)
 	assert.NotNil(t, s)
 }
 
-func Test_Metric_AddAttribute(t *testing.T) {
+func Test_Metric_CannotCreateSummaryWithEmptyName(t *testing.T) {
+	s, err := NewSummary(now, time.Minute, "", 1, 0.5, 1, 0, 1)
+	assert.Nil(t, s)
+	assert.Error(t, err)
+}
+
+func Test_Metric_AddDimension(t *testing.T) {
 	attrKey := "test"
 	attrVal := "value"
-	g := NewGauge(now, "gauge", 1)
+	g, _ := NewGauge(now, "gauge", 1)
 
-	g.AddDimension(attrKey, attrVal)
+	_ = g.AddDimension(attrKey, attrVal)
 	assert.Len(t, g.GetDimensions(), 1)
+}
+
+func Test_Metric_CannotAddDimensionWithEmptyKey(t *testing.T) {
+	g, _ := NewGauge(now, "gauge", 1)
+	err := g.AddDimension("", "value")
+	assert.Error(t, err)
+
+	assert.Len(t, g.GetDimensions(), 0)
 }
 
 func Test_Metric_AttributeReturnsTheAttributeValue(t *testing.T) {
 	attrKey := "test"
 	attrVal := "value"
-	g := NewGauge(now, "gauge", 1)
-	g.AddDimension(attrKey, attrVal)
+	g, _ := NewGauge(now, "gauge", 1)
+	_ = g.AddDimension(attrKey, attrVal)
 
 	val := g.Dimension(attrKey)
 	assert.Equal(t, attrVal, val)

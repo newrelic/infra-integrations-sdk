@@ -100,14 +100,14 @@ func Test_Integration_EntitiesWithDifferentTagsAreNotEqual(t *testing.T) {
 
 	e1, err := i.NewEntity("name", "ns", "")
 	assert.NoError(t, err)
-	e1.AddTag("k", "v")
+	_ = e1.AddTag("k", "v")
 
 	e2, err := i.NewEntity("name", "ns", "")
 	assert.NoError(t, err)
 
 	e3, err := i.NewEntity("name", "ns", "")
 	assert.NoError(t, err)
-	e3.AddTag("k", "v")
+	_ = e3.AddTag("k", "v")
 
 	assert.False(t, e1.SameAs(e2), "Different tags create different entities")
 	assert.True(t, e1.SameAs(e3), "Same metadata creates/retrieves same entity")
@@ -281,32 +281,34 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 
 	e, err := i.NewEntity("EntityOne", "test", "")
 	assert.NoError(t, err)
-	e.AddTag("env", "prod")
+	_ = e.AddTag("env", "prod")
 
-	gauge := Gauge(time.Unix(10000000, 0), "metric-gauge", 1)
-	pdelta := PDelta(time.Unix(10000000, 0), "metric-pdelta", 1)
-	pdelta.AddDimension("version", "1.0.0")
+	gauge, _ := Gauge(time.Unix(10000000, 0), "metric-gauge", 1)
+	pdelta, _ := PDelta(time.Unix(10000000, 0), "metric-pdelta", 1)
+	_ = pdelta.AddDimension("version", "1.0.0")
 
 	interval, _ := time.ParseDuration("1m")
-	count := Count(time.Unix(10000000, 0), interval, "metric-count", 100)
-	count.AddDimension("cpu", "amd")
-	summary := Summary(time.Unix(10000000, 0), interval, "metric-summary", 1, 10, 100, 1, 100)
+	count, _ := Count(time.Unix(10000000, 0), interval, "metric-count", 100)
+	_ = count.AddDimension("cpu", "amd")
+	summary, _ := Summary(time.Unix(10000000, 0), interval, "metric-summary", 1, 10, 100, 1, 100)
 	// attributes should be ordered by key in lexicographic order
-	summary.AddDimension("os", "linux")
-	summary.AddDimension("distribution", "debian")
+	_ = summary.AddDimension("os", "linux")
+	_ = summary.AddDimension("distribution", "debian")
 	// add metrics to entity 1
 	e.AddMetric(gauge)
 	e.AddMetric(pdelta)
 	e.AddMetric(count)
 	e.AddMetric(summary)
 	// add 1st event to entity 1
-	ev1 := i.NewEvent(time.Unix(10000000, 0), "evnt1sum", "evnt1cat")
-	ev1.AddAttribute("attr1", "attr1Val")
-	ev1.AddAttribute("attr2", 42)
-	assert.NoError(t, e.AddEvent(ev1))
+	ev1, err := i.NewEvent(time.Unix(10000000, 0), "evnt1sum", "evnt1cat")
+	assert.NoError(t, err)
+	_ = ev1.AddAttribute("attr1", "attr1Val")
+	_ = ev1.AddAttribute("attr2", 42)
+	e.AddEvent(ev1)
 	// add 2nd event to entity 1
-	ev2 := i.NewEvent(time.Unix(10000000, 0), "evnt2sum", "evnt2cat")
-	assert.NoError(t, e.AddEvent(ev2))
+	ev2, err := i.NewEvent(time.Unix(10000000, 0), "evnt2sum", "evnt2cat")
+	assert.NoError(t, err)
+	e.AddEvent(ev2)
 	// add inventory to entity 1. only one because order is not guaranteed and the test is comparing with a static string
 	err = e.AddInventoryItem("custom/example", "version", "1.2.3")
 	assert.NoError(t, err)
@@ -317,8 +319,8 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	e2, err := i.NewEntity("EntityTwo", "test", "")
 	assert.NoError(t, err)
 	// add metric to entity 2
-	gauge = Gauge(time.Unix(10000000, 0), "metricOne", 2)
-	gauge.AddDimension("processName", "java")
+	gauge, _ = Gauge(time.Unix(10000000, 0), "metricOne", 2)
+	_ = gauge.AddDimension("processName", "java")
 	e2.AddMetric(gauge)
 	// add entity 2 to integration
 	i.AddEntity(e2)
@@ -328,8 +330,9 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	assert.NoError(t, err)
 
 	// add event to the anonymous entity (will not create one, inventory before already created it)
-	ev3 := i.NewEvent(time.Unix(10000000, 0), "evnt2sum", "evnt2cat")
-	assert.NoError(t, i.AddEvent(ev3))
+	ev3, err := i.NewEvent(time.Unix(10000000, 0), "evnt2sum", "evnt2cat")
+	assert.NoError(t, err)
+	i.AddEvent(ev3)
 
 	assert.NoError(t, i.Publish())
 
