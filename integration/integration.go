@@ -166,10 +166,6 @@ func (i *Integration) Publish() error {
 	return err
 }
 
-func notEmpty(entity *Entity) bool {
-	return len(entity.Events) > 0 || len(entity.Metrics) > 0 || len(entity.Inventory.Items()) > 0
-}
-
 // Clear re-initializes the Inventory, Metrics and Events for this integration.
 // Used after publishing so the object can be reused.
 func (i *Integration) Clear() {
@@ -210,6 +206,11 @@ func Gauge(timestamp time.Time, metricName string, value float64) metric.Metric 
 	return metric.NewGauge(timestamp, metricName, value)
 }
 
+// PDelta creates a metric of type pdelta
+func PDelta(timestamp time.Time, metricName string, value float64) metric.Metric {
+	return metric.NewPDelta(timestamp, metricName, value)
+}
+
 // Count creates a metric of type count
 func Count(timestamp time.Time, interval time.Duration, metricName string, value uint64) metric.Metric {
 	return metric.NewCount(timestamp, interval, metricName, value)
@@ -222,6 +223,11 @@ func Summary(timestamp time.Time, interval time.Duration, metricName string, cou
 }
 
 // -- private
+// is entity empty?
+func notEmpty(entity *Entity) bool {
+	return len(entity.Events) > 0 || len(entity.Metrics) > 0 || len(entity.Inventory.Items()) > 0
+}
+
 func (i *Integration) checkArguments() error {
 	if i.args == nil {
 		i.args = new(struct{})

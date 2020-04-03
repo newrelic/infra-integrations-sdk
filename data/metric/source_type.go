@@ -14,10 +14,13 @@ type SourceType int
 // If any more SourceTypes are added update maps: SourcesTypeToName & SourcesNameToType.
 const (
 	// GAUGE is a value that may increase and decrease. It is stored as-is.
-	GAUGE   SourceType = iota
-	COUNT   SourceType = iota
+	GAUGE SourceType = iota
+	// COUNT is an ever increasing value
+	COUNT SourceType = iota
+	// SUMMARY is a composite value with avg, min, max sample count and sum
 	SUMMARY SourceType = iota
-	PDELTA  SourceType = iota
+	// PDELTA is a positive delta, meaning a positive difference between 2 values
+	PDELTA SourceType = iota
 )
 
 // SourcesTypeToName metric sources list mapping its type to readable name.

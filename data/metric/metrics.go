@@ -30,6 +30,12 @@ type Gauge struct {
 	Value float64 `json:"value"`
 }
 
+// PDelta is a metric of type pdelta (positive delta)
+type PDelta struct {
+	metricBase
+	Value float64 `json:"value"`
+}
+
 // Count is a metric of type count
 type Count struct {
 	metricBase
@@ -48,7 +54,7 @@ type Summary struct {
 	Max      float64 `json:"max"`
 }
 
-// NewGauge creates a new metric of type Gauge
+// NewGauge creates a new metric of type gauge
 func NewGauge(timestamp time.Time, name string, value float64) Metric {
 	return &Gauge{
 		metricBase: metricBase{
@@ -61,7 +67,20 @@ func NewGauge(timestamp time.Time, name string, value float64) Metric {
 	}
 }
 
-// NewCount creates a new metric of type Count
+// NewPDelta creates a new metric of type pdelta
+func NewPDelta(timestamp time.Time, name string, value float64) Metric {
+	return &PDelta{
+		metricBase: metricBase{
+			Timestamp:  timestamp.Unix(),
+			Name:       name,
+			Type:       SourcesTypeToName[PDELTA],
+			Dimensions: Dimensions{},
+		},
+		Value: value,
+	}
+}
+
+// NewCount creates a new metric of type count
 func NewCount(timestamp time.Time, interval time.Duration, name string, count uint64) Metric {
 	return &Count{
 		metricBase: metricBase{
@@ -75,7 +94,7 @@ func NewCount(timestamp time.Time, interval time.Duration, name string, count ui
 	}
 }
 
-// NewSummary creates a new metric of type Summary
+// NewSummary creates a new metric of type summary
 func NewSummary(timestamp time.Time, interval time.Duration, name string, count uint64, average float64, sum float64,
 	min float64, max float64) Metric {
 	return &Summary{

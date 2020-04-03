@@ -175,6 +175,15 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 					},
 					{
 						"timestamp": 10000000,
+						"name": "metric-pdelta",
+						"type": "pdelta",
+						"attributes": {
+							"version": "1.0.0"
+						},
+						"value": 1
+					},
+					{
+						"timestamp": 10000000,
 						"name": "metric-count",
 						"type": "count",
 						"attributes": {
@@ -275,6 +284,9 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	e.AddTag("env", "prod")
 
 	gauge := Gauge(time.Unix(10000000, 0), "metric-gauge", 1)
+	pdelta := PDelta(time.Unix(10000000, 0), "metric-pdelta", 1)
+	pdelta.AddDimension("version", "1.0.0")
+
 	interval, _ := time.ParseDuration("1m")
 	count := Count(time.Unix(10000000, 0), interval, "metric-count", 100)
 	count.AddDimension("cpu", "amd")
@@ -284,6 +296,7 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	summary.AddDimension("distribution", "debian")
 	// add metrics to entity 1
 	e.AddMetric(gauge)
+	e.AddMetric(pdelta)
 	e.AddMetric(count)
 	e.AddMetric(summary)
 	// add 1st event to entity 1
