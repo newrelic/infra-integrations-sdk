@@ -40,23 +40,23 @@ func Test_Metric_CannotCreateGaugeWithEmptyName(t *testing.T) {
 }
 
 func Test_Metric_CreateCount(t *testing.T) {
-	c, _ := NewCount(now, time.Minute, "count", 1)
+	c, _ := NewCount(now, "count", 1)
 	assert.NotNil(t, c)
 }
 
 func Test_Metric_CannotCreateCountWithEmptyName(t *testing.T) {
-	c, err := NewCount(now, time.Minute, "", 1)
+	c, err := NewCount(now, "", 1)
 	assert.Nil(t, c)
 	assert.Error(t, err)
 }
 
 func Test_Metric_CreateSummary(t *testing.T) {
-	s, _ := NewSummary(now, time.Minute, "summary", 1, 0.5, 1, 0, 1)
+	s, _ := NewSummary(now, "summary", 1, 0.5, 1, 0, 1)
 	assert.NotNil(t, s)
 }
 
 func Test_Metric_CannotCreateSummaryWithEmptyName(t *testing.T) {
-	s, err := NewSummary(now, time.Minute, "", 1, 0.5, 1, 0, 1)
+	s, err := NewSummary(now, "", 1, 0.5, 1, 0, 1)
 	assert.Nil(t, s)
 	assert.Error(t, err)
 }

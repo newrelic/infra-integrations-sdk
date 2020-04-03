@@ -36,12 +36,13 @@ type Integration struct {
 	ProtocolVersion    string    `json:"protocol_version"`
 	IntegrationVersion string    `json:"integration_version"`
 	Entities           []*Entity `json:"data"`
-	anonEntity         *Entity   // anonEntity is the equivalent to "local entity", ie, no metadata.
-	locker             sync.Locker
-	prettyOutput       bool
-	writer             io.Writer
-	logger             log.Logger
-	args               interface{}
+	// HostEntity is an "entity" that serves as dumping ground for metrics not associated with a specif entity
+	HostEntity   *Entity `json:"-"` //skip json serializing
+	locker       sync.Locker
+	prettyOutput bool
+	writer       io.Writer
+	logger       log.Logger
+	args         interface{}
 }
 
 // New creates new integration with sane default values.
@@ -88,7 +89,7 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 		i.logger = log.NewStdErr(defaultArgs.Verbose)
 	}
 
-	i.anonEntity = newAnonymousEntity()
+	i.HostEntity = newHostEntity()
 
 	return
 }
@@ -114,32 +115,18 @@ func (i *Integration) AddEntity(e *Entity) {
 	i.Entities = append(i.Entities, e)
 }
 
-// AddInventoryItem adds the item to the anonymous entity (if it exists, otherwise creates one)
-// To add Inventory to an entity, use the AddInventoryItem method in an Entity instance
-func (i *Integration) AddInventoryItem(key string, field string, value interface{}) error {
-	return i.anonEntity.AddInventoryItem(key, field, value)
-}
-
 // NewEvent creates a new event
 func (i *Integration) NewEvent(timestamp time.Time, summary string, category string) (*event.Event, error) {
 	return event.New(timestamp, summary, category)
 }
 
-// AddEvent adds the specified event to the anonymous entity  (if it exists, otherwise creates one)
-func (i *Integration) AddEvent(ev *event.Event) {
-	i.anonEntity.AddEvent(ev)
-}
-
-// Publish runs all necessary tasks before publishing the data. Currently, it
-// stores the Storer, prints the JSON representation of the integration using a writer (stdout by default)
-// and re-initializes the integration object (allowing re-use it during the
-// execution of your code).
+// Publish writes the data to output (stdout) and resets the integration "object"
 func (i *Integration) Publish() error {
 	defer i.Clear()
 
 	// add the anon entity to the list of entity to be serialized, if not empty
-	if notEmpty(i.anonEntity) {
-		i.Entities = append(i.Entities, i.anonEntity)
+	if notEmpty(i.HostEntity) {
+		i.Entities = append(i.Entities, i.HostEntity)
 	}
 	output, err := i.toJSON(i.prettyOutput)
 	if err != nil {
@@ -157,8 +144,8 @@ func (i *Integration) Clear() {
 	i.locker.Lock()
 	defer i.locker.Unlock()
 	i.Entities = []*Entity{} // empty array preferred instead of null on marshaling.
-	// reset the anon entity
-	i.anonEntity = newAnonymousEntity()
+	// reset the host entity
+	i.HostEntity = newHostEntity()
 }
 
 // MarshalJSON serializes integration to JSON, fulfilling Marshaler interface.
@@ -191,20 +178,15 @@ func Gauge(timestamp time.Time, metricName string, value float64) (metric.Metric
 	return metric.NewGauge(timestamp, metricName, value)
 }
 
-// PDelta creates a metric of type pdelta
-func PDelta(timestamp time.Time, metricName string, value float64) (metric.Metric, error) {
-	return metric.NewPDelta(timestamp, metricName, value)
-}
-
 // Count creates a metric of type count
-func Count(timestamp time.Time, interval time.Duration, metricName string, value uint64) (metric.Metric, error) {
-	return metric.NewCount(timestamp, interval, metricName, value)
+func Count(timestamp time.Time, metricName string, value uint64) (metric.Metric, error) {
+	return metric.NewCount(timestamp, metricName, value)
 }
 
 // Summary creates a metric of type summary
-func Summary(timestamp time.Time, interval time.Duration, metricName string, count uint64,
+func Summary(timestamp time.Time, metricName string, count uint64,
 	average float64, sum float64, min float64, max float64) (metric.Metric, error) {
-	return metric.NewSummary(timestamp, interval, metricName, count, average, sum, min, max)
+	return metric.NewSummary(timestamp, metricName, count, average, sum, min, max)
 }
 
 // -- private

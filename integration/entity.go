@@ -79,8 +79,8 @@ func (e *Entity) Name() string {
 
 //--- private
 
-// newAnonymousEntity creates a entity without metadata.
-func newAnonymousEntity() *Entity {
+// newHostEntity creates a entity without metadata.
+func newHostEntity() *Entity {
 	return &Entity{
 		Common:   &Common{},
 		Metadata: nil,

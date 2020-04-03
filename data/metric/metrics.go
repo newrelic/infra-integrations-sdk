@@ -32,28 +32,20 @@ type Gauge struct {
 	Value float64 `json:"value"`
 }
 
-// PDelta is a metric of type pdelta (positive delta)
-type PDelta struct {
-	metricBase
-	Value float64 `json:"value"`
-}
-
 // Count is a metric of type count
 type Count struct {
 	metricBase
-	Interval int64  `json:"interval.ms"`
-	Count    uint64 `json:"count"`
+	Count uint64 `json:"count"`
 }
 
 // Summary is a metric of type summary.
 type Summary struct {
 	metricBase
-	Interval int64   `json:"interval.ms"`
-	Count    uint64  `json:"count"`
-	Average  float64 `json:"average"`
-	Sum      float64 `json:"sum"`
-	Min      float64 `json:"min"`
-	Max      float64 `json:"max"`
+	Count   uint64  `json:"count"`
+	Average float64 `json:"average"`
+	Sum     float64 `json:"sum"`
+	Min     float64 `json:"min"`
+	Max     float64 `json:"max"`
 }
 
 // NewGauge creates a new metric of type gauge
@@ -73,25 +65,8 @@ func NewGauge(timestamp time.Time, name string, value float64) (Metric, error) {
 	}, nil
 }
 
-// NewPDelta creates a new metric of type pdelta
-func NewPDelta(timestamp time.Time, name string, value float64) (Metric, error) {
-	if len(name) == 0 {
-		return nil, err.ParameterCannotBeEmpty("name")
-	}
-
-	return &PDelta{
-		metricBase: metricBase{
-			Timestamp:  timestamp.Unix(),
-			Name:       name,
-			Type:       SourcesTypeToName[PDELTA],
-			Dimensions: Dimensions{},
-		},
-		Value: value,
-	}, nil
-}
-
 // NewCount creates a new metric of type count
-func NewCount(timestamp time.Time, interval time.Duration, name string, count uint64) (Metric, error) {
+func NewCount(timestamp time.Time, name string, count uint64) (Metric, error) {
 	if len(name) == 0 {
 		return nil, err.ParameterCannotBeEmpty("name")
 	}
@@ -103,13 +78,12 @@ func NewCount(timestamp time.Time, interval time.Duration, name string, count ui
 			Type:       SourcesTypeToName[COUNT],
 			Dimensions: Dimensions{},
 		},
-		Interval: interval.Milliseconds(),
-		Count:    count,
+		Count: count,
 	}, nil
 }
 
 // NewSummary creates a new metric of type summary
-func NewSummary(timestamp time.Time, interval time.Duration, name string, count uint64, average float64, sum float64,
+func NewSummary(timestamp time.Time, name string, count uint64, average float64, sum float64,
 	min float64, max float64) (Metric, error) {
 	if len(name) == 0 {
 		return nil, err.ParameterCannotBeEmpty("name")
@@ -122,12 +96,11 @@ func NewSummary(timestamp time.Time, interval time.Duration, name string, count 
 			Type:       SourcesTypeToName[SUMMARY],
 			Dimensions: Dimensions{},
 		},
-		Interval: interval.Milliseconds(),
-		Count:    count,
-		Average:  average,
-		Sum:      sum,
-		Min:      min,
-		Max:      max,
+		Count:   count,
+		Average: average,
+		Sum:     sum,
+		Min:     min,
+		Max:     max,
 	}, nil
 }
 

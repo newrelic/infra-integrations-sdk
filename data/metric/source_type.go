@@ -19,8 +19,6 @@ const (
 	COUNT SourceType = iota
 	// SUMMARY is a composite value with avg, min, max sample count and sum
 	SUMMARY SourceType = iota
-	// PDELTA is a positive delta, meaning a positive difference between 2 values
-	PDELTA SourceType = iota
 )
 
 // SourcesTypeToName metric sources list mapping its type to readable name.
@@ -28,7 +26,6 @@ var SourcesTypeToName = map[SourceType]string{
 	GAUGE:   "gauge",
 	COUNT:   "count",
 	SUMMARY: "summary",
-	PDELTA:  "pdelta",
 }
 
 // SourcesNameToType metric sources list mapping its name to type.
@@ -36,7 +33,6 @@ var SourcesNameToType = map[string]SourceType{
 	"gauge":   GAUGE,
 	"count":   COUNT,
 	"summary": SUMMARY,
-	"pdelta":  PDELTA,
 }
 
 // String fulfills stringer interface, returning empty string on invalid source types.
@@ -46,12 +42,6 @@ func (t SourceType) String() string {
 	}
 
 	return ""
-}
-
-// IsPositive checks that the `SourceType` belongs to the positive only
-// list of `SourceType`s
-func (t SourceType) IsPositive() bool {
-	return t == COUNT || t == PDELTA
 }
 
 // SourceTypeForName does a case insensitive conversion from a string to a SourceType.

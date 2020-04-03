@@ -184,14 +184,14 @@ func Test_Entity_AddInventoryConcurrent(t *testing.T) {
 }
 
 func Test_Entity_IsAnonymousEntity(t *testing.T) {
-	e := newAnonymousEntity()
+	e := newHostEntity()
 
 	assert.Empty(t, e.Metadata, "default entity should have no identifier")
 	assert.True(t, e.isAnonymousEntity())
 }
 
 func Test_Entity_AnonymousEntityIsProperlySerialized(t *testing.T) {
-	e := newAnonymousEntity()
+	e := newHostEntity()
 	j, err := json.Marshal(e)
 
 	assert.NoError(t, err)

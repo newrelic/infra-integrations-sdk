@@ -168,16 +168,7 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 						"type": "gauge",
 						"attributes": {},
 						"value": 1
-					},
-					{
-						"timestamp": 10000000,
-						"name": "metric-pdelta",
-						"type": "pdelta",
-						"attributes": {
-							"version": "1.0.0"
-						},
-						"value": 1
-					},
+					},	
 					{
 						"timestamp": 10000000,
 						"name": "metric-count",
@@ -185,7 +176,6 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 						"attributes": {
 							"cpu": "amd"
 						},
-						"interval.ms": 60000,
 					  	"count": 100
 					},
 					{	
@@ -196,7 +186,6 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 							"distribution": "debian",							
 							"os": "linux"	
 						},
-						"interval.ms": 60000,
 					  	"count": 1,
 						"average": 10,
 						"sum": 100,
@@ -280,19 +269,14 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	_ = e.AddTag("env", "prod")
 
 	gauge, _ := Gauge(time.Unix(10000000, 0), "metric-gauge", 1)
-	pdelta, _ := PDelta(time.Unix(10000000, 0), "metric-pdelta", 1)
-	_ = pdelta.AddDimension("version", "1.0.0")
-
-	interval, _ := time.ParseDuration("1m")
-	count, _ := Count(time.Unix(10000000, 0), interval, "metric-count", 100)
+	count, _ := Count(time.Unix(10000000, 0), "metric-count", 100)
 	_ = count.AddDimension("cpu", "amd")
-	summary, _ := Summary(time.Unix(10000000, 0), interval, "metric-summary", 1, 10, 100, 1, 100)
+	summary, _ := Summary(time.Unix(10000000, 0), "metric-summary", 1, 10, 100, 1, 100)
 	// attributes should be ordered by key in lexicographic order
 	_ = summary.AddDimension("os", "linux")
 	_ = summary.AddDimension("distribution", "debian")
 	// add metrics to entity 1
 	e.AddMetric(gauge)
-	e.AddMetric(pdelta)
 	e.AddMetric(count)
 	e.AddMetric(summary)
 	// add 1st event to entity 1
@@ -321,14 +305,14 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	// add entity 2 to integration
 	i.AddEntity(e2)
 
-	// add inventory to "the" anonymous entity (will create one)
-	err = i.AddInventoryItem("some-inventory", "some-field", "some-value")
+	// add inventory to the "host" entity
+	err = i.HostEntity.AddInventoryItem("some-inventory", "some-field", "some-value")
 	assert.NoError(t, err)
 
 	// add event to the anonymous entity (will not create one, inventory before already created it)
 	ev3, err := i.NewEvent(time.Unix(10000000, 0), "evnt2sum", "evnt2cat")
 	assert.NoError(t, err)
-	i.AddEvent(ev3)
+	i.HostEntity.AddEvent(ev3)
 
 	assert.NoError(t, i.Publish())
 
