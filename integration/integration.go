@@ -20,9 +20,7 @@ import (
 
 // Custom attribute keys:
 const (
-	CustomAttrPrefix  = "NRI_"
-	CustomAttrCluster = "cluster_name"
-	CustomAttrService = "service_name"
+	CustomAttrPrefix = "NRI_"
 )
 
 // NR infrastructure agent protocol version
@@ -36,7 +34,7 @@ type Integration struct {
 	ProtocolVersion    string    `json:"protocol_version"`
 	IntegrationVersion string    `json:"integration_version"`
 	Entities           []*Entity `json:"data"`
-	// HostEntity is an "entity" that serves as dumping ground for metrics not associated with a specif entity
+	// HostEntity is an "entity" that serves as dumping ground for metrics not associated with a specific entity
 	HostEntity   *Entity `json:"-"` //skip json serializing
 	locker       sync.Locker
 	prettyOutput bool
@@ -124,7 +122,7 @@ func (i *Integration) NewEvent(timestamp time.Time, summary string, category str
 func (i *Integration) Publish() error {
 	defer i.Clear()
 
-	// add the anon entity to the list of entity to be serialized, if not empty
+	// add the host entity to the list of entities to be serialized, if not empty
 	if notEmpty(i.HostEntity) {
 		i.Entities = append(i.Entities, i.HostEntity)
 	}
@@ -224,14 +222,6 @@ func (i *Integration) addDefaultAttributes(e *Entity) error {
 				}
 			}
 		}
-	}
-
-	// TODO: should these custom "attributes" be added to "common", "metrics" and "events"?
-	if defaultArgs.NriCluster != "" {
-		_ = e.AddTag(CustomAttrCluster, defaultArgs.NriCluster)
-	}
-	if defaultArgs.NriService != "" {
-		_ = e.AddTag(CustomAttrService, defaultArgs.NriService)
 	}
 
 	return nil

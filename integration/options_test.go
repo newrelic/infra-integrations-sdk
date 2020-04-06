@@ -8,7 +8,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/newrelic/infra-integrations-sdk/data/metadata"
 	"github.com/newrelic/infra-integrations-sdk/log"
 
 	"github.com/stretchr/testify/assert"
@@ -205,10 +204,5 @@ func Test_ClusterAndServiceArgumentsAreAddedToMetadata(t *testing.T) {
 	e, err := i.NewEntity("name", "ns", "")
 	assert.NoError(t, err)
 
-	expectedTags := metadata.TagMap{
-		CustomAttrCluster: "foo",
-		CustomAttrService: "bar",
-	}
-	assert.Len(t, e.Tags(), 2)
-	assert.Equal(t, expectedTags, e.Tags())
+	assert.Len(t, e.Tags(), 0)
 }
