@@ -2,47 +2,39 @@ package event
 
 import (
 	"testing"
+	"time"
 
-	"github.com/newrelic/infra-integrations-sdk/data/attribute"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewEvent(t *testing.T) {
-	e := New("summary", "category")
+func Test_Event_NewEvent(t *testing.T) {
+	now := time.Now()
+	e, _ := New(now, "summary", "category")
 
-	assert.Equal(t, e.Summary, "summary")
-	assert.Equal(t, e.Category, "category")
+	assert.Equal(t, now.Unix(), e.Timestamp)
+	assert.Equal(t, "summary", e.Summary)
+	assert.Equal(t, "category", e.Category)
 }
 
-func TestNewNotification(t *testing.T) {
-	n := NewNotification("summary")
-	assert.Equal(t, n.Summary, "summary")
+func Test_Event_CannotCreateWithEmptySummary(t *testing.T) {
+	now := time.Now()
+	e, err := New(now, "", "category")
+	assert.Error(t, err)
+	assert.Nil(t, e)
 }
 
-func TestNewEventsWithAttributes(t *testing.T) {
-	e := NewWithAttributes(
-		"summary",
-		"category",
-		map[string]interface{}{"attrKey": "attrVal"},
-	)
-
-	assert.Equal(t, e.Summary, "summary")
-	assert.Equal(t, e.Category, "category")
-	assert.Equal(t, e.Attributes["attrKey"], "attrVal")
+func Test_Event_NewNotification(t *testing.T) {
+	n, _ := NewNotification("summary")
+	assert.Equal(t, "summary", n.Summary)
 }
 
-func TestEventsAddCustomAttributes(t *testing.T) {
-	e := &Event{
-		Summary:    "summary",
-		Category:   "category",
-		Attributes: map[string]interface{}{"attrKey": "attrVal"},
-	}
+func Test_Event_NewEventsWithAttributes(t *testing.T) {
+	now := time.Now()
+	e, _ := New(now, "summary", "category")
+	_ = e.AddAttribute("attrKey", "attrVal")
 
-	a := attribute.Attributes{attribute.Attr("clusterName", "my-cluster")}
-
-	AddCustomAttributes(e, a)
-
-	assert.Equal(t, e.Summary, "summary")
-	assert.Equal(t, e.Category, "category")
-	assert.Equal(t, e.Attributes, map[string]interface{}{"attrKey": "attrVal", "clusterName": "my-cluster"})
+	assert.Equal(t, now.Unix(), e.Timestamp)
+	assert.Equal(t, "summary", e.Summary)
+	assert.Equal(t, "category", e.Category)
+	assert.Equal(t, "attrVal", e.Attributes["attrKey"])
 }

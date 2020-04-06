@@ -1,6 +1,10 @@
 package event
 
-import "github.com/newrelic/infra-integrations-sdk/data/attribute"
+import (
+	"time"
+
+	err "github.com/newrelic/infra-integrations-sdk/data/errors"
+)
 
 const (
 	// NotificationEventCategory category for notification events.
@@ -11,6 +15,7 @@ const (
 // activities on a system. Ex:
 //
 // Event{
+//   Timestamp: 12312323,
 //   Category: "gear",
 //   Summary:  "gear has been changed",
 //   Attributes: map[string]interface{}{
@@ -19,42 +24,44 @@ const (
 //     "transmission": "manual",
 //   },
 // }
+
+// Events stores events
+type Events []*Event
+
+// Event defines the structure of an event
 type Event struct {
-	Summary  string `json:"summary"`
-	Category string `json:"category,omitempty"`
+	Timestamp int64  `json:"timestamp"`
+	Summary   string `json:"summary"`
+	Category  string `json:"category,omitempty"`
 	// Attributes are optional, they represent additional information that
 	// can be attached to an event.
 	Attributes map[string]interface{} `json:"attributes,omitempty"`
 }
 
 // New creates a new event.
-func New(summary, category string) *Event {
+func New(timestamp time.Time, summary, category string) (*Event, error) {
+	if len(summary) == 0 {
+		return nil, err.ParameterCannotBeEmpty("summary")
+	}
 	return &Event{
+		Timestamp:  timestamp.Unix(),
 		Summary:    summary,
 		Category:   category,
 		Attributes: make(map[string]interface{}),
-	}
+	}, nil
 }
 
 // NewNotification creates a new notification event.
-func NewNotification(summary string) *Event {
-	return New(summary, NotificationEventCategory)
+func NewNotification(summary string) (*Event, error) {
+	return New(time.Now(), summary, NotificationEventCategory)
 }
 
-// NewWithAttributes creates a new event with the given attributes
-func NewWithAttributes(summary, category string, attributes map[string]interface{}) *Event {
-	e := New(summary, category)
-	e.Attributes = attributes
-	return e
-}
-
-func (e *Event) setAttribute(key string, val interface{}) {
-	e.Attributes[key] = val
-}
-
-// AddCustomAttributes add customAttributes to the Event
-func AddCustomAttributes(e *Event, customAttributes []attribute.Attribute) {
-	for _, attr := range customAttributes {
-		e.setAttribute(attr.Key, attr.Value)
+// AddAttribute adds an attribute to the Event
+func (e *Event) AddAttribute(key string, value interface{}) error {
+	if len(key) == 0 {
+		return err.ParameterCannotBeEmpty("key")
 	}
+	// TODO validate value type (bool, number, string) ?
+	e.Attributes[key] = value
+	return nil
 }
