@@ -27,21 +27,21 @@ type metricBase struct {
 	Dimensions Dimensions `json:"attributes"`
 }
 
-// Gauge is a metric of type gauge
-type Gauge struct {
+// gauge is a metric of type gauge
+type gauge struct {
 	metricBase
 	Value float64 `json:"value"`
 }
 
-// Count is a metric of type count
+// count is a metric of type count
 // This indicates to the Infra agent that the value should be interpreted as a count that is reset in each interval
-type Count struct {
+type count struct {
 	metricBase
-	Count uint64 `json:"count"`
+	Value uint64 `json:"count"`
 }
 
-// Summary is a metric of type summary.
-type Summary struct {
+// summary is a metric of type summary.
+type summary struct {
 	metricBase
 	Count   uint64  `json:"count"`
 	Average float64 `json:"average"`
@@ -50,17 +50,17 @@ type Summary struct {
 	Max     float64 `json:"max"`
 }
 
-// CumulativeCount is a metric of type cumulative count
+// cumulativeCount is a metric of type cumulative count
 // This indicates to the Infra agent that the value should be calculated as cumulative count (ever increasing value)
-type CumulativeCount Count
+type cumulativeCount count
 
-// Rate is a metric of type rate
+// rate is a metric of type rate
 // This indicates to the Infra agent that the value should be calculated as a rate
-type Rate Gauge
+type rate gauge
 
-// CumulativeRate is a metric of type cumulative rate
+// cumulativeRate is a metric of type cumulative rate
 // This indicates to the Infra agent that the value should be calculated as a cumulative rate
-type CumulativeRate Rate
+type cumulativeRate rate
 
 // NewGauge creates a new metric of type gauge
 func NewGauge(timestamp time.Time, name string, value float64) (Metric, error) {
@@ -68,7 +68,7 @@ func NewGauge(timestamp time.Time, name string, value float64) (Metric, error) {
 		return nil, err.ParameterCannotBeEmpty("name")
 	}
 
-	return &Gauge{
+	return &gauge{
 		metricBase: metricBase{
 			Timestamp:  timestamp.Unix(),
 			Name:       name,
@@ -80,19 +80,19 @@ func NewGauge(timestamp time.Time, name string, value float64) (Metric, error) {
 }
 
 // NewCount creates a new metric of type count
-func NewCount(timestamp time.Time, name string, count uint64) (Metric, error) {
+func NewCount(timestamp time.Time, name string, value uint64) (Metric, error) {
 	if len(name) == 0 {
 		return nil, err.ParameterCannotBeEmpty("name")
 	}
 
-	return &Count{
+	return &count{
 		metricBase: metricBase{
 			Timestamp:  timestamp.Unix(),
 			Name:       name,
 			Type:       SourcesTypeToName[COUNT],
 			Dimensions: Dimensions{},
 		},
-		Count: count,
+		Value: value,
 	}, nil
 }
 
@@ -103,7 +103,7 @@ func NewSummary(timestamp time.Time, name string, count uint64, average float64,
 		return nil, err.ParameterCannotBeEmpty("name")
 	}
 
-	return &Summary{
+	return &summary{
 		metricBase: metricBase{
 			Timestamp:  timestamp.Unix(),
 			Name:       name,
@@ -124,14 +124,14 @@ func NewCumulativeCount(timestamp time.Time, name string, value uint64) (Metric,
 		return nil, err.ParameterCannotBeEmpty("name")
 	}
 
-	return &CumulativeCount{
+	return &cumulativeCount{
 		metricBase: metricBase{
 			Timestamp:  timestamp.Unix(),
 			Name:       name,
 			Type:       SourcesTypeToName[CUMULATIVE_COUNT],
 			Dimensions: Dimensions{},
 		},
-		Count: value,
+		Value: value,
 	}, nil
 }
 
@@ -141,7 +141,7 @@ func NewRate(timestamp time.Time, name string, value float64) (Metric, error) {
 		return nil, err.ParameterCannotBeEmpty("name")
 	}
 
-	return &Rate{
+	return &rate{
 		metricBase: metricBase{
 			Timestamp:  timestamp.Unix(),
 			Name:       name,
@@ -159,7 +159,7 @@ func NewCumulativeRate(timestamp time.Time, name string, value float64) (Metric,
 		return nil, err.ParameterCannotBeEmpty("name")
 	}
 
-	return &Rate{
+	return &cumulativeRate{
 		metricBase: metricBase{
 			Timestamp:  timestamp.Unix(),
 			Name:       name,
