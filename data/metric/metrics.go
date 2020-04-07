@@ -17,7 +17,6 @@ type Metric interface {
 	AddDimension(key string, value string) error
 	Dimension(key string) string
 	GetDimensions() Dimensions
-	String() string
 }
 
 type metricBase struct {
@@ -188,8 +187,4 @@ func (m *metricBase) Dimension(key string) string {
 // GetDimensions gets all the dimensions
 func (m *metricBase) GetDimensions() Dimensions {
 	return m.Dimensions
-}
-
-func (m *metricBase) String() string {
-	return ""
 }
