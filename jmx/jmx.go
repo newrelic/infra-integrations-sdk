@@ -98,6 +98,10 @@ func (cfg *connectionConfig) command() []string {
 		c = append(c, "--keyStore", cfg.keyStore, "--keyStorePassword", cfg.keyStorePassword, "--trustStore", cfg.trustStore, "--trustStorePassword", cfg.trustStorePassword)
 	}
 
+	if cfg.verbose {
+		c = append(c, "--verbose")
+	}
+
 	return c
 }
 
@@ -125,8 +129,6 @@ func Open(hostname, port, username, password string, opts ...Option) error {
 	for _, opt := range opts {
 		opt(config)
 	}
-
-	log.SetupLogging(config.verbose)
 
 	return openConnection(config)
 }

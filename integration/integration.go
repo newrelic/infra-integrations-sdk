@@ -89,6 +89,10 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 	i.prettyOutput = defaultArgs.Pretty
 	i.addHostnameToMeta = defaultArgs.NriAddHostname
 
+	if defaultArgs.Verbose {
+		log.SetupLogging(defaultArgs.Verbose)
+	}
+
 	// Setting default values, if not set yet
 	if i.logger == nil {
 		i.logger = log.NewStdErr(defaultArgs.Verbose)
