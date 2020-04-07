@@ -239,7 +239,29 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 				},
 				{
 				  "common": {},
-                  "metrics": [],
+                  "metrics": [
+				   {
+						"timestamp": 10000000,
+						"name": "cumulative-count",
+						"type": "cumulative-count",
+						"attributes": {},
+						"count": 120
+					},
+					{
+						"timestamp": 10000000,
+						"name": "rate",
+						"type": "rate",
+						"attributes": {},
+						"value": 120
+					},
+					{
+						"timestamp": 10000000,
+						"name": "cumulative-rate",
+						"type": "cumulative-rate",
+						"attributes": {},
+						"value": 120
+					}
+                  ],
 				  "inventory": {
 				    "some-inventory": {
 					  "some-field": "some-value"
@@ -309,10 +331,21 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	err = i.HostEntity.AddInventoryItem("some-inventory", "some-field", "some-value")
 	assert.NoError(t, err)
 
-	// add event to the anonymous entity (will not create one, inventory before already created it)
+	// add event to the "host" entity (will not create one, inventory before already created it)
 	ev3, err := i.NewEvent(time.Unix(10000000, 0), "evnt2sum", "evnt2cat")
 	assert.NoError(t, err)
 	i.HostEntity.AddEvent(ev3)
+
+	// add a cumulative count metric to the host entity
+	ccount, _ := CumulativeCount(time.Unix(10000000, 0), "cumulative-count", 120)
+	i.HostEntity.AddMetric(ccount)
+	// add a rate metric to the host entity
+	rate, _ := Rate(time.Unix(10000000, 0), "rate", 120)
+	i.HostEntity.AddMetric(rate)
+
+	// add a cumulative rate metric to the host entity
+	crate, _ := CumulativeRate(time.Unix(10000000, 0), "cumulative-rate", 120)
+	i.HostEntity.AddMetric(crate)
 
 	assert.NoError(t, i.Publish())
 

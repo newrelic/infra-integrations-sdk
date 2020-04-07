@@ -13,26 +13,41 @@ type SourceType int
 // Source types
 // If any more SourceTypes are added update maps: SourcesTypeToName & SourcesNameToType.
 const (
-	// GAUGE is a value that may increase and decrease. It is stored as-is.
+	// GAUGE is a value that may increase and decrease.
+	// It generally represents the value for something at a particular moment in time
 	GAUGE SourceType = iota
-	// COUNT is an ever increasing value
+	// COUNT counts the number of times an event occurred since the last time it was retrieved (time window).
+	// It's values can go up or down
 	COUNT SourceType = iota
 	// SUMMARY is a composite value with avg, min, max sample count and sum
 	SUMMARY SourceType = iota
+	// CUMULATIVE_COUNT counts the number of times an event occurred. It is not a delta, but an absolute value.
+	// It's value should either be the same or go up, never down
+	CUMULATIVE_COUNT = iota
+	// RATE represents a rate of change of a value in a specific time window
+	RATE = iota
+	// CUMULATIVE_RATE represents an ever-increasing rate of change.
+	CUMULATIVE_RATE = iota
 )
 
 // SourcesTypeToName metric sources list mapping its type to readable name.
 var SourcesTypeToName = map[SourceType]string{
-	GAUGE:   "gauge",
-	COUNT:   "count",
-	SUMMARY: "summary",
+	GAUGE:            "gauge",
+	COUNT:            "count",
+	SUMMARY:          "summary",
+	CUMULATIVE_COUNT: "cumulative-count",
+	RATE:             "rate",
+	CUMULATIVE_RATE:  "cumulative-rate",
 }
 
 // SourcesNameToType metric sources list mapping its name to type.
 var SourcesNameToType = map[string]SourceType{
-	"gauge":   GAUGE,
-	"count":   COUNT,
-	"summary": SUMMARY,
+	"gauge":            GAUGE,
+	"count":            COUNT,
+	"summary":          SUMMARY,
+	"cumulative-count": CUMULATIVE_COUNT,
+	"rate":             RATE,
+	"cumulative-rate":  CUMULATIVE_RATE,
 }
 
 // String fulfills stringer interface, returning empty string on invalid source types.

@@ -17,6 +17,7 @@ type Metric interface {
 	AddDimension(key string, value string) error
 	Dimension(key string) string
 	GetDimensions() Dimensions
+	String() string
 }
 
 type metricBase struct {
@@ -33,6 +34,7 @@ type Gauge struct {
 }
 
 // Count is a metric of type count
+// This indicates to the Infra agent that the value should be interpreted as a count that is reset in each interval
 type Count struct {
 	metricBase
 	Count uint64 `json:"count"`
@@ -47,6 +49,18 @@ type Summary struct {
 	Min     float64 `json:"min"`
 	Max     float64 `json:"max"`
 }
+
+// CumulativeCount is a metric of type cumulative count
+// This indicates to the Infra agent that the value should be calculated as cumulative count (ever increasing value)
+type CumulativeCount Count
+
+// Rate is a metric of type rate
+// This indicates to the Infra agent that the value should be calculated as a rate
+type Rate Gauge
+
+// CumulativeRate is a metric of type cumulative rate
+// This indicates to the Infra agent that the value should be calculated as a cumulative rate
+type CumulativeRate Rate
 
 // NewGauge creates a new metric of type gauge
 func NewGauge(timestamp time.Time, name string, value float64) (Metric, error) {
@@ -104,6 +118,58 @@ func NewSummary(timestamp time.Time, name string, count uint64, average float64,
 	}, nil
 }
 
+// NewCumulativeCount creates a new metric of type cumulative count
+func NewCumulativeCount(timestamp time.Time, name string, value uint64) (Metric, error) {
+	if len(name) == 0 {
+		return nil, err.ParameterCannotBeEmpty("name")
+	}
+
+	return &CumulativeCount{
+		metricBase: metricBase{
+			Timestamp:  timestamp.Unix(),
+			Name:       name,
+			Type:       SourcesTypeToName[CUMULATIVE_COUNT],
+			Dimensions: Dimensions{},
+		},
+		Count: value,
+	}, nil
+}
+
+// NewRate creates a new metric of type rate
+func NewRate(timestamp time.Time, name string, value float64) (Metric, error) {
+	if len(name) == 0 {
+		return nil, err.ParameterCannotBeEmpty("name")
+	}
+
+	return &Rate{
+		metricBase: metricBase{
+			Timestamp:  timestamp.Unix(),
+			Name:       name,
+			Type:       SourcesTypeToName[RATE],
+			Dimensions: Dimensions{},
+		},
+		Value: value,
+	}, nil
+
+}
+
+// NewCumulativeRate creates a new metric of type cumulative rate
+func NewCumulativeRate(timestamp time.Time, name string, value float64) (Metric, error) {
+	if len(name) == 0 {
+		return nil, err.ParameterCannotBeEmpty("name")
+	}
+
+	return &Rate{
+		metricBase: metricBase{
+			Timestamp:  timestamp.Unix(),
+			Name:       name,
+			Type:       SourcesTypeToName[CUMULATIVE_RATE],
+			Dimensions: Dimensions{},
+		},
+		Value: value,
+	}, nil
+}
+
 // AddDimension adds a dimension to the metric instance
 func (m *metricBase) AddDimension(key string, value string) error {
 	if len(key) == 0 {
@@ -122,4 +188,8 @@ func (m *metricBase) Dimension(key string) string {
 // GetDimensions gets all the dimensions
 func (m *metricBase) GetDimensions() Dimensions {
 	return m.Dimensions
+}
+
+func (m *metricBase) String() string {
+	return ""
 }

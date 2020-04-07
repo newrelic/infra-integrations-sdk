@@ -87,3 +87,36 @@ func Test_Metric_AttributeReturnsTheAttributeValue(t *testing.T) {
 	val := g.Dimension(attrKey)
 	assert.Equal(t, attrVal, val)
 }
+
+func Test_Metric_CreateCumulativeCount(t *testing.T) {
+	cc, _ := NewCumulativeCount(now, "cumulative count", 1)
+	assert.NotNil(t, cc)
+}
+
+func Test_Metric_CannotCreateCumulativeCountWithEmptyName(t *testing.T) {
+	cc, err := NewCumulativeCount(now, "", 1)
+	assert.Nil(t, cc)
+	assert.Error(t, err)
+}
+
+func Test_Metric_CreateRate(t *testing.T) {
+	r, _ := NewRate(now, "rate", 110)
+	assert.NotNil(t, r)
+}
+
+func Test_Metric_CannotCreateCreateRateWithEmptyName(t *testing.T) {
+	r, err := NewRate(now, "", 110)
+	assert.Nil(t, r)
+	assert.Error(t, err)
+}
+
+func Test_Metric_CreateCumulativeRate(t *testing.T) {
+	cr, _ := NewCumulativeRate(now, "rate", 110)
+	assert.NotNil(t, cr)
+}
+
+func Test_Metric_CannotCreateCumulativeRateWithEmptyName(t *testing.T) {
+	cr, err := NewCumulativeRate(now, "", 110)
+	assert.Nil(t, cr)
+	assert.Error(t, err)
+}

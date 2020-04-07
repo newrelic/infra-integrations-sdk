@@ -25,3 +25,14 @@ func TestSourceTypeForName(t *testing.T) {
 	_, err = SourceTypeForName("invalid")
 	assert.Error(t, err)
 }
+
+func Test_SourceType_TypeAndNameAreSynced(t *testing.T) {
+
+	assert.Equal(t, len(SourcesTypeToName), len(SourcesNameToType))
+
+	for source, name := range SourcesTypeToName {
+		st, err := SourceTypeForName(name)
+		assert.NoError(t, err)
+		assert.Equal(t, source, st)
+	}
+}

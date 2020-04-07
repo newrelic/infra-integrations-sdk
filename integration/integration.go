@@ -187,6 +187,21 @@ func Summary(timestamp time.Time, metricName string, count uint64,
 	return metric.NewSummary(timestamp, metricName, count, average, sum, min, max)
 }
 
+// CumulativeCount creates metric of type cumulative count
+func CumulativeCount(timestamp time.Time, metricName string, value uint64) (metric.Metric, error) {
+	return metric.NewCumulativeCount(timestamp, metricName, value)
+}
+
+// Rate creates a metric of type rate
+func Rate(timestamp time.Time, metricName string, value float64) (metric.Metric, error) {
+	return metric.NewRate(timestamp, metricName, value)
+}
+
+// CumulativeRate creates a metric of type cumulative rate
+func CumulativeRate(timestamp time.Time, metricName string, value float64) (metric.Metric, error) {
+	return metric.NewCumulativeRate(timestamp, metricName, value)
+}
+
 // -- private
 // is entity empty?
 func notEmpty(entity *Entity) bool {
