@@ -18,6 +18,8 @@ linters-settings:
 
 issues:
   exclude-use-default: false
+  exclude:
+    - "don't use ALL_CAPS in Go names; use CamelCase"
 
 misspell:
   locale: US
