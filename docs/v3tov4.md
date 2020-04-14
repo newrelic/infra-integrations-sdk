@@ -1,16 +1,15 @@
 # Upgrading from GoSDK v3.x to GoSDK v4.x
 
-Support for older versions have been removed. Therefore, this new version is not compatible with the previous one. 
-This document describes the changes between versions and how to adapt an integration built with the GoSDK v3.x to the 
-new one.
+V4 of the GoSDK is not backward compatible with the previous versions of the GoSDK. This document describes the changes 
+between versions and how to adapt an integration built with the GoSDK v3.x to the new one.
 
 The Go SDK v4 contains the following changes:
 
-* A new JSON schema version 4.
+* New Infrastructure Agent Integration JSON version 4.
 * Add support for dimensional metrics using the [Metrics API format][1].
 * New metric data types: `count` and `summary`.
 * Removed support for `RATE`, `PRATE` and `DELTA` metric types.
-* Local entities have been removed.
+* Removed distinction between remote and local entities.
 * Metrics, Events and Inventory can be attached either to Entities or an Integration.
 * Support for Go Modules
 * Removed support for protocols prior to v4.x.
@@ -29,12 +28,19 @@ These are the most important changes:
 {
   "protocol_version":"4",                      # protocol version number
   "integration":{                              # this data will be added to all metrics and events as attributes,                                               
-                                               # and also sent as inventory.
+                                               # and also sent as inventory
     "name":"integration name",
     "version":"integration version"
   },
-  "data":[                                    # List of entities
+  "data":[                                    # List of objects containing entities, metrics, events and inventory
     {
+      "entity":{                              # this object is optional
+        "name":"redis:192.168.100.200:1234",  # unique entity name per account
+        "type":"RedisInstance",               # entity's category
+        "displayName":"my redis instance",    # human readable name
+        "tags":{}                             # key-value pairs that will be also added as attributes to all metrics 
+                                              # and events
+      },
       "metrics":[                             # list of metrics using the dimensional metric format
         {
           "name":"redis.metric1",
@@ -43,15 +49,8 @@ These are the most important changes:
           "attributes":{}                     # set of key-value pairs that define the dimensions of the metric
         }
       ],
-      "entity":{                              # this object is optional
-        "name":"redis:192.168.100.200:1234",  # unique entity name per account.
-        "type":"RedisInstance",               # entity's category
-        "displayName":"my redis instance",    # human readable name
-        "tags":{}                             # key-value pairs that will be also added as attributes to all metrics 
-                                              # and events
-      },
       "inventory":{...},                      # Inventory data format has not changed
-      "events":[...]                          # Events format has not changed
+      "events":[...]                          # Events data format has not changed
     }
   ]
 }
