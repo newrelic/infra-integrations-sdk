@@ -51,6 +51,7 @@ func (j jmxClientError) Error() string {
 	return string(j)
 }
 
+// IsJmxClientError identify if the error is jmx client error type
 func IsJmxClientError(err error) bool {
 	_, ok := err.(jmxClientError)
 	return ok
