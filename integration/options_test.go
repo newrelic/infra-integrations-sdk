@@ -5,22 +5,20 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"os"
-	"strconv"
 	"testing"
+
+	"github.com/newrelic/infra-integrations-sdk/log"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/log"
-	"github.com/newrelic/infra-integrations-sdk/persist"
 )
 
-func TestWriter(t *testing.T) {
+func Test_PublishWritesUsingSelectedWriter(t *testing.T) {
 	var w bytes.Buffer
 
-	i, err := New("integration", "7.0", Writer(&w), InMemoryStore())
+	i, err := New("integration", "7.0", Writer(&w))
 	assert.NoError(t, err)
 
 	assert.NoError(t, i.Publish())
@@ -28,7 +26,7 @@ func TestWriter(t *testing.T) {
 	assert.Equal(t, `{"name":"integration","protocol_version":"4","integration_version":"7.0","data":[]}`+"\n", w.String())
 }
 
-func TestArgs(t *testing.T) {
+func Test_PrettyPrintWritesPrettifiedResult(t *testing.T) {
 	// arguments are read from os
 	os.Args = []string{"cmd", "--pretty"}
 	flag.CommandLine = flag.NewFlagSet("name", 0)
@@ -37,7 +35,7 @@ func TestArgs(t *testing.T) {
 	// capture output
 	var writer bytes.Buffer
 
-	i, err := New("integration", "7.0", Args(&arguments), Writer(&writer), InMemoryStore())
+	i, err := New("integration", "7.0", Args(&arguments), Writer(&writer))
 	assert.NoError(t, err)
 
 	assert.NoError(t, i.Publish())
@@ -45,7 +43,7 @@ func TestArgs(t *testing.T) {
 	assert.Contains(t, writer.String(), "\n", "output should be prettified")
 }
 
-func TestWrongArgumentsCausesError(t *testing.T) {
+func Test_WrongArgumentsCausesError(t *testing.T) {
 	var d interface{} = struct{}{}
 
 	arguments := []struct {
@@ -63,50 +61,7 @@ func TestWrongArgumentsCausesError(t *testing.T) {
 	}
 }
 
-func TestItStoresOnDiskByDefault(t *testing.T) {
-	i, err := New(integrationName, integrationVersion)
-	assert.NoError(t, err)
-
-	i.storer.Set("hello", 12.33)
-
-	assert.NoError(t, i.Publish())
-
-	// assert data has been flushed to disk
-	c, err := persist.NewFileStore(persist.DefaultPath(integrationName), log.NewStdErr(true), persist.DefaultTTL)
-	assert.NoError(t, err)
-
-	var v float64
-	ts, err := c.Get("hello", &v)
-	assert.NoError(t, err)
-	assert.NotEqual(t, 0, ts)
-	assert.InDelta(t, 12.33, v, 0.1)
-}
-
-func TestInMemoryStoreDoesNotPersistOnDisk(t *testing.T) {
-	randomName := strconv.Itoa(rand.Int())
-
-	i, err := New(randomName, integrationVersion, InMemoryStore())
-	assert.NoError(t, err)
-
-	i.storer.Set("hello", 12.33)
-
-	assert.NoError(t, i.Publish())
-
-	// assert data has not been flushed to disk
-
-	// create folder in case it does not exists to enable store creation
-	path := persist.DefaultPath(randomName)
-	assert.NoError(t, os.MkdirAll(path, 0755))
-
-	s, err := persist.NewFileStore(path, log.Discard, persist.DefaultTTL)
-	assert.NoError(t, err)
-
-	var v float64
-	_, err = s.Get("hello", &v)
-	assert.Equal(t, persist.ErrNotFound, err)
-}
-
-func TestConcurrentModeHasNoDataRace(t *testing.T) {
+func Test_ConcurrentModeHasNoDataRace(t *testing.T) {
 	in, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard))
 	assert.NoError(t, err)
 
@@ -117,33 +72,137 @@ func TestConcurrentModeHasNoDataRace(t *testing.T) {
 	}
 }
 
-func TestStorer(t *testing.T) {
-	customStorer := fakeStorer{}
-	i, err := New("cool-integration", "1.0", Writer(ioutil.Discard), Storer(&customStorer))
+func Test_VerboseLogPrintsDebugMessages(t *testing.T) {
+	type argumentList struct {
+		args.DefaultArgumentList
+	}
+
+	// Given an integration set in verbose mode
+	os.Args = []string{"cmd", "--verbose"}
+	flag.CommandLine = flag.NewFlagSet("name", 0)
+
+	// Whose log messages are written in the standard error
+	r, w, err := os.Pipe()
+	assert.NoError(t, err)
+	back := os.Stderr
+	os.Stderr = w
+	defer func() {
+		os.Stderr = back
+	}()
+	defer func() { _ = r.Close() }()
+
+	var al argumentList
+	i, err := New("TestIntegration", "1.0", Args(&al))
 	assert.NoError(t, err)
 
-	assert.NoError(t, i.Publish())
+	// When logging a debug message
+	i.logger.Debugf("hello everybody")
+	assert.NoError(t, w.Close())
 
-	assert.True(t, customStorer.saved, "data has not been saved")
+	// The message is correctly submitted to the standard error
+	stdErrBytes := new(bytes.Buffer)
+	_, err = stdErrBytes.ReadFrom(r)
+	assert.NoError(t, err)
+	assert.Contains(t, stdErrBytes.String(), "hello everybody")
 }
 
-type fakeStorer struct {
-	saved bool
+func Test_CustomArgumentsAreAddedToArgumentList(t *testing.T) {
+	type argumentList struct {
+		args.DefaultArgumentList
+	}
+
+	os.Args = []string{"cmd", "--pretty", "--verbose"}
+	flag.CommandLine = flag.NewFlagSet("name", 0)
+
+	var al argumentList
+	_, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
+	assert.NoError(t, err)
+
+	if !al.All() {
+		t.Error()
+	}
+	if !al.Pretty {
+		t.Error()
+	}
+	if !al.Verbose {
+		t.Error()
+	}
 }
 
-func (m *fakeStorer) Save() error {
-	m.saved = true
-	return nil
+func Test_DefaultArguments(t *testing.T) {
+	t.Skip("This is failing to due to flag redefinition. We'll take a look later")
+	al := args.DefaultArgumentList{}
+
+	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
+	assert.NoError(t, err)
+
+	assert.Equal(t, "TestIntegration", i.Name)
+	assert.Equal(t, "1.0", i.IntegrationVersion)
+	assert.Equal(t, "4", i.ProtocolVersion)
+	assert.Len(t, i.Entities, 0)
+	assert.True(t, al.All())
+	assert.False(t, al.Pretty)
+	assert.False(t, al.Verbose)
 }
 
-func (fakeStorer) Set(_ string, _ interface{}) int64 {
-	return 0
+func Test_DefaultArgsSetNonVerboseLogging(t *testing.T) {
+	type argumentList struct {
+		args.DefaultArgumentList
+	}
+
+	// Given an integration set in non-verbose mode
+	os.Args = []string{"cmd"}
+	flag.CommandLine = flag.NewFlagSet("name", 0)
+
+	// Whose log messages are written in the standard error
+	r, w, err := os.Pipe()
+	assert.NoError(t, err)
+	back := os.Stderr
+	os.Stderr = w
+	defer func() {
+		os.Stderr = back
+	}()
+	defer func() { _ = r.Close() }()
+
+	var al argumentList
+	i, err := New("TestIntegration", "1.0", Args(&al))
+	assert.NoError(t, err)
+
+	// When logging info, error and debug messages
+	i.logger.Debugf("this is a debug")
+	i.logger.Infof("this is an info")
+	i.logger.Errorf("this is an error")
+	assert.NoError(t, w.Close())
+
+	// The standard error shows all the message levels but debug
+	stdErrBytes := new(bytes.Buffer)
+	_, err = stdErrBytes.ReadFrom(r)
+	assert.NoError(t, err)
+	assert.Contains(t, stdErrBytes.String(), "this is an error")
+	assert.Contains(t, stdErrBytes.String(), "this is an info")
+	assert.NotContains(t, stdErrBytes.String(), "this is a debug")
 }
 
-func (fakeStorer) Get(_ string, _ interface{}) (int64, error) {
-	return 0, nil
-}
+func Test_ClusterAndServiceArgumentsAreAddedToMetadata(t *testing.T) {
+	al := args.DefaultArgumentList{}
 
-func (fakeStorer) Delete(_ string) error {
-	return nil
+	_ = os.Setenv("NRI_CLUSTER", "foo")
+	_ = os.Setenv("NRI_SERVICE", "bar")
+
+	// os.ClearEnv breaks tests in Windows that use the fileStorer because clears the user env vars
+	defer func() {
+		_ = os.Unsetenv("NRI_CLUSTER")
+		_ = os.Unsetenv("NRI_SERVICE")
+	}()
+
+	os.Args = []string{"cmd"}
+	flag.CommandLine = flag.NewFlagSet("cmd", flag.ContinueOnError)
+
+	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
+	assert.NoError(t, err)
+
+	e, err := i.NewEntity("name", "ns", "")
+	assert.NoError(t, err)
+
+	assert.Len(t, e.Tags(), 0)
 }

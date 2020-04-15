@@ -9,24 +9,18 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
+
+	"github.com/newrelic/infra-integrations-sdk/data/event"
+	"github.com/newrelic/infra-integrations-sdk/data/metric"
 
 	"github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/data/metadata"
 	"github.com/newrelic/infra-integrations-sdk/log"
-	"github.com/newrelic/infra-integrations-sdk/persist"
 )
 
 // Custom attribute keys:
 const (
-	CustomAttrPrefix  = "NRI_"
-	CustomAttrCluster = "cluster_name"
-	CustomAttrService = "service_name"
-)
-
-// Standard attributes
-const (
-	AttrReportingEntity   = "reportingEntityKey"
-	AttrReportingEndpoint = "reportingEndpoint"
+	CustomAttrPrefix = "NRI_"
 )
 
 // NR infrastructure agent protocol version
@@ -40,12 +34,13 @@ type Integration struct {
 	ProtocolVersion    string    `json:"protocol_version"`
 	IntegrationVersion string    `json:"integration_version"`
 	Entities           []*Entity `json:"data"`
-	locker             sync.Locker
-	storer             persist.Storer
-	prettyOutput       bool
-	writer             io.Writer
-	logger             log.Logger
-	args               interface{}
+	// HostEntity is an "entity" that serves as dumping ground for metrics not associated with a specific entity
+	HostEntity   *Entity `json:"-"` //skip json serializing
+	locker       sync.Locker
+	prettyOutput bool
+	writer       io.Writer
+	logger       log.Logger
+	args         interface{}
 }
 
 // New creates new integration with sane default values.
@@ -92,112 +87,51 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 		i.logger = log.NewStdErr(defaultArgs.Verbose)
 	}
 
-	if i.storer == nil {
-		var err error
-		i.storer, err = persist.NewFileStore(persist.DefaultPath(i.Name), i.logger, persist.DefaultTTL)
-		if err != nil {
-			return nil, fmt.Errorf("can't create store: %s", err)
-		}
-	}
+	i.HostEntity = newHostEntity()
 
 	return
 }
 
-// EntityReportedBy entity being reported from another entity that is not producing the actual entity data.
-func (i *Integration) EntityReportedBy(
-	reportingEntityName string,
-	reportedEntityDisplayName string,
-	reportedEntityType string,
-	tags ...metadata.Tag) (e *Entity, err error) {
-
-	e, err = i.NewEntity(reportingEntityName, reportedEntityDisplayName, reportedEntityType, tags...)
-	if err != nil {
-		return
-	}
-
-	e.AddTag(AttrReportingEntity, reportingEntityName)
-	return
-}
-
-// EntityReportedVia entity being reported from a known endpoint.
-func (i *Integration) EntityReportedVia(
-	endpoint string,
-	reportingEntityName string,
-	reportedEntityDisplayName string,
-	reportedEntityType string,
-	tags ...metadata.Tag) (e *Entity, err error) {
-
-	e, err = i.NewEntity(reportingEntityName, reportedEntityDisplayName, reportedEntityType, tags...)
-	if err != nil {
-		return
-	}
-
-	e.AddTag(AttrReportingEndpoint, endpoint)
-	return
-}
-
-// NewEntity method creates a new Entity or retrieves an already created entity.
-// The name of the Entity must be unique for the account otherwise it will cause conflicts
-func (i *Integration) NewEntity(name string, displayName, entityType string, tags ...metadata.Tag) (e *Entity, err error) {
+// NewEntity method creates a new (uniquely named) Entity.
+// The `name` of the Entity must be unique for the account otherwise it will cause conflicts
+func (i *Integration) NewEntity(name string, entityType string, displayName string) (e *Entity, err error) {
 	i.locker.Lock()
 	defer i.locker.Unlock()
 
-	e, err = newEntity(name, displayName, entityType, i.storer, tags...)
+	e, err = newEntity(name, entityType, displayName)
 	if err != nil {
 		return nil, err
 	}
 
-	// check if the an "equal" entity alrady exists and return it instead
-	for _, entity := range i.Entities {
-		if e.SameAs(entity) {
-			return entity, nil
-		}
-	}
+	err = i.addDefaultAttributes(e)
 
-	defaultArgs := args.GetDefaultArgs(i.args)
-
-	// get env vars values for "custom" prefixed vars (NRIA_) and add them as attributes to the entity
-	if defaultArgs.Metadata {
-		for _, element := range os.Environ() {
-			variable := strings.Split(element, "=")
-			prefix := fmt.Sprintf("%s%s_", CustomAttrPrefix, strings.ToUpper(i.Name))
-			if strings.HasPrefix(variable[0], prefix) {
-				e.AddTag(strings.TrimPrefix(variable[0], prefix), variable[1])
-			}
-		}
-	}
-
-	// TODO: should these custom "attributes" be added to "common", "metrics" and "events"?
-	if defaultArgs.NriCluster != "" {
-		e.AddTag(CustomAttrCluster, defaultArgs.NriCluster)
-	}
-	if defaultArgs.NriService != "" {
-		e.AddTag(CustomAttrService, defaultArgs.NriService)
-	}
-
-	i.Entities = append(i.Entities, e)
-
-	return e, nil
+	return e, err
 }
 
-// Publish runs all necessary tasks before publishing the data. Currently, it
-// stores the Storer, prints the JSON representation of the integration using a writer (stdout by default)
-// and re-initializes the integration object (allowing re-use it during the
-// execution of your code).
-func (i *Integration) Publish() error {
-	if i.storer != nil {
-		if err := i.storer.Save(); err != nil {
-			return err
-		}
-	}
+// AddEntity adds an entity to the list of entities. No check for "duplicates" is performed
+func (i *Integration) AddEntity(e *Entity) {
+	i.Entities = append(i.Entities, e)
+}
 
+// NewEvent creates a new event
+func (i *Integration) NewEvent(timestamp time.Time, summary string, category string) (*event.Event, error) {
+	return event.New(timestamp, summary, category)
+}
+
+// Publish writes the data to output (stdout) and resets the integration "object"
+func (i *Integration) Publish() error {
+	defer i.Clear()
+
+	// add the host entity to the list of entities to be serialized, if not empty
+	if notEmpty(i.HostEntity) {
+		i.Entities = append(i.Entities, i.HostEntity)
+	}
 	output, err := i.toJSON(i.prettyOutput)
 	if err != nil {
 		return err
 	}
 	output = append(output, []byte{'\n'}...)
 	_, err = i.writer.Write(output)
-	defer i.Clear()
 
 	return err
 }
@@ -208,6 +142,8 @@ func (i *Integration) Clear() {
 	i.locker.Lock()
 	defer i.locker.Unlock()
 	i.Entities = []*Entity{} // empty array preferred instead of null on marshaling.
+	// reset the host entity
+	i.HostEntity = newHostEntity()
 }
 
 // MarshalJSON serializes integration to JSON, fulfilling Marshaler interface.
@@ -235,6 +171,43 @@ func (i *Integration) Logger() log.Logger {
 	return i.logger
 }
 
+// Gauge creates a metric of type gauge
+func Gauge(timestamp time.Time, metricName string, value float64) (metric.Metric, error) {
+	return metric.NewGauge(timestamp, metricName, value)
+}
+
+// Count creates a metric of type count
+func Count(timestamp time.Time, metricName string, value uint64) (metric.Metric, error) {
+	return metric.NewCount(timestamp, metricName, value)
+}
+
+// Summary creates a metric of type summary
+func Summary(timestamp time.Time, metricName string, count uint64,
+	average float64, sum float64, min float64, max float64) (metric.Metric, error) {
+	return metric.NewSummary(timestamp, metricName, count, average, sum, min, max)
+}
+
+// CumulativeCount creates metric of type cumulative count
+func CumulativeCount(timestamp time.Time, metricName string, value uint64) (metric.Metric, error) {
+	return metric.NewCumulativeCount(timestamp, metricName, value)
+}
+
+// Rate creates a metric of type rate
+func Rate(timestamp time.Time, metricName string, value float64) (metric.Metric, error) {
+	return metric.NewRate(timestamp, metricName, value)
+}
+
+// CumulativeRate creates a metric of type cumulative rate
+func CumulativeRate(timestamp time.Time, metricName string, value float64) (metric.Metric, error) {
+	return metric.NewCumulativeRate(timestamp, metricName, value)
+}
+
+// -- private
+// is entity empty?
+func notEmpty(entity *Entity) bool {
+	return len(entity.Events) > 0 || len(entity.Metrics) > 0 || len(entity.Inventory.Items()) > 0
+}
+
 func (i *Integration) checkArguments() error {
 	if i.args == nil {
 		i.args = new(struct{})
@@ -247,4 +220,24 @@ func (i *Integration) checkArguments() error {
 	}
 
 	return errors.New("arguments must be a pointer to a struct (or nil)")
+}
+
+func (i *Integration) addDefaultAttributes(e *Entity) error {
+	defaultArgs := args.GetDefaultArgs(i.args)
+
+	// get env vars values for "custom" prefixed vars (NRIA_) and add them as attributes to the entity
+	if defaultArgs.Metadata {
+		for _, element := range os.Environ() {
+			variable := strings.Split(element, "=")
+			prefix := fmt.Sprintf("%s%s_", CustomAttrPrefix, strings.ToUpper(i.Name))
+			if strings.HasPrefix(variable[0], prefix) {
+				err := e.AddTag(strings.TrimPrefix(variable[0], prefix), variable[1])
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
 }

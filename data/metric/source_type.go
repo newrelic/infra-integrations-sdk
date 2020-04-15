@@ -13,36 +13,41 @@ type SourceType int
 // Source types
 // If any more SourceTypes are added update maps: SourcesTypeToName & SourcesNameToType.
 const (
-	// GAUGE is a value that may increase and decrease. It is stored as-is.
+	// GAUGE is a value that may increase and decrease.
+	// It generally represents the value for something at a particular moment in time
 	GAUGE SourceType = iota
-	// RATE is an ever-growing value which might be reset. The package calculates the change rate.
-	RATE SourceType = iota
-	// DELTA is an ever-growing value which might be reset. The package calculates the difference between samples.
-	DELTA SourceType = iota
-	// ATTRIBUTE is any string value
-	ATTRIBUTE SourceType = iota
-	// PRATE is a version of RATE that only allows positive values.
-	PRATE SourceType = iota
-	// PDELTA is a version of DELTA that only allows positive values.
-	PDELTA SourceType = iota
+	// COUNT counts the number of times an event occurred since the last time it was retrieved (time window).
+	// It's values can go up or down
+	COUNT SourceType = iota
+	// SUMMARY is a composite value with avg, min, max sample count and sum
+	SUMMARY SourceType = iota
+	// CUMULATIVE_COUNT counts the number of times an event occurred. It is not a delta, but an absolute value.
+	// It's value should either be the same or go up, never down
+	CUMULATIVE_COUNT = iota
+	// RATE represents a rate of change of a value in a specific time window
+	RATE = iota
+	// CUMULATIVE_RATE represents an ever-increasing rate of change.
+	CUMULATIVE_RATE = iota
 )
 
 // SourcesTypeToName metric sources list mapping its type to readable name.
 var SourcesTypeToName = map[SourceType]string{
-	GAUGE:     "gauge",
-	RATE:      "rate",
-	DELTA:     "delta",
-	ATTRIBUTE: "attribute",
+	GAUGE:            "gauge",
+	COUNT:            "count",
+	SUMMARY:          "summary",
+	CUMULATIVE_COUNT: "cumulative-count",
+	RATE:             "rate",
+	CUMULATIVE_RATE:  "cumulative-rate",
 }
 
 // SourcesNameToType metric sources list mapping its name to type.
 var SourcesNameToType = map[string]SourceType{
-	"gauge":     GAUGE,
-	"rate":      RATE,
-	"delta":     DELTA,
-	"prate":     PRATE,
-	"pdelta":    PDELTA,
-	"attribute": ATTRIBUTE,
+	"gauge":            GAUGE,
+	"count":            COUNT,
+	"summary":          SUMMARY,
+	"cumulative-count": CUMULATIVE_COUNT,
+	"rate":             RATE,
+	"cumulative-rate":  CUMULATIVE_RATE,
 }
 
 // String fulfills stringer interface, returning empty string on invalid source types.
@@ -52,12 +57,6 @@ func (t SourceType) String() string {
 	}
 
 	return ""
-}
-
-// IsPositive checks that the `SourceType` belongs to the positive only
-// list of `SourceType`s
-func (t SourceType) IsPositive() bool {
-	return t == PRATE || t == PDELTA
 }
 
 // SourceTypeForName does a case insensitive conversion from a string to a SourceType.

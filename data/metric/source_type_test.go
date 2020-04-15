@@ -7,41 +7,32 @@ import (
 )
 
 func TestSourceType_String(t *testing.T) {
-	st := RATE
-	assert.Equal(t, "rate", st.String())
-}
-
-func TestSourceType_Positive(t *testing.T) {
-
-	var testCases = []struct {
-		sourceType SourceType
-		isPositive bool
-	}{
-		{GAUGE, false},
-		{RATE, false},
-		{DELTA, false},
-		{PRATE, true},
-		{PDELTA, true},
-	}
-
-	for _, tc := range testCases {
-		t.Run(string(tc.sourceType), func(t *testing.T) {
-			assert.Equal(t, tc.isPositive, tc.sourceType.IsPositive())
-		})
-	}
+	st := COUNT
+	assert.Equal(t, "count", st.String())
 }
 
 func TestSourceTypeForName(t *testing.T) {
-	name, err := SourceTypeForName("delta")
+	name, err := SourceTypeForName("gauge")
 	assert.NoError(t, err)
-	assert.Equal(t, DELTA, name)
+	assert.Equal(t, GAUGE, name)
 
 	// ignore case
-	name, err = SourceTypeForName("RATE")
+	name, err = SourceTypeForName("count")
 	assert.NoError(t, err)
-	assert.Equal(t, RATE, name)
+	assert.Equal(t, COUNT, name)
 
 	// error
 	_, err = SourceTypeForName("invalid")
 	assert.Error(t, err)
+}
+
+func Test_SourceType_TypeAndNameAreSynced(t *testing.T) {
+
+	assert.Equal(t, len(SourcesTypeToName), len(SourcesNameToType))
+
+	for source, name := range SourcesTypeToName {
+		st, err := SourceTypeForName(name)
+		assert.NoError(t, err)
+		assert.Equal(t, source, st)
+	}
 }
