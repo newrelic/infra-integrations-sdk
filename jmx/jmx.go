@@ -237,9 +237,7 @@ func openConnection(config *connectionConfig) (err error) {
 
 	go func() {
 		if err = cmd.Wait(); err != nil {
-			if err != nil {
-				cmdErrC <- jmxClientError(fmt.Sprintf("nrjmx error: %s [proc-state: %s]", err, cmd.ProcessState))
-			}
+			cmdErrC <- jmxClientError(fmt.Sprintf("nrjmx error: %s [proc-state: %s]", err, cmd.ProcessState))
 		}
 
 		cmd = nil
