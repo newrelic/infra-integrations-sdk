@@ -1,22 +1,20 @@
 # Upgrading from GoSDK v3.x to GoSDK v4.x
 
-V4 of the GoSDK is not backward compatible with the previous versions of the GoSDK. This document describes the changes 
-between versions and how to adapt an integration built with the GoSDK v3.x to the new one.
+Version 4 of the GoSDK is not backward compatible with the previous versions. This document describes the changes 
+between versions and how to update an integration built with the GoSDK v3.x.
 
 The Go SDK v4 contains the following changes:
 
 * New Infrastructure Agent Integration JSON version 4.
 * Add support for dimensional metrics using the [Metrics API format][1].
-* New metric data types: `count` and `summary`.
-* Removed support for `RATE`, `PRATE` and `DELTA` metric types.
-* Removed distinction between remote and local entities.
-* Metrics, Events and Inventory can be attached either to Entities or an Integration.
+* New metric data types: `count`, `summary`, `cumulative-count` and `cumulative-rate`.
+* LocalEntity has been replaced by HostEntity.
 * Support for Go Modules
 * Removed support for protocols prior to v4.x.
 
 ## JSON schema changes
 
-The following section explains the new JSON schema. Be aware that the new SDK only supports this new JSON document. 
+The following section explains the new JSON schema. Be aware that the new SDK only supports this new protocol version. 
 These are the most important changes:
 
 * A new "integration" object at the top-level.
@@ -34,23 +32,24 @@ These are the most important changes:
   },
   "data":[                                    # List of objects containing entities, metrics, events and inventory
     {
-      "entity":{                              # this object is optional
-        "name":"redis:192.168.100.200:1234",  # unique entity name per account
+      "entity":{                              # this object is optional. If it's not provided, then the Entity will get 
+                                              # the same entity ID as the agent that executes the integration. 
+        "name":"redis:192.168.100.200:1234",  # unique entity name per customer account
         "type":"RedisInstance",               # entity's category
         "displayName":"my redis instance",    # human readable name
-        "tags":{}                             # key-value pairs that will be also added as attributes to all metrics 
-                                              # and events
+        "metadata":{}                         # can hold general metadata or tags. Both are key-value pairs that will 
+                                              # be also added as attributes to all metrics and events
       },
       "metrics":[                             # list of metrics using the dimensional metric format
         {
           "name":"redis.metric1",
-          "type":"count",                     # gauge, count, summary or pdelta
+          "type":"count",                     # gauge, count, summary, cumulative-count, rate or cumulative-rate
           "value":93, 
           "attributes":{}                     # set of key-value pairs that define the dimensions of the metric
         }
       ],
-      "inventory":{...},                      # Inventory data format has not changed
-      "events":[...]                          # Events data format has not changed
+      "inventory":{...},                      # Inventory remains the same
+      "events":[...]                          # Events remain the same
     }
   ]
 }
@@ -58,11 +57,11 @@ These are the most important changes:
 
 ## GoSDK v4 API changes
 
-This section enumerates the main changes you have to keep in mind if you want to upgrade from GoSDK v3.x to v4.x
+This section enumerates the main changes you have to keep in mind to upgrade from GoSDK v3.x to v4.x.
 
 ### Entities
 
-In previous versions of the SDK, we had a distinction between Local and Remote entities. You could get the 
+In previous versions of the SDK, we had a distinction between the Local Entity and Remote entities. You could get the 
 `Local Entity` calling the method
 
 `func (i *Integration) LocalEntity() *Entity`
@@ -71,11 +70,38 @@ or create a `Remote Entity` calling
 
 `func (i *Integration) Entity(name, namespace string, idAttributes ...IDAttribute) (e *Entity, err error)`
 
-In SDK v4, there's only one way of creating entities:
+In SDK v4, you can obtain the Host Entity or create Entities. The Host Entity is a the entity attached to the host 
+where the agent is running. It inherits the same entity ID as the agent which executes the integration. On the other
+hand, an Entity has its own entity ID. Both types of entities are decorated with the metadata from the host where the
+agent is running.
 
-`func (i *Integration) Entity(name, type, displayName string) (e *Entity, err error)`
+To get the Host Entity you need to access the `HostEntity` of an integration. Example:
 
-* `name` must be an unique value per customer account because it uniquely identifies your Entity. It cannot be empty and 
+```
+// create the integration
+i, err := integration.New(integrationName, integrationVersion)
+
+// add some inventory to the Host Entity
+i.HostEntity.AddInventoryItem("key", "value", "foo")
+```
+
+To create an Entity you need to call the following method inside  integration
+
+`func (i *Integration) NewEntity(name, type, displayName string) (e *Entity, err error)`
+
+Example: 
+
+```
+// create the integration
+i, err := integration.New(integrationName, integrationVersion)
+
+// create an entity
+entity, err := i.NewEntity(entityName, entityType, entityDisplayName)
+```
+
+These are the parameters accepted by `NewEntity`:
+
+* `entityName` must be an unique value per customer account because it uniquely identifies your Entity. It cannot be empty and 
   the SDK cannot validate nor enforce that uniqueness, so it's up to the client to define a naming schema that produces 
   unique names.
 
@@ -85,25 +111,52 @@ In SDK v4, there's only one way of creating entities:
   For the ip or the hostname, please avoid using the values `127.0.0.1` or `localhost` as they don't produce unique 
   identifiers.
 
-* `type` describes the Entity's category. It cannot be empty. Some examples: "RedisInstance", "DockerContainer", 
+* `entityType` describes the Entity's category. It cannot be empty. Some examples: "RedisInstance", "DockerContainer", 
   "K8SPod", "CassandraCluster", "MySQLInstance", "KafkaBroker", "NginxServer", etc.
 
-* `displayName` is a friendly human readable name to be used in the UI. It can be empty.
+* `entityDisplayName` is a friendly human readable name to be used in the UI. It can be empty.
 
 #### Migrating from LocalEntity
 
-If you are using the LocalEntity, you need to use the new Entity method with the appropriate parameters.
+The LocalEntity must be replaced by the Host Entity. The Host Entity has the same methods and functionality as a normal
+Entity. 
 
-#### Adding tags to an Entity
+#### Adding metadata and tags to an Entity
 
-Entities can have a list of tags. These tags can be used to search and filter your entities and will be added to 
+Entities can have a list of metadata. This metadata can be used to search and filter your entities and will be added to 
 all the metrics and events of the Entity.
 
-To add a new Tag just call 
+There are two types of metadata:
+* Generic metadata about the entity. The metadata is provided by the integration. 
+* Tags. This information is provided by the user through the agent when it executes the integration. The SDK will prefix
+automatically the key values with "tags.".
+
+In this example we add the service version that produces the entity as generic metadata and the team that owns the data 
+produced by the integration as a tag.
+
+```
+  ...
+	"entity": {
+		"name": "redis:192.168.100.200:1234",
+		"type": "RedisInstance",
+		"displayName": "my redis instance",
+		"metadata": {
+			"redis_version": "4.0",
+			"tags.team": "foobar"
+		}
+	}
+  ...
+```
+
+To add metadata just call 
+
+`func (i *Entity) AddMetadata(key string, value interface{})`
+
+To add a tag just call 
 
 `func (i *Entity) AddTag(key string, value interface{})`
 
-If the `key` already exists, then the previous value will be overwritten with the new one.
+On both cases, if the `key` already exists the previous value will be overwritten with the new one.
 
 ### Metrics
 
@@ -111,71 +164,109 @@ If the `key` already exists, then the previous value will be overwritten with th
 
 In this SDK v4 we introduce some new metric types while removing some others.
 
-* GAUGE
+## Metric types in v4
 
-  No changes here. This metric type works in the same manner. 
+* Gauge
 
-* RATE and PRATE
+  It is a value that can increase or decrease. It generally represents the value for something at a particular moment 
+  in time.
+  
+  Examples include the CPU load or the memory consumption.
 
-  Both metric types have been removed. You should use a `gauge` value and replicate the behaviour using the NRQL `rate` 
-  function:
+* Count
 
-  `FROM Metric SELECT rate(average(metricName), 1 minute)`
+  Measures the number of occurrences of an event given a time interval.
 
-* DELTA
+  Examples include cache hits per reporting interval and the number of threads created per reporting interval.
 
-  The `delta` metric type has been removed. You should use a `gauge` value instead and take care of the delta 
-  calculation.
+* Summary
 
-* PDELTA
+  Used to report pre-aggregated data, or information on aggregated discrete events. A summary 
+  includes a `count`, `sum` value, `min` value, and `max` value. 
 
-  This metric type still exists and works in the same manner.
+  Examples include transaction count/durations and queue count/ durations.
+  
+* Cumulative-count
+  
+  It generates a count metric by calculating the delta between the reported value and the previous one. Interval is 
+  calculated based on the timestamp of the datapoints. The value passed in is not a delta but instead the absolute value. 
+  
+  Examples include the total number of threads created for a process or the total number of cache hits since process 
+  startup.
+
+* Rate
+  
+  It generates a gauge metric by dividing the current value by the interval in seconds. Interval is calculated based on the 
+  timestamp of the datapoints.
+  
+  Examples include the number of get request per second.
+  
+* Cumulative-rate  
+
+  Similar to the rate, but this time we calculate the delta between the reported value and the previous one and then we
+  divide the result by the interval in seconds. Interval is calculated based on the timestamp of the datapoints.
+  
+  Examples include the total write bytes per second.
+
+#### Creating v4 metrics
+
+| metric            | method                                                                 |
+|-------------------|------------------------------------------------------------------------|
+| gauge             | integration.Gauge(timestamp, name, value)                              |
+| count             | integration.Count(timestamp, name, count)                              |
+| summary           | integration.Summary(timestamp, name, count, average, sum, min, max)    |
+| cumulative-count  | integration.CumulativeCount(timestamp, name, count)                    |
+| rate              | integration.Rate(timestamp, name, value)                               |
+| cumulative-rate   | integration.CumulativeRate(timestamp, name, value)                     |
+
+Description of the paramaters:
+
+`timestamp` (time.Time) is the metric's start time in Unix time (milliseconds).
+
+`name` (string) is the name of the metric. The value must be less than 255 characters.
+
+`value` (float64) is a double. Gauges values can be any value positive or negative. Cumulative-rate values need to be 
+ever-growing.
+
+`count` (float64) is the number of occurrences of an event reported in a given interval. Must be a positive value.
+
+`average` (float64) is the number expressing the central value in the set of data.
+
+`sum` (float64) is the aggregation of all the values registered in the set of data.
+
+`min` (float64) is the minimum value registered in the set of data.
+
+`max` (float64) is the maximum value registered in the set of data.
+
+## Mapping metrics types from v3
+
+* GAUGE / RATE
+
+  No changes here. Both types work in the same way as before.
+
+* PRATE
+
+  It maps to the new `cumulative-rate` metric.
+
+* DELTA / PDELTA
+
+  They map to the new `cumulative-count` metric.
   
 * ATTRIBUTES
 
   This metric type has been removed. Now every metric can have attributes, called dimensions, attached to it.
 
-* COUNT
+#### Summary
 
-  This metric type is new. Measures the number of occurrences of an event given a time interval.
-
-  Examples include cache hits per reporting interval and the number of threads created per reporting interval.
-
-* SUMMARY
-
-  This metric type is new. Used to report pre-aggregated data, or information on aggregated discrete events. A summary 
-  includes a count, sum value, min value, and max value. 
-
-  Examples include transaction count/durations and queue count/ durations.
-
-#### Creating v4 metrics
-
-| metric  | method                                                                        |
-|---------|-------------------------------------------------------------------------------|
-| Gauge   | integration.Gauge(timestamp, name, value)                                     |
-| Count   | integration.Count(timestamp, interval, name, count)                           |
-| Summary | integration.Summary(timestamp, interval, name, count, average, sum, min, max) |
-| PDelta  | integration.PDelta(timestamp, name, value)                                    |
-
-##### Definition of the parameters
-
-`timestamp` is the metric's start time in Unix time (milliseconds).
-
-`name` is the name of the metric. The value must be less than 255 characters.
-
-`value` is a double. Gauge values can be positive or negative. PDelta only allows positive values.
-
-`interval` is the length of the time window in milliseconds.
-
-`count` is the number of occurrences of an event reported in a given interval. Must be a positive double.
-
-`average` is the number expressing the central value in the set of data.
-
-`sum` is the aggregation of all the values registered in the set of data.
-
-`min` is the minimum value registered in the set of data.
-
-`max` is the maximum value registered in the set of data.
+| type           | v3 | v4 | mapping                                                                       |
+|----------------|----|----|-------------------------------------------------------------------------------|
+| gauge          | ✅ | ✅ | integration.Gauge(timestamp, name, value)                                     |
+| rate           | ✅ | ✅ | integration.Rate(timestamp, name, value)                                      |
+| prate          | ✅ | ❌ | integration.CumulativeRate(timestamp, name, value)                            |
+| delta / pdelta | ✅ | ❌ | integration.CumulativeCount(timestamp, name, count)                           |
+| attribute      | ✅ | ❌ | add dimensions to the metrics                                                 |
+| count          | ❌ | ✅ | integration.Count(timestamp, interval, name, count)                           |
+| summary        | ❌ | ✅ | integration.Summary(timestamp, interval, name, count, average, sum, min, max) |
 
 #### Adding dimensions to a metric
 
@@ -186,7 +277,7 @@ To add a new Dimensions just call on a metric
 
 `func (i *<Gauge|Count|Summary>) AddDimension(key string, value interface{})`
 
-If the `key` already exists, then the previous value will be overwritten with the new one.
+If the `key` already exists the previous value will be overwritten with the new one.
 
 #### Adding metrics to an Entity
 
@@ -196,26 +287,6 @@ with the Entity's tags.
 To add a metric to an entity just call the method on an Entity
 
 `func (e *Entity) AddMetric(metric)`
-
-#### Adding metrics to an Integration
-
-Metrics can also be added to an Integration. Those metrics won't be attached to any Entity.
-
-To add a metric to an Integrations just call the method inside the `integration` namespace
-
-`func (e *Integration) AddMetric(metric)`
-
-#### Metrics summary
-
-| type       | v3 | v4 | mapping                                                                          |
-|------------|----|----|---------------------------------------------------------------------------------|
-| gauge      | ✅  | ✅  | integration.Gauge(timestamp, name, value)                                     |
-| rate/prate | ✅  | ❌  | use a gauge and the NRQL rate function                                        |
-| delta      | ✅  | ❌  | use a gauge and calculate the delta                                           |
-| pdelta     | ✅  | ✅  | integration.PDelta(timestamp, name, value)                                    |
-| attribute  | ✅  | ❌  | add dimensions to the metrics                                                 |
-| count      | ❌  | ✅  | integration.Count(timestamp, interval, name, count)                           |
-| summary    | ❌  | ✅  | integration.Summary(timestamp, interval, name, count, average, sum, min, max) |
 
 ### Events
 
@@ -241,7 +312,7 @@ In SDK v4, you need to use this other method for adding a single attribute
 
 `func (e *Event) AddAttribute(key string, value interface{})`
 
-If the `key` already exists, then the previous value will be overwritten with the new one.
+If the `key` already exists the previous value will be overwritten with the new one.
 
 #### Adding an event to an Entity
 
@@ -250,13 +321,6 @@ In both SDKs, the same method exists for adding an event to an entity
 `func (e *Entity) AddEvent(event *integration.Event) error`
 
 The event will be decorated with the Entity's tags.
-
-#### Adding an event to an Integration
-
-An Event can also be attached to an Integration which means that the event doesn't belong to any specific entity. You
-can call this method
-
-`func (i *Integration) AddEvent(event *integration.Event) error`
 
 ### Inventory
 
@@ -271,12 +335,6 @@ Now, to add an inventory item to an integration you use the following method
 `func (e *Entity) AddInventoryItem(key string, field string, value interface{}) error`
 
 Basically you just need to replace `SetInventoryItem` with `AddInventoryItem`. 
-
-#### Adding inventory to an Integration
-
-Inventory can also be added to an Integration. The previous call can be used on an Integration 
-
-`func (e *Integration) AddInventoryItem(key string, field string, value interface{}) error`
 
 
 [1]: https://docs.newrelic.com/docs/data-ingest-apis/get-data-new-relic/metric-api/introduction-metric-api
