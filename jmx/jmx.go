@@ -23,15 +23,19 @@ import (
 const (
 	jmxLineInitialBuffer = 4 * 1024 // initial 4KB per line, it'll be increased when required
 	cmdStdChanLen        = 1000
+	defaultNrjmxExec     = "/usr/bin/nrjmx" // defaultNrjmxExec default nrjmx tool executable path
 )
 
 // Error vars to ease Query response handling.
 var (
 	ErrBeanPattern = errors.New("cannot parse MBean glob pattern, valid: 'DOMAIN:BEAN'")
-	ErrConnection  = errors.New("jmx endpoint connection error")
+	ErrConnection  = jmxClientError("jmx endpoint connection error")
+	// ErrJmxCmdRunning error returned when trying to Open and nrjmx command is still running
+	ErrJmxCmdRunning = errors.New("JMX tool is already running")
 )
 
 var cmd *exec.Cmd
+
 var cancel context.CancelFunc
 var cmdOut io.ReadCloser
 var cmdError io.ReadCloser
@@ -40,12 +44,18 @@ var cmdErrC = make(chan error, cmdStdChanLen)
 var cmdWarnC = make(chan string, cmdStdChanLen)
 var done sync.WaitGroup
 
-var (
-	// DefaultNrjmxExec default nrjmx tool executable path
-	DefaultNrjmxExec = "/usr/bin/nrjmx"
-	// ErrJmxCmdRunning error returned when trying to Open and nrjmx command is still running
-	ErrJmxCmdRunning = errors.New("JMX tool is already running")
-)
+// jmxClientError error is returned when the nrjmx tool can not continue
+type jmxClientError string
+
+func (j jmxClientError) Error() string {
+	return string(j)
+}
+
+// IsJmxClientError identify if the error is jmx client error type
+func IsJmxClientError(err error) bool {
+	_, ok := err.(jmxClientError)
+	return ok
+}
 
 // connectionConfig is the configuration for the nrjmx command.
 type connectionConfig struct {
@@ -123,7 +133,7 @@ func Open(hostname, port, username, password string, opts ...Option) error {
 		port:           port,
 		username:       username,
 		password:       password,
-		executablePath: DefaultNrjmxExec,
+		executablePath: defaultNrjmxExec,
 	}
 
 	for _, opt := range opts {
@@ -227,9 +237,7 @@ func openConnection(config *connectionConfig) (err error) {
 
 	go func() {
 		if err = cmd.Wait(); err != nil {
-			if err != nil {
-				cmdErrC <- fmt.Errorf("nrjmx error: %s [proc-state: %s]", err, cmd.ProcessState)
-			}
+			cmdErrC <- jmxClientError(fmt.Sprintf("nrjmx error: %s [proc-state: %s]", err, cmd.ProcessState))
 		}
 
 		cmd = nil
