@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-- Return jmx client error when nrjxm fail to connect or exited and can not continue.
+- Improvement for jmx error handling.
 
 ### 3.6.2
 
