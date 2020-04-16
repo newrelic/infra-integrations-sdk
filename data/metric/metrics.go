@@ -36,13 +36,13 @@ type gauge struct {
 // This indicates to the Infra agent that the value should be interpreted as a count that is reset in each interval
 type count struct {
 	metricBase
-	Value uint64 `json:"count"`
+	Value float64 `json:"count"`
 }
 
 // summary is a metric of type summary.
 type summary struct {
 	metricBase
-	Count   uint64  `json:"count"`
+	Count   float64 `json:"count"`
 	Average float64 `json:"average"`
 	Sum     float64 `json:"sum"`
 	Min     float64 `json:"min"`
@@ -79,7 +79,7 @@ func NewGauge(timestamp time.Time, name string, value float64) (Metric, error) {
 }
 
 // NewCount creates a new metric of type count
-func NewCount(timestamp time.Time, name string, value uint64) (Metric, error) {
+func NewCount(timestamp time.Time, name string, value float64) (Metric, error) {
 	if len(name) == 0 {
 		return nil, err.ParameterCannotBeEmpty("name")
 	}
@@ -96,7 +96,7 @@ func NewCount(timestamp time.Time, name string, value uint64) (Metric, error) {
 }
 
 // NewSummary creates a new metric of type summary
-func NewSummary(timestamp time.Time, name string, count uint64, average float64, sum float64,
+func NewSummary(timestamp time.Time, name string, count float64, average float64, sum float64,
 	min float64, max float64) (Metric, error) {
 	if len(name) == 0 {
 		return nil, err.ParameterCannotBeEmpty("name")
@@ -118,7 +118,7 @@ func NewSummary(timestamp time.Time, name string, count uint64, average float64,
 }
 
 // NewCumulativeCount creates a new metric of type cumulative count
-func NewCumulativeCount(timestamp time.Time, name string, value uint64) (Metric, error) {
+func NewCumulativeCount(timestamp time.Time, name string, value float64) (Metric, error) {
 	if len(name) == 0 {
 		return nil, err.ParameterCannotBeEmpty("name")
 	}
@@ -179,7 +179,7 @@ func (m *metricBase) AddDimension(key string, value string) error {
 	return nil
 }
 
-// Dimension returns an attribute by key
+// Dimension returns an dimension by key
 func (m *metricBase) Dimension(key string) string {
 	return m.Dimensions[key]
 }

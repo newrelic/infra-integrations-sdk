@@ -177,18 +177,18 @@ func Gauge(timestamp time.Time, metricName string, value float64) (metric.Metric
 }
 
 // Count creates a metric of type count
-func Count(timestamp time.Time, metricName string, value uint64) (metric.Metric, error) {
+func Count(timestamp time.Time, metricName string, value float64) (metric.Metric, error) {
 	return metric.NewCount(timestamp, metricName, value)
 }
 
 // Summary creates a metric of type summary
-func Summary(timestamp time.Time, metricName string, count uint64,
+func Summary(timestamp time.Time, metricName string, count float64,
 	average float64, sum float64, min float64, max float64) (metric.Metric, error) {
 	return metric.NewSummary(timestamp, metricName, count, average, sum, min, max)
 }
 
 // CumulativeCount creates metric of type cumulative count
-func CumulativeCount(timestamp time.Time, metricName string, value uint64) (metric.Metric, error) {
+func CumulativeCount(timestamp time.Time, metricName string, value float64) (metric.Metric, error) {
 	return metric.NewCumulativeCount(timestamp, metricName, value)
 }
 
