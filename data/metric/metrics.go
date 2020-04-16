@@ -83,7 +83,9 @@ func NewCount(timestamp time.Time, name string, value float64) (Metric, error) {
 	if len(name) == 0 {
 		return nil, err.ParameterCannotBeEmpty("name")
 	}
-
+	if value < 0 {
+		return nil, err.ParameterCannotBeNegative("value", value)
+	}
 	return &count{
 		metricBase: metricBase{
 			Timestamp:  timestamp.Unix(),
@@ -100,6 +102,9 @@ func NewSummary(timestamp time.Time, name string, count float64, average float64
 	min float64, max float64) (Metric, error) {
 	if len(name) == 0 {
 		return nil, err.ParameterCannotBeEmpty("name")
+	}
+	if count < 0 {
+		return nil, err.ParameterCannotBeNegative("count", count)
 	}
 
 	return &summary{
@@ -122,7 +127,9 @@ func NewCumulativeCount(timestamp time.Time, name string, value float64) (Metric
 	if len(name) == 0 {
 		return nil, err.ParameterCannotBeEmpty("name")
 	}
-
+	if value < 0 {
+		return nil, err.ParameterCannotBeNegative("value", value)
+	}
 	return &cumulativeCount{
 		metricBase: metricBase{
 			Timestamp:  timestamp.Unix(),

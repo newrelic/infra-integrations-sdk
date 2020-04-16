@@ -50,6 +50,20 @@ func Test_Metric_CannotCreateCountWithEmptyName(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func Test_Metric_CannotCreateCountWithNegativeValue(t *testing.T) {
+	c, err := NewCount(now, "count", -1)
+	assert.Nil(t, c)
+	assert.Error(t, err)
+
+	c, err = NewCount(now, "count", -1.0)
+	assert.Nil(t, c)
+	assert.Error(t, err)
+
+	c, err = NewCount(now, "count", 0)
+	assert.NotNil(t, c)
+	assert.NoError(t, err)
+}
+
 func Test_Metric_CreateSummary(t *testing.T) {
 	s, _ := NewSummary(now, "summary", 1, 0.5, 1, 0, 1)
 	assert.NotNil(t, s)
@@ -59,6 +73,20 @@ func Test_Metric_CannotCreateSummaryWithEmptyName(t *testing.T) {
 	s, err := NewSummary(now, "", 1, 0.5, 1, 0, 1)
 	assert.Nil(t, s)
 	assert.Error(t, err)
+}
+
+func Test_Metric_CannotCreateSummaryWithNegativeCount(t *testing.T) {
+	s, err := NewSummary(now, "summary", -1, 0.5, 1, 0, 1)
+	assert.Nil(t, s)
+	assert.Error(t, err)
+
+	s, err = NewSummary(now, "summary", -1.0, 0.5, 1, 0, 1)
+	assert.Nil(t, s)
+	assert.Error(t, err)
+
+	s, err = NewSummary(now, "summary", 0, 0.5, 1, 0, 1)
+	assert.NotNil(t, s)
+	assert.NoError(t, err)
 }
 
 func Test_Metric_AddDimension(t *testing.T) {
@@ -97,6 +125,20 @@ func Test_Metric_CannotCreateCumulativeCountWithEmptyName(t *testing.T) {
 	cc, err := NewCumulativeCount(now, "", 1)
 	assert.Nil(t, cc)
 	assert.Error(t, err)
+}
+
+func Test_Metric_CannotCreateCumulativeCountWithNegativeValue(t *testing.T) {
+	cc, err := NewCumulativeCount(now, "count", -1)
+	assert.Nil(t, cc)
+	assert.Error(t, err)
+
+	cc, err = NewCumulativeCount(now, "count", -1.0)
+	assert.Nil(t, cc)
+	assert.Error(t, err)
+
+	cc, err = NewCumulativeCount(now, "count", 0)
+	assert.NotNil(t, cc)
+	assert.NoError(t, err)
 }
 
 func Test_Metric_CreateRate(t *testing.T) {
