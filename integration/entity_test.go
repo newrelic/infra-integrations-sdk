@@ -35,7 +35,7 @@ func Test_Entity_EntityAddTag(t *testing.T) {
 	assert.NoError(t, err)
 
 	_ = e.AddTag("key1", "val1")
-	assert.Len(t, e.Tags(), 1, "tags should have been added to the entity")
+	assert.Len(t, e.GetMetadata(), 1, "tags should have been added to the entity")
 
 }
 
@@ -45,7 +45,7 @@ func Test_Entity_EntityCannotAddTagWithEmptyName(t *testing.T) {
 
 	err = e.AddTag("", "val1")
 	assert.Error(t, err)
-	assert.Len(t, e.Tags(), 0, "tags should NOT have been added to the entity")
+	assert.Len(t, e.GetMetadata(), 0, "tags should NOT have been added to the entity")
 }
 
 func Test_Entity_AddTagReplacesExisting(t *testing.T) {
@@ -187,7 +187,7 @@ func Test_Entity_IsAnonymousEntity(t *testing.T) {
 	e := newHostEntity()
 
 	assert.Empty(t, e.Metadata, "default entity should have no identifier")
-	assert.True(t, e.isAnonymousEntity())
+	assert.True(t, e.isHostEntity())
 }
 
 func Test_Entity_AnonymousEntityIsProperlySerialized(t *testing.T) {

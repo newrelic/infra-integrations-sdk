@@ -58,8 +58,8 @@ func (e *Entity) AddInventoryItem(key string, field string, value interface{}) e
 	return e.Inventory.SetItem(key, field, value)
 }
 
-// Metadata returns all the Entity tags
-func (e *Entity) Tags() metadata.MetadataMap {
+// GetMetadata returns all the Entity's metadata
+func (e *Entity) GetMetadata() metadata.MetadataMap {
 	return e.Metadata.GetMetadataMap()
 }
 
@@ -69,6 +69,15 @@ func (e *Entity) AddTag(key string, value interface{}) error {
 		return errors.New("key cannot be empty")
 	}
 	e.Metadata.AddTag(key, value)
+	return nil
+}
+
+// AddMetadata adds a new metadata to the entity
+func (e *Entity) AddMetadata(key string, value interface{}) error {
+	if len(key) == 0 {
+		return errors.New("key cannot be empty")
+	}
+	e.Metadata.AddMetadata(key, value)
 	return nil
 }
 
@@ -92,8 +101,8 @@ func newHostEntity() *Entity {
 	}
 }
 
-// isAnonymousEntity returns true if entity has no metadata
-func (e *Entity) isAnonymousEntity() bool {
+// isHostEntity returns true if entity has no metadata
+func (e *Entity) isHostEntity() bool {
 	return e.Metadata == nil || e.Metadata.Name == ""
 }
 

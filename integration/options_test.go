@@ -204,5 +204,5 @@ func Test_ClusterAndServiceArgumentsAreAddedToMetadata(t *testing.T) {
 	e, err := i.NewEntity("name", "ns", "")
 	assert.NoError(t, err)
 
-	assert.Len(t, e.Tags(), 0)
+	assert.Len(t, e.GetMetadata(), 0)
 }
