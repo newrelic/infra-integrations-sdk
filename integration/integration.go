@@ -28,12 +28,17 @@ const (
 	protocolVersion = "4"
 )
 
+// Metadata describes the integration
+type Metadata struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
+}
+
 // Integration defines the format of the output JSON that integrations will return for protocol 2.
 type Integration struct {
-	Name               string    `json:"name"`
-	ProtocolVersion    string    `json:"protocol_version"`
-	IntegrationVersion string    `json:"integration_version"`
-	Entities           []*Entity `json:"data"`
+	ProtocolVersion string    `json:"protocol_version"`
+	Metadata        Metadata  `json:"integration"`
+	Entities        []*Entity `json:"data"`
 	// HostEntity is an "entity" that serves as dumping ground for metrics not associated with a specific entity
 	HostEntity   *Entity `json:"-"` //skip json serializing
 	locker       sync.Locker
@@ -57,12 +62,12 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 	}
 
 	i = &Integration{
-		Name:               name,
-		ProtocolVersion:    protocolVersion,
-		IntegrationVersion: version,
-		Entities:           []*Entity{},
-		writer:             os.Stdout,
-		locker:             &sync.Mutex{},
+
+		ProtocolVersion: protocolVersion,
+		Metadata:        Metadata{name, version},
+		Entities:        []*Entity{},
+		writer:          os.Stdout,
+		locker:          &sync.Mutex{},
 	}
 
 	for _, opt := range opts {
@@ -229,7 +234,7 @@ func (i *Integration) addDefaultAttributes(e *Entity) error {
 	if defaultArgs.Metadata {
 		for _, element := range os.Environ() {
 			variable := strings.Split(element, "=")
-			prefix := fmt.Sprintf("%s%s_", CustomAttrPrefix, strings.ToUpper(i.Name))
+			prefix := fmt.Sprintf("%s%s_", CustomAttrPrefix, strings.ToUpper(i.Metadata.Name))
 			if strings.HasPrefix(variable[0], prefix) {
 				err := e.AddTag(strings.TrimPrefix(variable[0], prefix), variable[1])
 				if err != nil {

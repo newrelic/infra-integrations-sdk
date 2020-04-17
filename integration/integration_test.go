@@ -19,8 +19,8 @@ var (
 func Test_Integration_CreateIntegrationInitializesCorrectly(t *testing.T) {
 	i := newTestIntegration(t)
 
-	assert.Equal(t, "TestIntegration", i.Name)
-	assert.Equal(t, "1.0", i.IntegrationVersion)
+	assert.Equal(t, "TestIntegration", i.Metadata.Name)
+	assert.Equal(t, "1.0", i.Metadata.Version)
 	assert.Equal(t, "4", i.ProtocolVersion)
 	assert.Len(t, i.Entities, 0)
 }
@@ -39,8 +39,8 @@ func Test_Integration_DefaultIntegrationWritesToStdout(t *testing.T) {
 	i, err := New("integration", "4.0")
 
 	assert.NoError(t, err)
-	assert.Equal(t, "integration", i.Name)
-	assert.Equal(t, "4.0", i.IntegrationVersion)
+	assert.Equal(t, "integration", i.Metadata.Name)
+	assert.Equal(t, "4.0", i.Metadata.Version)
 	assert.Equal(t, "4", i.ProtocolVersion)
 	assert.Equal(t, 0, len(i.Entities))
 
@@ -50,7 +50,7 @@ func Test_Integration_DefaultIntegrationWritesToStdout(t *testing.T) {
 	_ = f.Close()
 	payload, err := ioutil.ReadFile(f.Name())
 	assert.NoError(t, err)
-	assert.Equal(t, stripBlanks([]byte(`{"name":"integration","protocol_version":"4","integration_version":"4.0","data":[]}`)), stripBlanks(payload))
+	assert.Equal(t, stripBlanks([]byte(`{"protocol_version":"4","integration":{"name":"integration","version":"4.0"},"data":[]}`)), stripBlanks(payload))
 }
 
 func Test_Integration_EntitiesWithSameBasicMetadataAreEqual(t *testing.T) {
@@ -147,9 +147,11 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 		func(integrationBytes []byte) {
 			expectedOutputRaw := []byte(`
 			{
-			  "name": "TestIntegration",
 			  "protocol_version": "4",
-			  "integration_version": "1.0",
+              "integration": {
+				  "name": "TestIntegration",
+				  "version": "1.0"
+			  },
 			  "data": [
 				{
 				  "common":{},
@@ -157,8 +159,8 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 					"name": "EntityOne",
 					"displayName":"",
 					"type": "test",
-					"tags": {
-						"env":"prod"
+					"metadata": {
+						"tags.env":"prod"
 					  }
 				  },
 				  "metrics": [
@@ -221,7 +223,7 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 					"name": "EntityTwo",
 					"displayName":"",
 					"type": "test",
-					"tags": {}
+					"metadata": {}
 				  },
 				  "metrics": [
 					{

@@ -58,9 +58,9 @@ func (e *Entity) AddInventoryItem(key string, field string, value interface{}) e
 	return e.Inventory.SetItem(key, field, value)
 }
 
-// Tags returns all the Entity tags
-func (e *Entity) Tags() metadata.TagMap {
-	return e.Metadata.GetTags()
+// Metadata returns all the Entity tags
+func (e *Entity) Tags() metadata.MetadataMap {
+	return e.Metadata.GetMetadataMap()
 }
 
 // AddTag adds a new tag to the entity

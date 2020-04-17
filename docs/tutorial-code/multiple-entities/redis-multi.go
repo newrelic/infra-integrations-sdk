@@ -95,6 +95,9 @@ func main() {
 		e1.AddMetric(g)
 	}
 
+	// Add the first entity to the integration
+	i.AddEntity(e1)
+
 	// Create another Entity
 	e2, err := i.NewEntity("instance-2", "my-instance", "redis")
 	panicOnErr(err)
@@ -131,6 +134,10 @@ func main() {
 		e2.AddMetric(g)
 	}
 
+	// Add the second entity to the integration
+	i.AddEntity(e2)
+
+	// Print the JSON document to stdout
 	panicOnErr(i.Publish())
 }
 

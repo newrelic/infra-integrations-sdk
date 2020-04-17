@@ -22,7 +22,7 @@ func Test_Entity_NewEntityInitializesCorrectly(t *testing.T) {
 	assert.Equal(t, "name", e.Metadata.Name)
 	assert.Equal(t, "displayName", e.Metadata.DisplayName)
 	assert.Equal(t, "type", e.Metadata.EntityType)
-	assert.Empty(t, e.Metadata.GetTags())
+	assert.Empty(t, e.Metadata.GetMetadataMap())
 	assert.Empty(t, e.Events)
 	assert.Empty(t, e.Metrics)
 	assert.NotNil(t, e.Inventory)
@@ -53,12 +53,12 @@ func Test_Entity_AddTagReplacesExisting(t *testing.T) {
 	assert.NoError(t, err)
 
 	_ = e.AddTag("env", "prod")
-	assert.Len(t, e.Metadata.Tags, 1)
+	assert.Len(t, e.Metadata.Metadata, 1)
 	assert.Equal(t, e.Metadata.GetTag("env"), "prod")
 
 	_ = e.AddTag("env", "staging")
 
-	assert.Len(t, e.Metadata.Tags, 1)
+	assert.Len(t, e.Metadata.Metadata, 1)
 	assert.Equal(t, e.Metadata.GetTag("env"), "staging")
 }
 
