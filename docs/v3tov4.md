@@ -70,7 +70,7 @@ or create a `Remote Entity` calling
 
 `func (i *Integration) Entity(name, namespace string, idAttributes ...IDAttribute) (e *Entity, err error)`
 
-In SDK v4, you can obtain the Host Entity or create Entities. The Host Entity is a the entity attached to the host 
+In SDK v4, you can obtain the Host Entity or create Entities. The Host Entity is the entity that represents the host 
 where the agent is running. It inherits the same entity ID as the agent which executes the integration. On the other
 hand, an Entity has its own entity ID. Both types of entities are decorated with the metadata from the host where the
 agent is running.
@@ -85,7 +85,7 @@ i, err := integration.New(integrationName, integrationVersion)
 i.HostEntity.AddInventoryItem("key", "value", "foo")
 ```
 
-To create an Entity you need to call the following method inside  integration
+To create an Entity you need to call the following method on the integration struct:
 
 `func (i *Integration) NewEntity(name, type, displayName string) (e *Entity, err error)`
 
