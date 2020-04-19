@@ -1,8 +1,9 @@
 package metadata
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_Metadata_AddMetadataAndTags(t *testing.T) {
@@ -18,6 +19,6 @@ func Test_Metadata_AddMetadataAndTags(t *testing.T) {
 	assert.True(t, ok)
 
 	// then we check that the tag has been prefixed correctly
-	_, ok = m.Metadata[TagsPrefix + "t1"]
+	_, ok = m.Metadata[tagsPrefix+"t1"]
 	assert.True(t, ok)
 }

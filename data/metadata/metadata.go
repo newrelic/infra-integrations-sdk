@@ -6,18 +6,18 @@ import (
 	"strings"
 )
 
-const TagsPrefix = "tags."
+const tagsPrefix = "tags."
 
-// MetadataMap stores the tags for the entity
-type MetadataMap map[string]interface{}
+// Map stores the tags for the entity
+type Map map[string]interface{}
 
 // Metadata stores entity Metadata. Serialized as "entity"
 type Metadata struct {
 	// TODO: not a fan of having the fields exposed
-	Name        string      `json:"name"`
-	DisplayName string      `json:"displayName"`
-	EntityType  string      `json:"type"`
-	Metadata    MetadataMap `json:"metadata"`
+	Name        string `json:"name"`
+	DisplayName string `json:"displayName"`
+	EntityType  string `json:"type"`
+	Metadata    Map    `json:"metadata"`
 }
 
 // New creates a new metadata section that "identifies" an entity
@@ -26,7 +26,7 @@ func New(name string, entityType string, displayName string) *Metadata {
 		Name:        name,
 		DisplayName: displayName,
 		EntityType:  entityType,
-		Metadata:    MetadataMap{},
+		Metadata:    Map{},
 	}
 }
 
@@ -60,13 +60,13 @@ func (m *Metadata) GetTag(key string) interface{} {
 }
 
 // GetMetadataMap gets all the tags added to the metadata section of an entity
-func (m *Metadata) GetMetadataMap() MetadataMap {
+func (m *Metadata) GetMetadataMap() Map {
 	return m.Metadata
 }
 
 func applyTagsPrefix(s string) string {
-	if ok := strings.HasPrefix(s, TagsPrefix); !ok {
-		s = fmt.Sprintf("%s%s", TagsPrefix, s)
+	if ok := strings.HasPrefix(s, tagsPrefix); !ok {
+		s = fmt.Sprintf("%s%s", tagsPrefix, s)
 	}
 	return s
 }

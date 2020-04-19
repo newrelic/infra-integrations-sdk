@@ -59,7 +59,7 @@ func (e *Entity) AddInventoryItem(key string, field string, value interface{}) e
 }
 
 // GetMetadata returns all the Entity's metadata
-func (e *Entity) GetMetadata() metadata.MetadataMap {
+func (e *Entity) GetMetadata() metadata.Map {
 	return e.Metadata.GetMetadataMap()
 }
 
