@@ -14,23 +14,16 @@
 [GoDocWidget]: https://godoc.org/github.com/newrelic/infra-integrations-sdk?status.svg
 
 
-New Relic Infrastructure, provided by New Relic, Inc (http://www.newrelic.com),
-offers flexible, dynamic server monitoring. We provide an SDK for creating an
-integration for reporting custom host and server data, including metric, event,
-and inventory (system state) data. That data will be findable and usable in New Relic
-Infrastructure and in New Relic Insights. You can find the complete documentation
-of the SDK on [our docs site](https://docs.newrelic.com/docs/intro-infrastructure-integration-sdk).
+[New Relic Infrastructure](https://docs.newrelic.com/docs/infrastructure), provided by [New Relic, Inc](http://www.newrelic.com), offers flexible, dynamic server monitoring, including [integrations](https://docs.newrelic.com/docs/integrations/new-relic-integrations/get-started/introduction-infrastructure-integrations) for many popular services. 
 
-This Go package helps take the complexity out of building an Infrastructure
-Integration by providing a set of useful GO functions and data structures. For
-instance, some common use cases like reading values from command-line arguments
-or environment variables, initializing a structure with all the necessary fields
-for an Integration defined by our SDK or generating and printing a JSON to
-stdout, are covered and simplified by this package.
+If our [on-host integrations](https://docs.newrelic.com/docs/integrations/host-integrations/getting-started/introduction-host-integrations) don't meet your needs, we provide two options for creating your own on-host integration: 
 
-If you want to know more or you need specific documentation about the structures
-and functions provided by this package, you can take a look at the official
-package documentation in godoc.org (see below).
+* Our [Flex integration tool](https://docs.newrelic.com/docs/integrations/host-integrations/host-integrations-list/flex-integration-tool-build-your-own-integration): a simple way to report custom metrics by creating a configuration file that defines what data will be reported. This is recommended for most use cases. 
+* Our Integrations SDK: a more robust solution. We give you access to the complete set of tools we use to build our integrations and report all [Infrastructure integration data types](https://docs.newrelic.com/docs/integrations/new-relic-integrations/get-started/introduction-infrastructure-integrations#data-types). 
+
+The Integrations SDK helps take the complexity out of building an integration by providing a set of useful Go language functions and data structures. For instance, some common use cases like reading values from command-line arguments or environment variables, initializing a structure with all the necessary fields for an integration defined by our SDK or generating and printing a JSON to stdout, are covered and simplified by this package.
+
+If you want to know more or you need specific documentation about the structures and functions provided by this package, you can take a look at the official package documentation in godoc.org (see below).
 
 ## Getting Started
 
@@ -55,8 +48,7 @@ You can find the latest API documentation generated from the source code in
 
 ### Agent API
 
-Integrations are executed periodically by the *agent*. The integration `stdout` is consumed by the *agent*.
-This `stdout` data is formatted as JSON.
+Infrastructure on-host integrations are executed periodically by the Infrastructure *agent*. The integration `stdout` is consumed by the *agent*. This `stdout` data is formatted as JSON.
 
 Agent supports different JSON data-structures called *integration protocols*:
 
@@ -65,14 +57,13 @@ Agent supports different JSON data-structures called *integration protocols*:
 * v3: Improves remote entities support. See [protocol v3](docs/protocol-v3.md) documentation. 
 
 
-### Local Entity vs Remote Entities
+### Local vs remote entities
 
-`Entity` is a specific thing we collect data about. We used this vague term because we want to support hosts, pods, load balancers, DBs, etc. in a generic way. In the previous SDK versions (v1 & v2) the entity was local and just one, the host.
+`Entity` is a specific thing we collect data about. We used this vague term because we want to support hosts, pods, load balancers, DBs, etc. in a generic way. In the previous SDK versions (v1 & v2) the entity was local and just one: the host.
 
-In later versions the host reporting is called **local entity**, and it's optional to add metrics to it. You could just use **remote entities** to attach metrics.
+In later versions the reporting host is called **local entity**, and it's optional to add metrics to it. You could just use **remote entities** to attach metrics.
 
 For more information on the definition of a remote entity, please see the following document on [local vs remote entites](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/entity-definition.md).
-
 
 
 ## Upgrading from SDK v2 to v3
