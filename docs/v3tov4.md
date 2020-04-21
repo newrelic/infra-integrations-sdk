@@ -229,6 +229,7 @@ Description of the paramaters:
 ever-growing.
 
 `count` (float64) is the number of occurrences of an event reported in a given interval. Must be a positive value.
+Cumulative-count values need to be ever-growing.
 
 `average` (float64) is the number expressing the central value in the set of data.
 
@@ -273,7 +274,7 @@ ever-growing.
 Metrics can have a list of dimensions. These dimensions, along with the name, make the metric unique and can be used to 
 search and filter them.
 
-To add a new Dimensions just call on a metric 
+To add a dimension to a metric just call the following method on a metric structure
 
 `func (i *<Gauge|Count|Summary>) AddDimension(key string, value interface{})`
 
@@ -290,7 +291,7 @@ To add a metric to an entity just call the method on an Entity
 
 ### Events
 
-The API for creating events has changed a little bit. Events can be attached to an Entity or Integration.
+The API for creating events hasn't changed much. Events can be attached to the HostEntity or an Entity.
 
 In SDK v3, events were created like this
 
@@ -308,7 +309,7 @@ In SDK v3, attributes were added to events using this method
 
 `func AddCustomAttributes(e *Event, customAttributes []attribute.Attribute)`
 
-In SDK v4, you need to use this other method for adding a single attribute
+In SDK v4, you need to use this method on the Event for adding a single attribute
 
 `func (e *Event) AddAttribute(key string, value interface{})`
 
@@ -324,13 +325,13 @@ The event will be decorated with the Entity's tags.
 
 ### Inventory
 
-The API for creating inventory is almost the same. Inventory can be attached to an Entity or Integration.
+The API for creating inventory is almost the same. Inventory can be attached to the HostEntity or an Entity.
 
 In SDK v3, an inventory item was added like this
 
 `func (e *Entity) SetInventoryItem(key string, field string, value interface{}) error`
 
-Now, to add an inventory item to an integration you use the following method
+Now, to add an inventory item to an entity you use the following method
 
 `func (e *Entity) AddInventoryItem(key string, field string, value interface{}) error`
 
