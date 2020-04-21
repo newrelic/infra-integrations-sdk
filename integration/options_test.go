@@ -23,7 +23,7 @@ func Test_PublishWritesUsingSelectedWriter(t *testing.T) {
 
 	assert.NoError(t, i.Publish())
 
-	assert.Equal(t, `{"name":"integration","protocol_version":"4","integration_version":"7.0","data":[]}`+"\n", w.String())
+	assert.Equal(t, `{"protocol_version":"4","integration":{"name":"integration","version":"7.0"},"data":[]}`+"\n", w.String())
 }
 
 func Test_PrettyPrintWritesPrettifiedResult(t *testing.T) {
@@ -136,8 +136,8 @@ func Test_DefaultArguments(t *testing.T) {
 	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
 	assert.NoError(t, err)
 
-	assert.Equal(t, "TestIntegration", i.Name)
-	assert.Equal(t, "1.0", i.IntegrationVersion)
+	assert.Equal(t, "TestIntegration", i.Metadata.Name)
+	assert.Equal(t, "1.0", i.Metadata.Version)
 	assert.Equal(t, "4", i.ProtocolVersion)
 	assert.Len(t, i.Entities, 0)
 	assert.True(t, al.All())
@@ -204,5 +204,5 @@ func Test_ClusterAndServiceArgumentsAreAddedToMetadata(t *testing.T) {
 	e, err := i.NewEntity("name", "ns", "")
 	assert.NoError(t, err)
 
-	assert.Len(t, e.Tags(), 0)
+	assert.Len(t, e.GetMetadata(), 0)
 }
