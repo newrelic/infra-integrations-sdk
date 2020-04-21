@@ -36,7 +36,7 @@ func (m *Metadata) EqualsTo(b *Metadata) bool {
 		return false
 	}
 
-	return reflect.DeepEqual(m.GetMetadataMap(), b.GetMetadataMap())
+	return reflect.DeepEqual(m.Metadata, b.Metadata)
 }
 
 // AddMetadata adds a generic metadata to the entity
@@ -57,11 +57,6 @@ func (m *Metadata) AddTag(key string, value interface{}) {
 // GetTag gets a specific tag from the metadata section of an entity
 func (m *Metadata) GetTag(key string) interface{} {
 	return m.Metadata[applyTagsPrefix(key)]
-}
-
-// GetMetadataMap gets all the tags added to the metadata section of an entity
-func (m *Metadata) GetMetadataMap() Map {
-	return m.Metadata
 }
 
 func applyTagsPrefix(s string) string {

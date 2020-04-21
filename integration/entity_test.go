@@ -22,7 +22,7 @@ func Test_Entity_NewEntityInitializesCorrectly(t *testing.T) {
 	assert.Equal(t, "name", e.Metadata.Name)
 	assert.Equal(t, "displayName", e.Metadata.DisplayName)
 	assert.Equal(t, "type", e.Metadata.EntityType)
-	assert.Empty(t, e.Metadata.GetMetadataMap())
+	assert.Empty(t, e.Metadata.Metadata)
 	assert.Empty(t, e.Events)
 	assert.Empty(t, e.Metrics)
 	assert.NotNil(t, e.Inventory)
