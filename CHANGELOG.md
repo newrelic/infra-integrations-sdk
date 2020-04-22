@@ -5,10 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-### Next
+### 4.0.0-internal-release
 
-- Start using go modules
-- Go version requirement changed to 1.13
+### Added
+
+- New integration protocol v4. It supports dimensional metric data format.
+- New metric types: `count`, `summary`, `cumulative-count` and `cumulative-rate`.
+
+### Changed
+
+- Old metric types have been remapped: 
+    * `PDELTA` and `DELTA` to `cumulative-count`.
+    * `PRATE` to `cumulative-rate`.
+    * `ATTRIBUTE` has been removed. Now you can add generic metadata or tags to all metric types.
+- Start using go modules.
+- Go version requirement changed to 1.13.
 
 ### 3.6.1
 
