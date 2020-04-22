@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -88,18 +89,17 @@ func _new(CABundleFile, CABundleDir string, httpTimeout time.Duration, acceptInv
 
 func getCertPool(certFile string, certDirectory string) (*x509.CertPool, error) {
 	caCertPool := x509.NewCertPool()
+
 	if certFile != "" {
-		caCert, err := ioutil.ReadFile(certFile)
-		if err != nil {
-			return nil, err
+		if err := addCert(filepath.Join(certDirectory, certFile), caCertPool); err != nil {
+			if os.IsNotExist(err) {
+				if err = addCert(certFile, caCertPool); err != nil {
+					return nil, err
+				}
+			}
 		}
-
-		ok := caCertPool.AppendCertsFromPEM(caCert)
-		if !ok {
-			return nil, errors.New("can't parse certificate")
-		}
-
 	}
+
 	if certDirectory != "" {
 		files, err := ioutil.ReadDir(certDirectory)
 		if err != nil {
@@ -108,17 +108,25 @@ func getCertPool(certFile string, certDirectory string) (*x509.CertPool, error) 
 
 		for _, f := range files {
 			if strings.Contains(f.Name(), ".pem") {
-				caCertFilePath := filepath.Join(certDirectory + "/" + f.Name())
-				caCert, err := ioutil.ReadFile(caCertFilePath)
-				if err != nil {
+				caCertFilePath := filepath.Join(certDirectory, f.Name())
+				if err := addCert(caCertFilePath, caCertPool); err != nil {
 					return nil, err
-				}
-				ok := caCertPool.AppendCertsFromPEM(caCert)
-				if !ok {
-					return nil, errors.New("can't parse certificate")
 				}
 			}
 		}
 	}
 	return caCertPool, nil
+}
+
+func addCert(certFile string, caCertPool *x509.CertPool) error {
+	caCert, err := ioutil.ReadFile(certFile)
+	if err != nil {
+		return err
+	}
+
+	ok := caCertPool.AppendCertsFromPEM(caCert)
+	if !ok {
+		return errors.New("can't parse certificate")
+	}
+	return nil
 }
