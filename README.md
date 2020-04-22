@@ -32,11 +32,24 @@ If you want to know more or you need specific documentation about the structures
 and functions provided by this package, you can take a look at the official
 package documentation in godoc.org (see below).
 
+# SDK v4 Internal Release Notice
+
+This is an internal release of the new SDK v4. It contains breaking changes, therefore it's highly recommended to take
+a look at the [migration guide from v3 to v4](#upgrading-from-SDK-v3-to-v4).
+
+Most of the documentation hasn't been updated yet to reflect the changes made in this new release.
+
 ## Getting Started
 
 Before starting to write Go code, we suggest taking a look at
 [golang's documentation](https://golang.org/doc/code.html) to setup the
-environment and familiarize yourself with the golang language.
+environment and familiarize yourself with the golang language. 
+
+The minimum supported Go version is 1.13. You can check your Go version executing the following command in a bash shell:
+
+```bash
+$ go version
+```
 
 You can download the SDK code to your GOPATH with the following command:
 
@@ -69,14 +82,14 @@ Agent supports different JSON data-structures called *integration protocols*:
 ### Host Entity vs Entities
 
 `Entity` is a specific thing we collect data about. We used this vague term because we want to support hosts, pods, load
- balancers, DBs, etc. in a generic way. In the previous SDK version v3, we had the Local Entity and the Remote Entities. 
+ balancers, DBs, etc. in a generic way. In the previous SDK v3, we had the Local Entity and Remote Entities. 
  
 In this new version the reporting host is called **HostEntity**, and it's optional to add data to it. It represents the 
 host where the agent is running on. If your entity belongs to a different host or it's something abstract that is 
-not attached to a specific host, then you can create an Entity which will require a unique name and an entity type in
-order to be created.
+not attached to the host where the integration runs, then you can create an Entity which requires a unique name and 
+an entity type in order to be created.
 
-On both types of entities, you can metrics, events and inventory to them.
+You can add metrics, events and inventory on both types of entities.
 
 ## Upgrading from SDK v3 to v4
 
