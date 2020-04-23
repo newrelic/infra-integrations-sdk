@@ -65,7 +65,7 @@ func _new(CABundleFile, CABundleDir string, httpTimeout time.Duration, acceptInv
 
 				opts := x509.VerifyOptions{
 					Roots:         t.TLSClientConfig.RootCAs, // On the server side, use config.ClientCAs.
-					DNSName:       t.TLSClientConfig.ServerName,
+					DNSName:       acceptInvalidHostname,
 					Intermediates: x509.NewCertPool(),
 					// On the server side, set KeyUsages to ExtKeyUsageClientAuth. The
 					// default value is appropriate for clients side verification.
