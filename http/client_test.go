@@ -187,18 +187,17 @@ func Test_NewAcceptInvalidHostname(t *testing.T) {
 		}))
 	defer srv.Close()
 
+	// Given a server certificate accepting a certain IP and hostname
 	var ip net.IP
 	ip = net.IPv4(127, 0, 0, 111)
-	sameIP := ip.String()
-
 	serverTLSConf, err := certsetup("foo.bar", []net.IP{ip})
 	require.NoError(t, err)
 	srv.TLS = serverTLSConf
 
-	// Given test server is working
+	// And server is running HTTPS
 	srv.StartTLS()
 
-	// Then create temp dir
+	// And folder in client to contain a certificate
 	tmpDir, err := ioutil.TempDir("", "test")
 	require.NoError(t, err)
 	defer func() {
@@ -206,14 +205,15 @@ func Test_NewAcceptInvalidHostname(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	// Extract ca.pem from TLS server
+	// And ca.pem exists for client
 	err = writeCApem(t, err, srv, tmpDir, "ca.pem")
 
-	// New should return new client
+	// When HTTPS client is created for an IP accepted by certificate
+	sameIP := ip.String()
 	client, err := NewAcceptInvalidHostname(filepath.Join(tmpDir, "ca.pem"), "", time.Second, sameIP)
 	require.NoError(t, err)
 
-	// And HTTPS should work
+	// Then HTTPS should work even for different hostname and source IP (127.0.0.1)
 	req, err := http.NewRequest("GET", srv.URL, nil)
 	require.NoError(t, err)
 	req.Host = "different.hostname"
