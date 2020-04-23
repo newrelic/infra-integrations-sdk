@@ -208,7 +208,9 @@ func Test_NewAcceptInvalidHostname(t *testing.T) {
 	// And ca.pem exists for client
 	err = writeCApem(t, err, srv, tmpDir, "ca.pem")
 
-	// When HTTPS client is created for an IP accepted by certificate
+	// 2 assertions:
+
+	// When HTTPS client is created accepting server certificated IP
 	sameIP := ip.String()
 	client, err := NewAcceptInvalidHostname(filepath.Join(tmpDir, "ca.pem"), "", time.Second, sameIP)
 	require.NoError(t, err)
@@ -218,6 +220,20 @@ func Test_NewAcceptInvalidHostname(t *testing.T) {
 	require.NoError(t, err)
 	req.Host = "different.hostname"
 	resp, err := client.Do(req)
+	require.NoError(t, err)
+
+	_, err = ioutil.ReadAll(resp.Body)
+	assert.NoError(t, err)
+
+	// When HTTPS client is created accepting server certificated hostname
+	client, err = NewAcceptInvalidHostname(filepath.Join(tmpDir, "ca.pem"), "", time.Second, "foo.bar")
+	require.NoError(t, err)
+
+	// Then HTTPS should work
+	req, err = http.NewRequest("GET", srv.URL, nil)
+	require.NoError(t, err)
+	req.Host = "different.hostname"
+	resp, err = client.Do(req)
 	require.NoError(t, err)
 
 	_, err = ioutil.ReadAll(resp.Body)
