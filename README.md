@@ -32,11 +32,24 @@ If you want to know more or you need specific documentation about the structures
 and functions provided by this package, you can take a look at the official
 package documentation in godoc.org (see below).
 
+# SDK v4 Internal Release Notice
+
+This is an internal release of the new SDK v4. It contains breaking changes, therefore it's highly recommended to take
+a look at the [migration guide from v3 to v4](#upgrading-from-SDK-v3-to-v4).
+
+Most of the documentation hasn't been updated yet to reflect the changes made in this new release.
+
 ## Getting Started
 
 Before starting to write Go code, we suggest taking a look at
 [golang's documentation](https://golang.org/doc/code.html) to setup the
-environment and familiarize yourself with the golang language.
+environment and familiarize yourself with the golang language. 
+
+The minimum supported Go version is 1.13. You can check your Go version executing the following command in a bash shell:
+
+```bash
+$ go version
+```
 
 You can download the SDK code to your GOPATH with the following command:
 
@@ -63,21 +76,24 @@ Agent supports different JSON data-structures called *integration protocols*:
 * v1: Legacy data structure to monitor local entity.
 * v2: This version allows to monitor remote entities and keep support for previous local entity. [Official doc](https://docs.newrelic.com/docs/integrations/integrations-sdk/file-specifications/integration-executable-file-specifications)
 * v3: Improves remote entities support. See [protocol v3](docs/protocol-v3.md) documentation. 
+* v4: Adds support for dimensional metrics format and introduces new metric types: `count`, `summary`, `cumulative-count`
+ and `cumulative-rate`.
 
+### Host Entity vs Entities
 
-### Local Entity vs Remote Entities
+`Entity` is a specific thing we collect data about. We used this vague term because we want to support hosts, pods, load
+ balancers, DBs, etc. in a generic way. In the previous SDK v3, we had the Local Entity and Remote Entities. 
+ 
+In this new version the reporting host is called **HostEntity**, and it's optional to add data to it. It represents the 
+host where the agent is running on. If your entity belongs to a different host or it's something abstract that is 
+not attached to the host where the integration runs, then you can create an Entity which requires a unique name and 
+an entity type in order to be created.
 
-`Entity` is a specific thing we collect data about. We used this vague term because we want to support hosts, pods, load balancers, DBs, etc. in a generic way. In the previous SDK versions (v1 & v2) the entity was local and just one, the host.
+You can add metrics, events and inventory on both types of entities.
 
-In later versions the host reporting is called **local entity**, and it's optional to add metrics to it. You could just use **remote entities** to attach metrics.
+## Upgrading from SDK v3 to v4
 
-For more information on the definition of a remote entity, please see the following document on [local vs remote entites](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/entity-definition.md).
-
-
-
-## Upgrading from SDK v2 to v3
-
-https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/v2tov3.md
+https://github.com/newrelic/infra-integrations-sdk/blob/sdk-v4/docs/v3tov4.md
 
 #### SDK & agent-protocol compatibility 
 
@@ -85,57 +101,21 @@ SDK v1 and v2 use *protocol-v1*.
 
 SDK v3 could use either *protocol-v2* or *protocol-v3*.
 
-
-## Tools
-
-This section shows the documentation of all the core components of the GoSDK v3. This is, all the packages that are required to setup and manage the integration data, as well as some other libraries that, despite they are not part of the core SDK, implement common operations that may be reused in different integrations:
-
-### Command-line tool to scaffold new New Relic custom integrations
-
-https://github.com/newrelic/nr-integrations-builder
-
-### Integration data model
-
-https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/integration.md
-
-
-### Configuration arguments
-
-https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/args.md
-
-### Internal logging
-
-https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/log.md
-
-### Persistence/Key-Value storage
-
-https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/persist.md
-
-
-### Legacy protocol v1 builder
-
-In case you want to use the previous builder, you still can do it via `gopkg.in/newrelic/nr-integrations-builder.v1`.
-
-You can easily fetch it using:
- 
-`go get gopkg.in/newrelic/nr-integrations-builder.v1`
+SDK v4 only uses *protocol-v4*.
 
 ## Libraries
 
 ### JMX support
 
-The Integrations Go lang SDK supports getting metrics through JMX by calling the
-`jmx.Open()`, `jmx.OpenWithSSL`, `jmx.Query()` and `jmx.Close()` functions. This JMX support relies
-on the nrjmx tool. Follow the steps in
-the [nrjmx](https://github.com/newrelic/nrjmx) repository to build it and set
-the `NR_JMX_TOOL` environment variable to point to the location of the nrjmx
-executable. If the `NR_JMX_TOOL` variable is not set, the SDK will use
-`/usr/bin/nrjmx` by default.
+The Integrations Go lang SDK supports getting metrics through JMX by calling the `jmx.Open()`, `jmx.OpenWithSSL`, 
+`jmx.Query()` and `jmx.Close()` functions. This JMX support relies on the nrjmx tool. Follow the steps in the [nrjmx](https://github.com/newrelic/nrjmx) 
+repository to build it and set the `NR_JMX_TOOL` environment variable to point to the location of the nrjmx executable. 
+If the `NR_JMX_TOOL` variable is not set, the SDK will use `/usr/bin/nrjmx` by default.
 
 ### HTTP support
 
-GoSDK v3 provides a helper HTTP package to create secure HTTPS clients that require loading credentials from a Certificate Authority Bundle (stored in a file or in a directory).You can read more [here](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/http.md).
-
+The GoSDK provides a helper HTTP package to create secure HTTPS clients that require loading credentials from a 
+Certificate Authority Bundle (stored in a file or in a directory). You can read more [here](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/http.md).
 
 ## Contributing Code
 
@@ -160,47 +140,6 @@ or email support@newrelic.com.
 
 New Relic, Inc.
 
+## Tools and FAQs related to previous SDK v3.
 
-## FAQs
-
-- **Where can I see the data I'm sending to New Relic with my custom integration?**
-
-    * You can go to [insights](https://insights.newrelic.com/) and run [these queries]( https://github.com/newrelic/infra-integrations-sdk/blob/faqs/docs/tutorial.md#view-metric-data-in-new-relic-insights) to see metric data.
-    * In order to see inventory data follow [these intructions](https://github.com/newrelic/infra-integrations-sdk/blob/faqs/docs/tutorial.md#view-inventory-data-in-infrastructure).
-    
-    
-- **Are there other SDKs in other languages?**
-
-    * No, we plan to have more in the future though.
-- **Do you have examples of integrations written in other languages?**
-
-    * Yes, you can find them at this [link](https://github.com/newrelic/infra-integrations/tree/master/doc/examples).
-
-- **Can I reuse my Nagios checks?**
-
-    * We don't offer an Integration for "Nagios" checks. But with the SDK you can build a simple custom integration to push your check data
-
-- **How can I migrate my current integration from sdk v2 to sdk v3?**
-    
-    * You can check our [migration steps](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/v2tov3.md).
-
-<!--
- - **Can I attach a custom calculation function to a metric type?** 
--->
-
-- **How can I add a custom argument to my integration?**
-
-    * Take a look at [arguments documentation](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/args.md).
-
-- **How can I query a server that uses a custom certificate?**
-
-    * We have [http helper](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/http.md) that you can use to setup custom certificates easily.
-
-- **How can I query JMX bean using the sdk?**
-
-    * We have a [Jmx helper](https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/toolset/jmx.md) that will help you query any beam you are interested in monitoring.
-
-        
-
-
-
+https://github.com/newrelic/infra-integrations-sdk/blob/sdk-v4/docs/v3_tools_faqs.md

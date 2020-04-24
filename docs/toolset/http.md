@@ -1,6 +1,6 @@
 # HTTP package
 
-The `GoSDK v3` integrations should rely on the standard Go `http` package for doing HTTP petitions. However, `GoSDK v3`
+`GoSDK` integrations should rely on the standard Go `http` package for doing HTTP requests. However, the `GoSDK`
 provides a helper [HTTP package](https://godoc.org/github.com/newrelic/infra-integrations-sdk/http) to create secure
 HTTPS clients that require loading credentials from a Certificate Authority Bundle (stored in a file or in a directory).
 
