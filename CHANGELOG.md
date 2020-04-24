@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+
+### Next
+
+### Added
+
+- Package `http` can now create a client that validate certificates but also
+  accepts invalid hostnames via `NewAcceptInvalidHostname`.
+
 ### 3.6.3
 
 ### Fixed
