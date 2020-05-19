@@ -362,6 +362,8 @@ func receiveResult(lineC chan []byte, queryErrC chan error, cancelFn context.Can
 			for k, v := range r {
 				result[k] = v
 			}
+			cancelFn()
+			Close()
 			return
 
 		case warn = <-cmdWarnC:
