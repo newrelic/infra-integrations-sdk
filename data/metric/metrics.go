@@ -1,6 +1,7 @@
 package metric
 
 import (
+	"math"
 	"time"
 
 	err "github.com/newrelic/infra-integrations-sdk/data/errors"
@@ -42,11 +43,11 @@ type count struct {
 // summary is a metric of type summary.
 type summary struct {
 	metricBase
-	Count   float64 `json:"count"`
-	Average float64 `json:"average"`
-	Sum     float64 `json:"sum"`
-	Min     float64 `json:"min"`
-	Max     float64 `json:"max"`
+	Count   *float64 `json:"count"`
+	Average *float64 `json:"average"`
+	Sum     *float64 `json:"sum"`
+	Min     *float64 `json:"min"`
+	Max     *float64 `json:"max"`
 }
 
 // cumulativeCount is a metric of type cumulative count
@@ -114,11 +115,11 @@ func NewSummary(timestamp time.Time, name string, count float64, average float64
 			Type:       SourcesTypeToName[SUMMARY],
 			Dimensions: Dimensions{},
 		},
-		Count:   count,
-		Average: average,
-		Sum:     sum,
-		Min:     min,
-		Max:     max,
+		Count:   asFloatPtr(count),
+		Average: asFloatPtr(average),
+		Sum:     asFloatPtr(sum),
+		Min:     asFloatPtr(min),
+		Max:     asFloatPtr(max),
 	}, nil
 }
 
@@ -194,4 +195,11 @@ func (m *metricBase) Dimension(key string) string {
 // GetDimensions gets all the dimensions
 func (m *metricBase) GetDimensions() Dimensions {
 	return m.Dimensions
+}
+
+func asFloatPtr(value float64) *float64 {
+	if math.IsNaN(value) || math.IsInf(value, 0) {
+		return nil
+	}
+	return &value
 }

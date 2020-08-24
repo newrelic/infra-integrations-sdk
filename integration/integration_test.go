@@ -2,6 +2,7 @@ package integration
 
 import (
 	"io/ioutil"
+	"math"
 	"os"
 	"strings"
 	"testing"
@@ -240,6 +241,30 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 				  "events": []
 				},
 				{
+				  "common":{},
+				  "entity": {
+					"name": "EntityThree",
+					"displayName":"",
+					"type": "test",
+					"metadata": {}
+				  },
+				  "metrics": [
+					{
+						"timestamp": 10000000,
+						"name": "metric-summary-with-nan",
+						"type": "summary",
+						"attributes": {},
+						"count": 1,
+						"average": null,
+						"sum": 100,
+						"min": null,
+						"max": null
+					}
+				  ],
+				  "inventory": {},
+				  "events": []
+				},
+				{
 				  "common": {},
                   "metrics": [
 				   {
@@ -348,6 +373,15 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	// add a cumulative rate metric to the host entity
 	crate, _ := CumulativeRate(time.Unix(10000000, 0), "cumulative-rate", 120)
 	i.HostEntity.AddMetric(crate)
+
+	// add entity 3
+	e3, err := i.NewEntity("EntityThree", "test", "")
+	assert.NoError(t, err)
+	// add metric to entity 2
+	summary2, _ := Summary(time.Unix(10000000, 0), "metric-summary-with-nan", 1, math.NaN(), 100, math.NaN(), math.NaN())
+	e3.AddMetric(summary2)
+	// add entity 3 to integration
+	i.AddEntity(e3)
 
 	assert.NoError(t, i.Publish())
 
