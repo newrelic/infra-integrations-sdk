@@ -1,6 +1,7 @@
 package metric
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -161,4 +162,10 @@ func Test_Metric_CannotCreateCumulativeRateWithEmptyName(t *testing.T) {
 	cr, err := NewCumulativeRate(now, "", 110)
 	assert.Nil(t, cr)
 	assert.Error(t, err)
+}
+
+func Test_Metric_CanCreateSummaryWithNan(t *testing.T) {
+	s, err := NewSummary(now, "summary-with-nan", 1, math.NaN(), 10, math.NaN(), math.NaN())
+	assert.NotNil(t, s)
+	assert.NoError(t, err)
 }
