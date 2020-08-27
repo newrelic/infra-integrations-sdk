@@ -169,7 +169,7 @@ func (ms *Set) elapsedDifference(name string, absolute interface{}, sourceType S
 		return
 	}
 
-	if sourceType == RATE {
+	if sourceType == RATE || sourceType == PRATE {
 		elapsed = elapsed / float64(duration)
 	}
 
