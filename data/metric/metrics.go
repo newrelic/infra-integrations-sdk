@@ -55,6 +55,7 @@ type bucket struct {
 	UpperBound      *float64 `json:"upper_bound,omitempty"`
 }
 
+// PrometheusHistogram represents a Prometheus histogram
 type PrometheusHistogram struct {
 	metricBase
 	SampleCount *uint64  `json:"sample_count,omitempty"`
@@ -70,6 +71,7 @@ type quantile struct {
 	Value    *float64 `json:"value,omitempty"`
 }
 
+// PrometheusSummary represents a Prometheus summary
 type PrometheusSummary struct {
 	metricBase
 	SampleCount *uint64     `json:"sample_count,omitempty"`
@@ -204,6 +206,7 @@ func NewCumulativeRate(timestamp time.Time, name string, value float64) (Metric,
 	}, nil
 }
 
+// NewPrometheusHistogram creates a new metric structurally similar to a Prometheus histogram
 func NewPrometheusHistogram(timestamp time.Time, name string, sampleCount uint64, sampleSum float64) (*PrometheusHistogram, error) {
 	return &PrometheusHistogram{
 		metricBase: metricBase{
@@ -214,21 +217,21 @@ func NewPrometheusHistogram(timestamp time.Time, name string, sampleCount uint64
 		},
 		// TODO make sure we make we don't allow NaN
 		SampleCount: &sampleCount,
-		SampleSum:   &sampleSum,
+		SampleSum:   asFloatPtr(sampleSum),
 	}, nil
 }
 
 // AddBucket adds a new bucket to the histogram.
 // Note that no attempt is made to keep buckets ordered, it's on the caller to guarantee the buckets are added
 // in the correct order.
-// TODO: can we make it so we guarantee the order?
 func (ph *PrometheusHistogram) AddBucket(value uint64, upperBound float64) {
 	ph.Buckets = append(ph.Buckets, &bucket{
 		CumulativeCount: &value,
-		UpperBound:      &upperBound,
+		UpperBound:      asFloatPtr(upperBound),
 	})
 }
 
+// NewPrometheusSummary creates a new metric structurally similar to a Prometheus summary
 func NewPrometheusSummary(timestamp time.Time, name string, sampleCount uint64, sampleSum float64) (*PrometheusSummary, error) {
 	return &PrometheusSummary{
 		metricBase: metricBase{
@@ -239,18 +242,15 @@ func NewPrometheusSummary(timestamp time.Time, name string, sampleCount uint64, 
 		},
 		// TODO make sure we make we don't allow NaN
 		SampleCount: &sampleCount,
-		SampleSum:   &sampleSum,
+		SampleSum:   asFloatPtr(sampleSum),
 	}, nil
 }
 
 // AddQuantile adds a new quantile to the summary.
-// Note that no attempt is made to keep buckets ordered, it's on the caller to guarantee the buckets are added
-// in the correct order.
-// TODO: can we make it so we guarantee the order?
 func (ps *PrometheusSummary) AddQuantile(quant float64, value float64) {
 	ps.Quantiles = append(ps.Quantiles, &quantile{
-		Quantile: &quant,
-		Value:    &value,
+		Quantile: asFloatPtr(quant),
+		Value:    asFloatPtr(value),
 	})
 }
 
