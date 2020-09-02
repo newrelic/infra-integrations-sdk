@@ -204,7 +204,7 @@ func NewCumulativeRate(timestamp time.Time, name string, value float64) (Metric,
 	}, nil
 }
 
-func NewPrometheusHistogram(timestamp time.Time, name string, sampleCount uint64, sampleSum float64) (Metric, error) {
+func NewPrometheusHistogram(timestamp time.Time, name string, sampleCount uint64, sampleSum float64) (*PrometheusHistogram, error) {
 	return &PrometheusHistogram{
 		metricBase: metricBase{
 			Timestamp:  timestamp.Unix(),
@@ -229,7 +229,7 @@ func (ph *PrometheusHistogram) AddBucket(value uint64, upperBound float64) {
 	})
 }
 
-func NewPrometheusSummary(timestamp time.Time, name string, sampleCount uint64, sampleSum float64) (Metric, error) {
+func NewPrometheusSummary(timestamp time.Time, name string, sampleCount uint64, sampleSum float64) (*PrometheusSummary, error) {
 	return &PrometheusSummary{
 		metricBase: metricBase{
 			Timestamp:  timestamp.Unix(),

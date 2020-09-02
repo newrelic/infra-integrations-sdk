@@ -421,13 +421,13 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	i.AddEntity(e3)
 
 	phisto, _ := metric.NewPrometheusHistogram(time.Unix(10000000, 0), "prometheus-histogram", 2, 3)
-	phisto.(*metric.PrometheusHistogram).AddBucket(1, 1)
-	phisto.(*metric.PrometheusHistogram).AddBucket(2, 2)
+	phisto.AddBucket(1, 1)
+	phisto.AddBucket(2, 2)
 	i.HostEntity.AddMetric(phisto)
 
 	psum, _ := metric.NewPrometheusSummary(time.Unix(10000000, 0), "prometheus-summary", 2, 2)
-	psum.(*metric.PrometheusSummary).AddQuantile(0.5, 1)
-	psum.(*metric.PrometheusSummary).AddQuantile(0.9, 1)
+	psum.AddQuantile(0.5, 1)
+	psum.AddQuantile(0.9, 1)
 	i.HostEntity.AddMetric(psum)
 
 	assert.NoError(t, i.Publish())
