@@ -225,6 +225,10 @@ func NewPrometheusHistogram(timestamp time.Time, name string, sampleCount uint64
 // Note that no attempt is made to keep buckets ordered, it's on the caller to guarantee the buckets are added
 // in the correct order.
 func (ph *PrometheusHistogram) AddBucket(value uint64, upperBound float64) {
+	// ignore +Inf buckets
+	if math.IsNaN(upperBound) || math.IsInf(upperBound, 0) {
+		return
+	}
 	ph.Buckets = append(ph.Buckets, &bucket{
 		CumulativeCount: &value,
 		UpperBound:      asFloatPtr(upperBound),
@@ -248,6 +252,10 @@ func NewPrometheusSummary(timestamp time.Time, name string, sampleCount uint64, 
 
 // AddQuantile adds a new quantile to the summary.
 func (ps *PrometheusSummary) AddQuantile(quant float64, value float64) {
+	// ignore invalid quantiles
+	if math.IsNaN(quant) || math.IsNaN(value) {
+		return
+	}
 	ps.Quantiles = append(ps.Quantiles, &quantile{
 		Quantile: asFloatPtr(quant),
 		Value:    asFloatPtr(value),
