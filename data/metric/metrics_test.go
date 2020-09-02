@@ -169,3 +169,67 @@ func Test_Metric_CanCreateSummaryWithNan(t *testing.T) {
 	assert.NotNil(t, s)
 	assert.NoError(t, err)
 }
+
+func Test_Metric_CreatePrometheusHistogram(t *testing.T) {
+	ph, err := NewPrometheusHistogram(now, "some-histogram", 2, 3)
+	assert.NotNil(t, ph)
+	assert.NoError(t, err)
+
+	mb := ph.(*PrometheusHistogram)
+	assert.Equal(t, "prometheus-histogram", mb.Type)
+	assert.Equal(t, "some-histogram", mb.Name)
+	assert.Equal(t, now.Unix(), mb.Timestamp)
+	assert.Equal(t, uint64(2), *mb.SampleCount)
+	assert.Equal(t, float64(3), *mb.SampleSum)
+}
+
+func Test_Metric_PrometheusHistogramAddBucket(t *testing.T) {
+	ph, err := NewPrometheusHistogram(now, "some-histogram", 2, 3)
+	assert.NotNil(t, ph)
+	assert.NoError(t, err)
+
+	mb := ph.(*PrometheusHistogram)
+	// bucket with upper bound = 1, 1 sample
+	mb.AddBucket(1, 1)
+	// bucket with upper bound = 2, 2 samples (it's cumulative)
+	mb.AddBucket(2, 2)
+
+	// sampleCount should be equal to the last bucket value
+	// (buckets store the number of samples for the specific upper bound so the last bucket should have the total number of samples)
+	assert.Equal(t, uint64(2), *mb.SampleCount)
+	// sampleSum is the sum of all "observed" values
+	assert.Equal(t, float64(3), *mb.SampleSum)
+	assert.Len(t, mb.Buckets, 2)
+}
+
+func Test_Metric_CreatePrometheusSummary(t *testing.T) {
+	ps, err := NewPrometheusSummary(now, "some-summary", 2, 3)
+	assert.NotNil(t, ps)
+	assert.NoError(t, err)
+
+	mb := ps.(*PrometheusSummary)
+	assert.Equal(t, "prometheus-summary", mb.Type)
+	assert.Equal(t, "some-summary", mb.Name)
+	assert.Equal(t, now.Unix(), mb.Timestamp)
+	assert.Equal(t, uint64(2), *mb.SampleCount)
+	assert.Equal(t, float64(3), *mb.SampleSum)
+}
+
+func Test_Metric_PrometheusSummaryAddQuantile(t *testing.T) {
+	ph, err := NewPrometheusSummary(now, "some-summary", 2, 3)
+	assert.NotNil(t, ph)
+	assert.NoError(t, err)
+
+	mb := ph.(*PrometheusSummary)
+	// 50th quantile (median) with 1 sample with value 1
+	mb.AddQuantile(0.5, 1)
+	// 99th quantile with 1 sample with value 2 (it's NOT cumulative)
+	mb.AddQuantile(0.9, 2)
+
+	// sampleCount should be equal to the last bucket value
+	// (buckets store the number of samples for the specific upper bound so the last bucket should have the total number of samples)
+	assert.Equal(t, uint64(2), *mb.SampleCount)
+	// sampleSum is the sum of all "observed" values
+	assert.Equal(t, float64(3), *mb.SampleSum)
+	assert.Len(t, mb.Quantiles, 2)
+}

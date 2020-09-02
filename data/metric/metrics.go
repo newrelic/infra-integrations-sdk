@@ -50,6 +50,33 @@ type summary struct {
 	Max     *float64 `json:"max"`
 }
 
+type bucket struct {
+	CumulativeCount *uint64  `json:"cumulative_count,omitempty"`
+	UpperBound      *float64 `json:"upper_bound,omitempty"`
+}
+
+type PrometheusHistogram struct {
+	metricBase
+	SampleCount *uint64  `json:"sample_count,omitempty"`
+	SampleSum   *float64 `json:"sample_sum,omitempty"`
+	// Buckets defines the buckets into which observations are counted. Each
+	// element in the slice is the upper inclusive bound of a bucket. The
+	// values must are sorted in strictly increasing order.
+	Buckets []*bucket `json:"buckets,omitempty"`
+}
+
+type quantile struct {
+	Quantile *float64 `json:"quantile,omitempty"`
+	Value    *float64 `json:"value,omitempty"`
+}
+
+type PrometheusSummary struct {
+	metricBase
+	SampleCount *uint64     `json:"sample_count,omitempty"`
+	SampleSum   *float64    `json:"sample_sum,omitempty"`
+	Quantiles   []*quantile `json:"quantiles,omitempty"`
+}
+
 // cumulativeCount is a metric of type cumulative count
 // This indicates to the Infra agent that the value should be calculated as cumulative count (ever increasing value)
 type cumulativeCount count
@@ -175,6 +202,56 @@ func NewCumulativeRate(timestamp time.Time, name string, value float64) (Metric,
 		},
 		Value: value,
 	}, nil
+}
+
+func NewPrometheusHistogram(timestamp time.Time, name string, sampleCount uint64, sampleSum float64) (Metric, error) {
+	return &PrometheusHistogram{
+		metricBase: metricBase{
+			Timestamp:  timestamp.Unix(),
+			Name:       name,
+			Type:       SourcesTypeToName[PROMETHEUS_HISTOGRAM],
+			Dimensions: Dimensions{},
+		},
+		// TODO make sure we make we don't allow NaN
+		SampleCount: &sampleCount,
+		SampleSum:   &sampleSum,
+	}, nil
+}
+
+// AddBucket adds a new bucket to the histogram.
+// Note that no attempt is made to keep buckets ordered, it's on the caller to guarantee the buckets are added
+// in the correct order.
+// TODO: can we make it so we guarantee the order?
+func (ph *PrometheusHistogram) AddBucket(value uint64, upperBound float64) {
+	ph.Buckets = append(ph.Buckets, &bucket{
+		CumulativeCount: &value,
+		UpperBound:      &upperBound,
+	})
+}
+
+func NewPrometheusSummary(timestamp time.Time, name string, sampleCount uint64, sampleSum float64) (Metric, error) {
+	return &PrometheusSummary{
+		metricBase: metricBase{
+			Timestamp:  timestamp.Unix(),
+			Name:       name,
+			Type:       SourcesTypeToName[PROMETHEUS_SUMMARY],
+			Dimensions: Dimensions{},
+		},
+		// TODO make sure we make we don't allow NaN
+		SampleCount: &sampleCount,
+		SampleSum:   &sampleSum,
+	}, nil
+}
+
+// AddQuantile adds a new quantile to the summary.
+// Note that no attempt is made to keep buckets ordered, it's on the caller to guarantee the buckets are added
+// in the correct order.
+// TODO: can we make it so we guarantee the order?
+func (ps *PrometheusSummary) AddQuantile(quant float64, value float64) {
+	ps.Quantiles = append(ps.Quantiles, &quantile{
+		Quantile: &quant,
+		Value:    &value,
+	})
 }
 
 // AddDimension adds a dimension to the metric instance
