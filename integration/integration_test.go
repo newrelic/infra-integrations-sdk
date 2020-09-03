@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/stretchr/testify/assert"
 )
@@ -354,10 +353,10 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	assert.NoError(t, err)
 	_ = e.AddTag("env", "prod")
 
-	gauge, _ := metric.NewGauge(time.Unix(10000000, 0), "metric-gauge", 1)
-	count, _ := metric.NewCount(time.Unix(10000000, 0), "metric-count", 100)
+	gauge, _ := Gauge(time.Unix(10000000, 0), "metric-gauge", 1)
+	count, _ := Count(time.Unix(10000000, 0), "metric-count", 100)
 	_ = count.AddDimension("cpu", "amd")
-	summary, _ := metric.NewSummary(time.Unix(10000000, 0), "metric-summary", 1, 10, 100, 1, 100)
+	summary, _ := Summary(time.Unix(10000000, 0), "metric-summary", 1, 10, 100, 1, 100)
 	// attributes should be ordered by key in lexicographic order
 	_ = summary.AddDimension("os", "linux")
 	_ = summary.AddDimension("distribution", "debian")
@@ -385,7 +384,7 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	e2, err := i.NewEntity("EntityTwo", "test", "")
 	assert.NoError(t, err)
 	// add metric to entity 2
-	gauge, _ = metric.NewGauge(time.Unix(10000000, 0), "metricOne", 2)
+	gauge, _ = Gauge(time.Unix(10000000, 0), "metricOne", 2)
 	_ = gauge.AddDimension("processName", "java")
 	e2.AddMetric(gauge)
 	// add entity 2 to integration
@@ -401,14 +400,14 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	i.HostEntity.AddEvent(ev3)
 
 	// add a cumulative count metric to the host entity
-	ccount, _ := metric.NewCumulativeCount(time.Unix(10000000, 0), "cumulative-count", 120)
+	ccount, _ := CumulativeCount(time.Unix(10000000, 0), "cumulative-count", 120)
 	i.HostEntity.AddMetric(ccount)
 	// add a rate metric to the host entity
-	rate, _ := metric.NewRate(time.Unix(10000000, 0), "rate", 120)
+	rate, _ := Rate(time.Unix(10000000, 0), "rate", 120)
 	i.HostEntity.AddMetric(rate)
 
 	// add a cumulative rate metric to the host entity
-	crate, _ := metric.NewCumulativeRate(time.Unix(10000000, 0), "cumulative-rate", 120)
+	crate, _ := CumulativeRate(time.Unix(10000000, 0), "cumulative-rate", 120)
 	i.HostEntity.AddMetric(crate)
 
 	// add entity 3
@@ -420,12 +419,12 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	// add entity 3 to integration
 	i.AddEntity(e3)
 
-	phisto, _ := metric.NewPrometheusHistogram(time.Unix(10000000, 0), "prometheus-histogram", 2, 3)
+	phisto, _ := PrometheusHistogram(time.Unix(10000000, 0), "prometheus-histogram", 2, 3)
 	phisto.AddBucket(1, 1)
 	phisto.AddBucket(2, 2)
 	i.HostEntity.AddMetric(phisto)
 
-	psum, _ := metric.NewPrometheusSummary(time.Unix(10000000, 0), "prometheus-summary", 2, 2)
+	psum, _ := PrometheusSummary(time.Unix(10000000, 0), "prometheus-summary", 2, 2)
 	psum.AddQuantile(0.5, 1)
 	psum.AddQuantile(0.9, 1)
 	i.HostEntity.AddMetric(psum)
