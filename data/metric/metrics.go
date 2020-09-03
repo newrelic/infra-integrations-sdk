@@ -215,7 +215,6 @@ func NewPrometheusHistogram(timestamp time.Time, name string, sampleCount uint64
 			Type:       SourcesTypeToName[PROMETHEUS_HISTOGRAM],
 			Dimensions: Dimensions{},
 		},
-		// TODO make sure we make we don't allow NaN
 		SampleCount: &sampleCount,
 		SampleSum:   asFloatPtr(sampleSum),
 	}, nil
@@ -244,7 +243,6 @@ func NewPrometheusSummary(timestamp time.Time, name string, sampleCount uint64, 
 			Type:       SourcesTypeToName[PROMETHEUS_SUMMARY],
 			Dimensions: Dimensions{},
 		},
-		// TODO make sure we make we don't allow NaN
 		SampleCount: &sampleCount,
 		SampleSum:   asFloatPtr(sampleSum),
 	}, nil
