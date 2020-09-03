@@ -8,6 +8,7 @@ The Go SDK v4 contains the following changes:
 * New Infrastructure Agent Integration JSON version 4.
 * Add support for dimensional metrics using the [Metrics API format][1].
 * New metric data types: `count`, `summary`, `cumulative-count` and `cumulative-rate`.
+* Support for Prometheus Histogram and Summary metrics
 * LocalEntity has been replaced by HostEntity.
 * Support for Go Modules
 * Removed support for protocols prior to v4.x.
@@ -57,7 +58,7 @@ These are the most important changes:
 
 ## GoSDK v4 API changes
 
-This section enumerates the main changes you have to keep in mind to upgrade from GoSDK v3.x to v4.x.
+This section enumerates the main changes you have to keep in mind when upgrading from GoSDK v3.x to v4.x.
 
 ### Entities
 
@@ -101,7 +102,7 @@ entity, err := i.NewEntity(entityName, entityType, entityDisplayName)
 
 These are the parameters accepted by `NewEntity`:
 
-* `entityName` must be an unique value per customer account because it uniquely identifies your Entity. It cannot be empty and 
+* `entityName` must be a unique value per customer account because it uniquely identifies your Entity. It cannot be empty and 
   the SDK cannot validate nor enforce that uniqueness, so it's up to the client to define a naming schema that produces 
   unique names.
 
@@ -208,6 +209,19 @@ In this SDK v4 we introduce some new metric types while removing some others.
   
   Examples include the total write bytes per second.
 
+* Prometheus Histogram
+    
+    Generates a structurally similar metric to a Prometheus Histogram. New Relic does not support natively the Prometheus histogram
+    metric type so this structure needs to be processed by the Infra agent before being stored in New Relic.
+    For more information on Prometheus histograms see [Prometheus histogram](https://prometheus.io/docs/concepts/metric_types/#histogram). 
+
+* Prometheus Summary
+
+    Generates a structurally similar metric to a Prometheus Summary. New Relic does not support natively the Prometheus summary
+    metric type so this structure needs to be processed by the Infra agent before being stored in New Relic.
+    For more information on Prometheus histograms see [Prometheus summary](https://prometheus.io/docs/concepts/metric_types/#summary). 
+
+
 #### Creating v4 metrics
 
 | metric            | method                                                                 |
@@ -218,14 +232,16 @@ In this SDK v4 we introduce some new metric types while removing some others.
 | cumulative-count  | integration.CumulativeCount(timestamp, name, count)                    |
 | rate              | integration.Rate(timestamp, name, value)                               |
 | cumulative-rate   | integration.CumulativeRate(timestamp, name, value)                     |
+| prometheus-histogram | integration.PrometheusHistogram(timestamp time.Time, metricName string, sampleCount uint64, sampleSum float64 |
+| prometheus-summary   | PrometheusSummary(timestamp time.Time, metricName string, sampleCount uint64, sampleSum float64) |
 
-Description of the paramaters:
+Description of the parameters:
 
 `timestamp` (time.Time) is the metric's start time in Unix time (milliseconds).
 
 `name` (string) is the name of the metric. The value must be less than 255 characters.
 
-`value` (float64) is a double. Gauges values can be any value positive or negative. Cumulative-rate values need to be 
+`value` (float64) is a double. Gauge values can be any value positive or negative. Cumulative-rate values need to be 
 ever-growing.
 
 `count` (float64) is the number of occurrences of an event reported in a given interval. Must be a positive value.
@@ -238,6 +254,10 @@ Cumulative-count values need to be ever-growing.
 `min` (float64) is the minimum value registered in the set of data.
 
 `max` (float64) is the maximum value registered in the set of data.
+
+`sampleCount` (uint64) is the number of samples observed.
+
+`sampleSum` (float64) is sum of all the samples observed.
 
 ## Mapping metrics types from v3
 
@@ -268,6 +288,8 @@ Cumulative-count values need to be ever-growing.
 | attribute      | ✅ | ❌ | add dimensions to the metrics                                                 |
 | count          | ❌ | ✅ | integration.Count(timestamp, interval, name, count)                           |
 | summary        | ❌ | ✅ | integration.Summary(timestamp, interval, name, count, average, sum, min, max) |
+| prometheus-histogram | ❌ | ✅ | integration.PrometheusHistogram(timestamp, name, sampleCount, sampleSum) |
+| prometheus-summary | ❌ | ✅ | integration.PrometheusSummary(timestamp, name, sampleCount, sampleSum) |
 
 #### Adding dimensions to a metric
 
@@ -288,6 +310,30 @@ with the Entity's tags.
 To add a metric to an entity just call the method on an Entity
 
 `func (e *Entity) AddMetric(metric)`
+
+#### Adding Buckets to a Prometheus histogram
+
+After creating the Prometheus histogram you add histogram buckets by calling the method
+
+`func(ph *PrometheusHistogram) AddBucket(cumulativeCount, upperBound)`
+
+where
+
+`cumulativeCount` is the cumulative count of observations for the bucket
+
+`upperBound` is the upper bound value of the bucket (ex: 0.1, 1.0, 10.0)
+
+#### Adding Quantiles to a Prometheus summary
+
+After creating the Prometheus summary you add summary quantiles by calling the method
+
+`func(ps *PrometheusSummary) AddQuantile(quantile, value float64)`
+
+where
+
+`quantile` is the quantile value (ex: 0.5, 0.9)
+
+`value` is the (non-cumulative) value for the quantile
 
 ### Events
 

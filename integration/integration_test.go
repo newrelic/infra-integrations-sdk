@@ -287,6 +287,42 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 						"type": "cumulative-rate",
 						"attributes": {},
 						"value": 120
+					},
+					{
+						"timestamp": 10000000,
+						"name": "prometheus-histogram",
+						"type": "prometheus-histogram",
+						"attributes": {},
+						"sample_count": 2,
+						"sample_sum": 3,
+						"buckets": [
+						 {
+							"cumulative_count": 1,
+							"upper_bound": 1
+						 },
+						 {
+							"cumulative_count": 2,
+							"upper_bound": 2
+						 }
+						]
+					},
+					{
+						"timestamp": 10000000,
+						"name": "prometheus-summary",
+						"type": "prometheus-summary",
+						"attributes": {},
+						"sample_count": 2,
+						"sample_sum": 2,
+						"quantiles": [
+						 {
+							"quantile": 0.5,
+							"value": 1
+						 },
+						 {
+							"quantile": 0.9,
+							"value": 1
+						 }
+						]
 					}
                   ],
 				  "inventory": {
@@ -382,6 +418,16 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	e3.AddMetric(summary2)
 	// add entity 3 to integration
 	i.AddEntity(e3)
+
+	phisto, _ := PrometheusHistogram(time.Unix(10000000, 0), "prometheus-histogram", 2, 3)
+	phisto.AddBucket(1, 1)
+	phisto.AddBucket(2, 2)
+	i.HostEntity.AddMetric(phisto)
+
+	psum, _ := PrometheusSummary(time.Unix(10000000, 0), "prometheus-summary", 2, 2)
+	psum.AddQuantile(0.5, 1)
+	psum.AddQuantile(0.9, 1)
+	i.HostEntity.AddMetric(psum)
 
 	assert.NoError(t, i.Publish())
 

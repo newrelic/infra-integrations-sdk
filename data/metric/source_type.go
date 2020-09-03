@@ -28,26 +28,34 @@ const (
 	RATE = iota
 	// CUMULATIVE_RATE represents an ever-increasing rate of change.
 	CUMULATIVE_RATE = iota
+	// PROMETHEUS_HISTROGRAM is a histogram as defined by Prometheus
+	PROMETHEUS_HISTOGRAM SourceType = iota
+	// PROMETHEUS_SUMMARY is a summaru as defined by Prometheus
+	PROMETHEUS_SUMMARY SourceType = iota
 )
 
 // SourcesTypeToName metric sources list mapping its type to readable name.
 var SourcesTypeToName = map[SourceType]string{
-	GAUGE:            "gauge",
-	COUNT:            "count",
-	SUMMARY:          "summary",
-	CUMULATIVE_COUNT: "cumulative-count",
-	RATE:             "rate",
-	CUMULATIVE_RATE:  "cumulative-rate",
+	GAUGE:                "gauge",
+	COUNT:                "count",
+	SUMMARY:              "summary",
+	CUMULATIVE_COUNT:     "cumulative-count",
+	RATE:                 "rate",
+	CUMULATIVE_RATE:      "cumulative-rate",
+	PROMETHEUS_HISTOGRAM: "prometheus-histogram",
+	PROMETHEUS_SUMMARY:   "prometheus-summary",
 }
 
 // SourcesNameToType metric sources list mapping its name to type.
 var SourcesNameToType = map[string]SourceType{
-	"gauge":            GAUGE,
-	"count":            COUNT,
-	"summary":          SUMMARY,
-	"cumulative-count": CUMULATIVE_COUNT,
-	"rate":             RATE,
-	"cumulative-rate":  CUMULATIVE_RATE,
+	"gauge":                GAUGE,
+	"count":                COUNT,
+	"summary":              SUMMARY,
+	"cumulative-count":     CUMULATIVE_COUNT,
+	"rate":                 RATE,
+	"cumulative-rate":      CUMULATIVE_RATE,
+	"prometheus-histogram": PROMETHEUS_HISTOGRAM,
+	"prometheus-summary":   PROMETHEUS_SUMMARY,
 }
 
 // String fulfills stringer interface, returning empty string on invalid source types.

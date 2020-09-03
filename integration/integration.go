@@ -207,6 +207,16 @@ func CumulativeRate(timestamp time.Time, metricName string, value float64) (metr
 	return metric.NewCumulativeRate(timestamp, metricName, value)
 }
 
+// PrometheusHistogram creates a metric of type prometheus histogram
+func PrometheusHistogram(timestamp time.Time, metricName string, sampleCount uint64, sampleSum float64) (*metric.PrometheusHistogram, error) {
+	return metric.NewPrometheusHistogram(timestamp, metricName, sampleCount, sampleSum)
+}
+
+// PrometheusSummary creates a metric of type prometheus summary
+func PrometheusSummary(timestamp time.Time, metricName string, sampleCount uint64, sampleSum float64) (*metric.PrometheusSummary, error) {
+	return metric.NewPrometheusSummary(timestamp, metricName, sampleCount, sampleSum)
+}
+
 // -- private
 // is entity empty?
 func notEmpty(entity *Entity) bool {

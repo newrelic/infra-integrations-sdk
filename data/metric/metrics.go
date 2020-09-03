@@ -50,6 +50,35 @@ type summary struct {
 	Max     *float64 `json:"max"`
 }
 
+type bucket struct {
+	CumulativeCount *uint64  `json:"cumulative_count,omitempty"`
+	UpperBound      *float64 `json:"upper_bound,omitempty"`
+}
+
+// PrometheusHistogram represents a Prometheus histogram
+type PrometheusHistogram struct {
+	metricBase
+	SampleCount *uint64  `json:"sample_count,omitempty"`
+	SampleSum   *float64 `json:"sample_sum,omitempty"`
+	// Buckets defines the buckets into which observations are counted. Each
+	// element in the slice is the upper inclusive bound of a bucket. The
+	// values must are sorted in strictly increasing order.
+	Buckets []*bucket `json:"buckets,omitempty"`
+}
+
+type quantile struct {
+	Quantile *float64 `json:"quantile,omitempty"`
+	Value    *float64 `json:"value,omitempty"`
+}
+
+// PrometheusSummary represents a Prometheus summary
+type PrometheusSummary struct {
+	metricBase
+	SampleCount *uint64     `json:"sample_count,omitempty"`
+	SampleSum   *float64    `json:"sample_sum,omitempty"`
+	Quantiles   []*quantile `json:"quantiles,omitempty"`
+}
+
 // cumulativeCount is a metric of type cumulative count
 // This indicates to the Infra agent that the value should be calculated as cumulative count (ever increasing value)
 type cumulativeCount count
@@ -175,6 +204,60 @@ func NewCumulativeRate(timestamp time.Time, name string, value float64) (Metric,
 		},
 		Value: value,
 	}, nil
+}
+
+// NewPrometheusHistogram creates a new metric structurally similar to a Prometheus histogram
+func NewPrometheusHistogram(timestamp time.Time, name string, sampleCount uint64, sampleSum float64) (*PrometheusHistogram, error) {
+	return &PrometheusHistogram{
+		metricBase: metricBase{
+			Timestamp:  timestamp.Unix(),
+			Name:       name,
+			Type:       SourcesTypeToName[PROMETHEUS_HISTOGRAM],
+			Dimensions: Dimensions{},
+		},
+		SampleCount: &sampleCount,
+		SampleSum:   asFloatPtr(sampleSum),
+	}, nil
+}
+
+// AddBucket adds a new bucket to the histogram.
+// Note that no attempt is made to keep buckets ordered, it's on the caller to guarantee the buckets are added
+// in the correct order.
+func (ph *PrometheusHistogram) AddBucket(cumulativeCount uint64, upperBound float64) {
+	// ignore +Inf buckets
+	if math.IsNaN(upperBound) || math.IsInf(upperBound, 0) {
+		return
+	}
+	ph.Buckets = append(ph.Buckets, &bucket{
+		CumulativeCount: &cumulativeCount,
+		UpperBound:      asFloatPtr(upperBound),
+	})
+}
+
+// NewPrometheusSummary creates a new metric structurally similar to a Prometheus summary
+func NewPrometheusSummary(timestamp time.Time, name string, sampleCount uint64, sampleSum float64) (*PrometheusSummary, error) {
+	return &PrometheusSummary{
+		metricBase: metricBase{
+			Timestamp:  timestamp.Unix(),
+			Name:       name,
+			Type:       SourcesTypeToName[PROMETHEUS_SUMMARY],
+			Dimensions: Dimensions{},
+		},
+		SampleCount: &sampleCount,
+		SampleSum:   asFloatPtr(sampleSum),
+	}, nil
+}
+
+// AddQuantile adds a new quantile to the summary.
+func (ps *PrometheusSummary) AddQuantile(quant float64, value float64) {
+	// ignore invalid quantiles
+	if math.IsNaN(quant) || math.IsNaN(value) {
+		return
+	}
+	ps.Quantiles = append(ps.Quantiles, &quantile{
+		Quantile: asFloatPtr(quant),
+		Value:    asFloatPtr(value),
+	})
 }
 
 // AddDimension adds a dimension to the metric instance
