@@ -110,7 +110,7 @@ func Test_Integration_EntitiesWithDifferentTagsAreNotEqual(t *testing.T) {
 	assert.True(t, e1.SameAs(e3), "Same metadata creates/retrieves same entity")
 }
 
-func Test_Integration_NewEntityReturnsExistingEntity(t *testing.T) {
+func Test_Integration_EntitiesWithSameMetadataAreTheSame(t *testing.T) {
 	i := newTestIntegration(t)
 
 	e1, err := i.NewEntity("Entity1", "test", "")
@@ -433,6 +433,27 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 
 	// check integration  was reset
 	assert.Empty(t, i.Entities)
+}
+
+func Test_Integration_FindEntity(t *testing.T) {
+	i := newTestIntegration(t)
+
+	_, found := i.FindEntity("some-entity-name")
+	assert.False(t, found)
+
+	e, err := i.NewEntity("some-entity-name", "test", "")
+	assert.NoError(t, err)
+	assert.NotNil(t, e)
+	// not added yet
+	_, found = i.FindEntity("some-entity-name")
+	assert.False(t, found)
+
+	i.AddEntity(e)
+	// after adding
+	assert.Len(t, i.Entities, 1)
+	e1, found1 := i.FindEntity("some-entity-name")
+	assert.True(t, found1)
+	assert.True(t, e.SameAs(e1))
 }
 
 //--- helpers
