@@ -43,6 +43,10 @@ type count struct {
 // summary is a metric of type summary.
 type summary struct {
 	metricBase
+	Value summaryValue `json:"value"`
+}
+
+type summaryValue struct {
 	Count   *float64 `json:"count"`
 	Average *float64 `json:"average"`
 	Sum     *float64 `json:"sum"`
@@ -58,6 +62,10 @@ type bucket struct {
 // PrometheusHistogram represents a Prometheus histogram
 type PrometheusHistogram struct {
 	metricBase
+	Value PrometheusHistogramValue `json:"value,omitempty"`
+}
+
+type PrometheusHistogramValue struct {
 	SampleCount *uint64  `json:"sample_count,omitempty"`
 	SampleSum   *float64 `json:"sample_sum,omitempty"`
 	// Buckets defines the buckets into which observations are counted. Each
@@ -74,6 +82,10 @@ type quantile struct {
 // PrometheusSummary represents a Prometheus summary
 type PrometheusSummary struct {
 	metricBase
+	Value PrometheusSummaryValue `json:"value,omitempty"`
+}
+
+type PrometheusSummaryValue struct {
 	SampleCount *uint64     `json:"sample_count,omitempty"`
 	SampleSum   *float64    `json:"sample_sum,omitempty"`
 	Quantiles   []*quantile `json:"quantiles,omitempty"`
@@ -144,11 +156,13 @@ func NewSummary(timestamp time.Time, name string, count float64, average float64
 			Type:       SourcesTypeToName[SUMMARY],
 			Dimensions: Dimensions{},
 		},
-		Count:   asFloatPtr(count),
-		Average: asFloatPtr(average),
-		Sum:     asFloatPtr(sum),
-		Min:     asFloatPtr(min),
-		Max:     asFloatPtr(max),
+		Value: summaryValue{
+			Count:   asFloatPtr(count),
+			Average: asFloatPtr(average),
+			Sum:     asFloatPtr(sum),
+			Min:     asFloatPtr(min),
+			Max:     asFloatPtr(max),
+		},
 	}, nil
 }
 
@@ -215,8 +229,10 @@ func NewPrometheusHistogram(timestamp time.Time, name string, sampleCount uint64
 			Type:       SourcesTypeToName[PROMETHEUS_HISTOGRAM],
 			Dimensions: Dimensions{},
 		},
-		SampleCount: &sampleCount,
-		SampleSum:   asFloatPtr(sampleSum),
+		Value: PrometheusHistogramValue{
+			SampleCount: &sampleCount,
+			SampleSum:   asFloatPtr(sampleSum),
+		},
 	}, nil
 }
 
@@ -228,7 +244,7 @@ func (ph *PrometheusHistogram) AddBucket(cumulativeCount uint64, upperBound floa
 	if math.IsNaN(upperBound) || math.IsInf(upperBound, 0) {
 		return
 	}
-	ph.Buckets = append(ph.Buckets, &bucket{
+	ph.Value.Buckets = append(ph.Value.Buckets, &bucket{
 		CumulativeCount: &cumulativeCount,
 		UpperBound:      asFloatPtr(upperBound),
 	})
@@ -243,8 +259,10 @@ func NewPrometheusSummary(timestamp time.Time, name string, sampleCount uint64, 
 			Type:       SourcesTypeToName[PROMETHEUS_SUMMARY],
 			Dimensions: Dimensions{},
 		},
-		SampleCount: &sampleCount,
-		SampleSum:   asFloatPtr(sampleSum),
+		Value: PrometheusSummaryValue{
+			SampleCount: &sampleCount,
+			SampleSum:   asFloatPtr(sampleSum),
+		},
 	}, nil
 }
 
@@ -254,7 +272,7 @@ func (ps *PrometheusSummary) AddQuantile(quant float64, value float64) {
 	if math.IsNaN(quant) || math.IsNaN(value) {
 		return
 	}
-	ps.Quantiles = append(ps.Quantiles, &quantile{
+	ps.Value.Quantiles = append(ps.Value.Quantiles, &quantile{
 		Quantile: asFloatPtr(quant),
 		Value:    asFloatPtr(value),
 	})
