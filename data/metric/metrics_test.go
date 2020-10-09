@@ -178,8 +178,8 @@ func Test_Metric_CreatePrometheusHistogram(t *testing.T) {
 	assert.Equal(t, "prometheus-histogram", ph.Type)
 	assert.Equal(t, "some-histogram", ph.Name)
 	assert.Equal(t, now.Unix(), ph.Timestamp)
-	assert.Equal(t, uint64(2), *ph.SampleCount)
-	assert.Equal(t, float64(3), *ph.SampleSum)
+	assert.Equal(t, uint64(2), *ph.Value.SampleCount)
+	assert.Equal(t, float64(3), *ph.Value.SampleSum)
 }
 
 func Test_Metric_PrometheusHistogramAddBucket(t *testing.T) {
@@ -194,10 +194,10 @@ func Test_Metric_PrometheusHistogramAddBucket(t *testing.T) {
 
 	// sampleCount should be equal to the last bucket value
 	// (buckets store the number of samples for the specific upper bound so the last bucket should have the total number of samples)
-	assert.Equal(t, uint64(2), *ph.SampleCount)
+	assert.Equal(t, uint64(2), *ph.Value.SampleCount)
 	// sampleSum is the sum of all "observed" values
-	assert.Equal(t, float64(3), *ph.SampleSum)
-	assert.Len(t, ph.Buckets, 2)
+	assert.Equal(t, float64(3), *ph.Value.SampleSum)
+	assert.Len(t, ph.Value.Buckets, 2)
 }
 
 func Test_Metric_CreatePrometheusSummary(t *testing.T) {
@@ -208,8 +208,8 @@ func Test_Metric_CreatePrometheusSummary(t *testing.T) {
 	assert.Equal(t, "prometheus-summary", ps.Type)
 	assert.Equal(t, "some-summary", ps.Name)
 	assert.Equal(t, now.Unix(), ps.Timestamp)
-	assert.Equal(t, uint64(2), *ps.SampleCount)
-	assert.Equal(t, float64(3), *ps.SampleSum)
+	assert.Equal(t, uint64(2), *ps.Value.SampleCount)
+	assert.Equal(t, float64(3), *ps.Value.SampleSum)
 }
 
 func Test_Metric_PrometheusSummaryAddQuantile(t *testing.T) {
@@ -224,8 +224,8 @@ func Test_Metric_PrometheusSummaryAddQuantile(t *testing.T) {
 
 	// sampleCount should be equal to the last bucket value
 	// (buckets store the number of samples for the specific upper bound so the last bucket should have the total number of samples)
-	assert.Equal(t, uint64(2), *ps.SampleCount)
+	assert.Equal(t, uint64(2), *ps.Value.SampleCount)
 	// sampleSum is the sum of all "observed" values
-	assert.Equal(t, float64(3), *ps.SampleSum)
-	assert.Len(t, ps.Quantiles, 2)
+	assert.Equal(t, float64(3), *ps.Value.SampleSum)
+	assert.Len(t, ps.Value.Quantiles, 2)
 }

@@ -149,116 +149,94 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 			expectedOutputRaw := []byte(`
 			{
 			  "protocol_version": "4",
-              "integration": {
-				  "name": "TestIntegration",
-				  "version": "1.0"
+			  "integration": {
+				"name": "TestIntegration",
+				"version": "1.0"
 			  },
 			  "data": [
 				{
-				  "common":{},
+				  "common": {},
 				  "entity": {
 					"name": "EntityOne",
-					"displayName":"",
+					"displayName": "",
 					"type": "test",
 					"metadata": {
-						"tags.env":"prod"
-					  }
+					  "tags.env": "prod"
+					}
 				  },
 				  "metrics": [
 					{
-						"timestamp": 10000000,
-						"name": "metric-gauge",
-						"type": "gauge",
-						"attributes": {},
-						"value": 1
-					},	
-					{
-						"timestamp": 10000000,
-						"name": "metric-count",
-						"type": "count",
-						"attributes": {
-							"cpu": "amd"
-						},
-					  	"count": 100
+					  "timestamp": 10000000,
+					  "name": "metric-gauge",
+					  "type": "gauge",
+					  "attributes": {},
+					  "value": 1
 					},
-					{	
-						"timestamp": 10000000,
-						"name": "metric-summary",
-						"type": "summary",
-						"attributes": {
-							"distribution": "debian",							
-							"os": "linux"	
-						},
-					  	"count": 1,
+					{
+					  "timestamp": 10000000,
+					  "name": "metric-count",
+					  "type": "count",
+					  "attributes": {
+						"cpu": "amd"
+					  },
+					  "count": 100
+					},
+					{
+					  "timestamp": 10000000,
+					  "name": "metric-summary",
+					  "type": "summary",
+					  "attributes": {
+						"distribution": "debian",
+						"os": "linux"
+					  },
+					  "value": {
+						"count": 1,
 						"average": 10,
 						"sum": 100,
 						"min": 1,
 						"max": 100
+					  }
 					}
 				  ],
 				  "inventory": {
 					"custom/example": {
-						"version": "1.2.3"
+					  "version": "1.2.3"
 					}
-                  },
+				  },
 				  "events": [
 					{
-                      "timestamp": 10000000,
+					  "timestamp": 10000000,
 					  "summary": "evnt1sum",
 					  "category": "evnt1cat",
-						"attributes": {
-							"attr1": "attr1Val",
-							"attr2": 42
-						}
+					  "attributes": {
+						"attr1": "attr1Val",
+						"attr2": 42
+					  }
 					},
 					{
- 					  "timestamp": 10000000,
+					  "timestamp": 10000000,
 					  "summary": "evnt2sum",
 					  "category": "evnt2cat"
 					}
 				  ]
 				},
 				{
-				  "common":{},
+				  "common": {},
 				  "entity": {
 					"name": "EntityTwo",
-					"displayName":"",
+					"displayName": "",
 					"type": "test",
 					"metadata": {}
 				  },
 				  "metrics": [
 					{
-						"timestamp": 10000000,
-						"name": "metricOne",
-						"type": "gauge",
-						"attributes": {
-							"processName": "java"
-						},
-						"value": 2
-					}
-				  ],
-				  "inventory": {},
-				  "events": []
-				},
-				{
-				  "common":{},
-				  "entity": {
-					"name": "EntityThree",
-					"displayName":"",
-					"type": "test",
-					"metadata": {}
-				  },
-				  "metrics": [
-					{
-						"timestamp": 10000000,
-						"name": "metric-summary-with-nan",
-						"type": "summary",
-						"attributes": {},
-						"count": 1,
-						"average": null,
-						"sum": 100,
-						"min": null,
-						"max": null
+					  "timestamp": 10000000,
+					  "name": "metricOne",
+					  "type": "gauge",
+					  "attributes": {
+						"processName": "java"
+					  },
+					  "value": 2
 					}
 				  ],
 				  "inventory": {},
@@ -266,78 +244,108 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 				},
 				{
 				  "common": {},
-                  "metrics": [
-				   {
-						"timestamp": 10000000,
-						"name": "cumulative-count",
-						"type": "cumulative-count",
-						"attributes": {},
-						"count": 120
+				  "entity": {
+					"name": "EntityThree",
+					"displayName": "",
+					"type": "test",
+					"metadata": {}
+				  },
+				  "metrics": [
+					{
+					  "timestamp": 10000000,
+					  "name": "metric-summary-with-nan",
+					  "type": "summary",
+					  "attributes": {},
+					  "value": {
+						"count": 1,
+						"average": null,
+						"sum": 100,
+						"min": null,
+						"max": null
+					  }
+					}
+				  ],
+				  "inventory": {},
+				  "events": []
+				},
+				{
+				  "common": {},
+				  "metrics": [
+					{
+					  "timestamp": 10000000,
+					  "name": "cumulative-count",
+					  "type": "cumulative-count",
+					  "attributes": {},
+					  "count": 120
 					},
 					{
-						"timestamp": 10000000,
-						"name": "rate",
-						"type": "rate",
-						"attributes": {},
-						"value": 120
+					  "timestamp": 10000000,
+					  "name": "rate",
+					  "type": "rate",
+					  "attributes": {},
+					  "value": 120
 					},
 					{
-						"timestamp": 10000000,
-						"name": "cumulative-rate",
-						"type": "cumulative-rate",
-						"attributes": {},
-						"value": 120
+					  "timestamp": 10000000,
+					  "name": "cumulative-rate",
+					  "type": "cumulative-rate",
+					  "attributes": {},
+					  "value": 120
 					},
 					{
-						"timestamp": 10000000,
-						"name": "prometheus-histogram",
-						"type": "prometheus-histogram",
-						"attributes": {},
+					  "timestamp": 10000000,
+					  "name": "prometheus-histogram",
+					  "type": "prometheus-histogram",
+					  "attributes": {},
+					  "value": {
 						"sample_count": 2,
 						"sample_sum": 3,
 						"buckets": [
-						 {
+						  {
 							"cumulative_count": 1,
 							"upper_bound": 1
-						 },
-						 {
+						  },
+						  {
 							"cumulative_count": 2,
 							"upper_bound": 2
-						 }
+						  }
 						]
+					  }
 					},
 					{
-						"timestamp": 10000000,
-						"name": "prometheus-summary",
-						"type": "prometheus-summary",
-						"attributes": {},
+					  "timestamp": 10000000,
+					  "name": "prometheus-summary",
+					  "type": "prometheus-summary",
+					  "attributes": {},
+					  "value": {
 						"sample_count": 2,
 						"sample_sum": 2,
 						"quantiles": [
-						 {
+						  {
 							"quantile": 0.5,
 							"value": 1
-						 },
-						 {
+						  },
+						  {
 							"quantile": 0.9,
 							"value": 1
-						 }
+						  }
 						]
+					  }
 					}
-                  ],
+				  ],
 				  "inventory": {
-				    "some-inventory": {
+					"some-inventory": {
 					  "some-field": "some-value"
 					}
 				  },
 				  "events": [
-				  {
-				   "timestamp": 10000000,
-				   "summary": "evnt2sum",
-				   "category": "evnt2cat"
-				  }
-				 ]
-                }
+					{
+					  "timestamp": 10000000,
+					  "summary": "evnt2sum",
+					  "category": "evnt2cat"
+					}
+				  ]
+				}
 			  ]
 			}`)
 
