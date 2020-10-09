@@ -65,6 +65,7 @@ type PrometheusHistogram struct {
 	Value PrometheusHistogramValue `json:"value,omitempty"`
 }
 
+// PrometheusHistogramValue represents the Value type for a Prometheus histogram.
 type PrometheusHistogramValue struct {
 	SampleCount *uint64  `json:"sample_count,omitempty"`
 	SampleSum   *float64 `json:"sample_sum,omitempty"`
@@ -85,6 +86,7 @@ type PrometheusSummary struct {
 	Value PrometheusSummaryValue `json:"value,omitempty"`
 }
 
+// PrometheusSummaryValue represents the Value type for a Prometheus summary.
 type PrometheusSummaryValue struct {
 	SampleCount *uint64     `json:"sample_count,omitempty"`
 	SampleSum   *float64    `json:"sample_sum,omitempty"`
