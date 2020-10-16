@@ -37,7 +37,7 @@ type gauge struct {
 // This indicates to the Infra agent that the value should be interpreted as a count that is reset in each interval
 type count struct {
 	metricBase
-	Value float64 `json:"count"`
+	Value float64 `json:"value"`
 }
 
 // summary is a metric of type summary.
