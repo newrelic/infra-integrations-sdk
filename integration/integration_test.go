@@ -179,7 +179,7 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 					  "attributes": {
 						"cpu": "amd"
 					  },
-					  "count": 100
+					  "value": 100
 					},
 					{
 					  "timestamp": 10000000,
@@ -276,7 +276,7 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 					  "name": "cumulative-count",
 					  "type": "cumulative-count",
 					  "attributes": {},
-					  "count": 120
+					  "value": 120
 					},
 					{
 					  "timestamp": 10000000,
