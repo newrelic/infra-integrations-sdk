@@ -273,9 +273,8 @@ func (i *Integration) addDefaultAttributes(e *Entity) error {
 		}
 	}
 
-	e.AddTag("instrumentation.name", i.Metadata.Name)
-	e.AddTag("instrumentation.version", i.Metadata.Version)
-	e.AddTag("instrumentation.provider", i.Metadata.Provider)
-
+	e.AddMetadata("instrumentation.name", i.Metadata.Name)
+	e.AddMetadata("instrumentation.version", i.Metadata.Version)
+	e.AddMetadata("instrumentation.provider", i.Metadata.Provider)
 	return nil
 }
