@@ -18,10 +18,11 @@ type argumentList struct {
 }
 
 const (
-	integrationName    = "com.myorganization.redis-multi"
-	integrationVersion = "0.1.0"
-	instanceOnePort    = 16379
-	instanceTwoPort    = 26379
+	integrationName     = "com.myorganization.redis-multi"
+	integrationVersion  = "0.1.0"
+	integrationProvider = "newRelic"
+	instanceOnePort     = 16379
+	instanceTwoPort     = 26379
 )
 
 var (
@@ -56,7 +57,7 @@ func queryAttrRedisInfo(query string, port int) (string, string) {
 
 func main() {
 	// Create Integration
-	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
+	i, err := integration.New(integrationName, integrationVersion, integrationProvider, integration.Args(&args))
 	panicOnErr(err)
 
 	// Create Entity, entities name must be unique

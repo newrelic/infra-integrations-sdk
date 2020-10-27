@@ -13,8 +13,9 @@ import (
 )
 
 var (
-	integrationName    = "TestIntegration"
-	integrationVersion = "1.0"
+	integrationName     = "TestIntegration"
+	integrationVersion  = "1.0"
+	integrationProvider = "newRelic"
 )
 
 func Test_Integration_CreateIntegrationInitializesCorrectly(t *testing.T) {
@@ -37,7 +38,7 @@ func Test_Integration_DefaultIntegrationWritesToStdout(t *testing.T) {
 	}()
 	os.Stdout = f
 
-	i, err := New("integration", "4.0")
+	i, err := New("integration", "4.0", "newRelic")
 
 	assert.NoError(t, err)
 	assert.Equal(t, "integration", i.Metadata.Name)
@@ -128,7 +129,7 @@ func Test_Integration_EntitiesWithSameMetadataAreTheSame(t *testing.T) {
 }
 
 func Test_Integration_LoggerReturnsDefaultLogger(t *testing.T) {
-	i, err := New(integrationName, integrationVersion)
+	i, err := New(integrationName, integrationVersion, integrationProvider)
 	assert.NoError(t, err)
 
 	assert.Equal(t, i.logger, i.Logger())
@@ -137,7 +138,7 @@ func Test_Integration_LoggerReturnsDefaultLogger(t *testing.T) {
 func Test_Integration_LoggerReturnsInjectedInstance(t *testing.T) {
 	l := log.NewStdErr(false)
 
-	i, err := New(integrationName, integrationVersion, Logger(l))
+	i, err := New(integrationName, integrationVersion, integrationProvider, Logger(l))
 	assert.NoError(t, err)
 
 	assert.Equal(t, l, i.Logger())
@@ -354,7 +355,7 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 		},
 	}
 
-	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(w))
+	i, err := New("TestIntegration", "1.0", "newRelic", Logger(log.Discard), Writer(w))
 	assert.NoError(t, err)
 
 	e, err := i.NewEntity("EntityOne", "test", "")
@@ -466,7 +467,7 @@ func Test_Integration_FindEntity(t *testing.T) {
 
 //--- helpers
 func newTestIntegration(t *testing.T) *Integration {
-	i, err := New(integrationName, integrationVersion, Logger(log.Discard), Writer(ioutil.Discard))
+	i, err := New(integrationName, integrationVersion, integrationProvider, Logger(log.Discard), Writer(ioutil.Discard))
 	assert.NoError(t, err)
 
 	return i

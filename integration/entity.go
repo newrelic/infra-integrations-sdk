@@ -21,7 +21,9 @@ type Entity struct {
 }
 
 // Common is a common set of attributes
-type Common struct{}
+type Common struct {
+	Attributes map[string]interface{} `json:"attributes"`
+}
 
 // SameAs return true when is same entity
 func (e *Entity) SameAs(b *Entity) bool {
