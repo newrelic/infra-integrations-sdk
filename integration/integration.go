@@ -30,8 +30,9 @@ const (
 
 // Metadata describes the integration
 type Metadata struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
+	Name     string `json:"name"`
+	Version  string `json:"version"`
+	Provider string `json:"provider"`
 }
 
 // Integration defines the format of the output JSON that integrations will return for protocol 2.
@@ -49,7 +50,7 @@ type Integration struct {
 }
 
 // New creates new integration with sane default values.
-func New(name, version string, opts ...Option) (i *Integration, err error) {
+func New(name string, version string, provider string, opts ...Option) (i *Integration, err error) {
 
 	if name == "" {
 		err = errors.New("integration name cannot be empty")
@@ -64,7 +65,7 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 	i = &Integration{
 
 		ProtocolVersion: protocolVersion,
-		Metadata:        Metadata{name, version},
+		Metadata:        Metadata{name, version, provider},
 		Entities:        []*Entity{},
 		writer:          os.Stdout,
 		locker:          &sync.Mutex{},
@@ -271,6 +272,10 @@ func (i *Integration) addDefaultAttributes(e *Entity) error {
 			}
 		}
 	}
+
+	e.AddTag("instrumentation.name", i.Metadata.Name)
+	e.AddTag("instrumentation.version", i.Metadata.Version)
+	e.AddTag("instrumentation.provider", i.Metadata.Provider)
 
 	return nil
 }
