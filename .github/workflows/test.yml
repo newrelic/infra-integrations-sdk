@@ -23,4 +23,6 @@ jobs:
           path: src/github.com/newrelic/infra-integrations-sdk
 
     - name: Test
+      env:
+          GOPATH: "${{ github.workspace }}"
       run: make
