@@ -82,6 +82,17 @@ func TestIntegration_Entity(t *testing.T) {
 	assert.Equal(t, e1, e3, "Same namespace & name create/retrieve same entity")
 }
 
+func TestIntegration_RemoveEntity(t *testing.T) {
+	i := newTestIntegration(t)
+
+	e1, err := i.Entity("name", "ns")
+	assert.NoError(t, err)
+	assert.Contains(e1, i.Entities, "Entity is in the list.")
+
+	i.RemoveEntity(e1)
+	assert.NotContains(e1, i.Entities, "Entity removed from the list.")
+}
+
 func TestIntegration_Entity_WithIDAttrs(t *testing.T) {
 	i := newTestIntegration(t)
 

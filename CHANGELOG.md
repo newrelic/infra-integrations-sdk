@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Package `http` can now create a client that validate certificates but also
   accepts invalid hostnames via `NewAcceptInvalidHostname`.
+- Allow entities to be removed from the integration payload with `integration.RemoveEntity`
 
 ### 3.6.3
 

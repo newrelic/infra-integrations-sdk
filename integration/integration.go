@@ -189,6 +189,23 @@ func (i *Integration) Entity(name, namespace string, idAttributes ...IDAttribute
 	return e, nil
 }
 
+// RemoveEntity removes entity from the inner entity slice.
+func (i *Integration) RemoveEntity(entity Entity) {
+	i.locker.Lock()
+	defer i.locker.Unlock()
+
+	var entityIdx int
+	for idx, ent := range i.Entities {
+		if entity.SameAs(ent) {
+			entityIdx = idx
+			break
+		}
+	}
+	// Trick to remove an item from a slice and reduce its size properly.
+	i.Entities[entityIdx] = i.Entities[len(i.Entities)-1]
+	i.Entities = i.Entities[:len(i.Entities)-1]
+}
+
 // Publish runs all necessary tasks before publishing the data. Currently, it
 // stores the Storer, prints the JSON representation of the integration using a writer (stdout by default)
 // and re-initializes the integration object (allowing re-use it during the
