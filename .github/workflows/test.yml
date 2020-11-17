@@ -25,4 +25,4 @@ jobs:
     - name: Test
       env:
           GOPATH: "${{ github.workspace }}"
-      run: make
+      run: env PATH="$PATH:$GOPATH/bin" make
