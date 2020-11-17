@@ -87,10 +87,10 @@ func TestIntegration_RemoveEntity(t *testing.T) {
 
 	e1, err := i.Entity("name", "ns")
 	assert.NoError(t, err)
-	assert.Contains(e1, i.Entities, "Entity is in the list")
+	assert.Contains(t, e1, i.Entities, "Entity is in the list")
 
 	i.RemoveEntity(e1)
-	assert.NotContains(e1, i.Entities, "Entity is not in the list")
+	assert.NotContains(t, e1, i.Entities, "Entity is not in the list")
 }
 
 func TestIntegration_Entity_WithIDAttrs(t *testing.T) {

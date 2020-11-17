@@ -190,7 +190,7 @@ func (i *Integration) Entity(name, namespace string, idAttributes ...IDAttribute
 }
 
 // RemoveEntity removes entity from the inner entity slice.
-func (i *Integration) RemoveEntity(entity Entity) {
+func (i *Integration) RemoveEntity(entity *Entity) {
 	i.locker.Lock()
 	defer i.locker.Unlock()
 
