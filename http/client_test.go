@@ -1,134 +1,353 @@
 package http
 
 import (
-	"io"
+	"bytes"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"fmt"
 	"io/ioutil"
-	"log"
+	"math/big"
+	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
-	"os/signal"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-var caCert = `-----BEGIN CERTIFICATE-----
-MIIDgjCCAmoCCQDtqmB4gHIHFTANBgkqhkiG9w0BAQsFADCBgjELMAkGA1UEBhMC
-RVMxDDAKBgNVBAgMA0NBVDEMMAoGA1UEBwwDYmNuMRIwEAYDVQQKDAlOZXcgcmVs
-aWMxDTALBgNVBAsMBG9oYWkxEjAQBgNVBAMMCWxvY2FsaG9zdDEgMB4GCSqGSIb3
-DQEJARYRb2hhaUBuZXdyZWxpYy5jb20wHhcNMTgwNTE3MTAxMjUwWhcNMjgwNTE0
-MTAxMjUwWjCBgjELMAkGA1UEBhMCRVMxDDAKBgNVBAgMA0NBVDEMMAoGA1UEBwwD
-YmNuMRIwEAYDVQQKDAlOZXcgcmVsaWMxDTALBgNVBAsMBG9oYWkxEjAQBgNVBAMM
-CWxvY2FsaG9zdDEgMB4GCSqGSIb3DQEJARYRb2hhaUBuZXdyZWxpYy5jb20wggEi
-MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC8xxoKmMJAjPESMWvEaOn/A5HG
-b6ZdwM0MNAQL6b2UpGd1oe8ARcrJkMxD0pttYJFKCLYiTVZISfF/xqJuhQeuaPpH
-gU+lDoGNb/HF3Q8YlUfmuZktw45t3biZKRLUDals/EYZBrwPO+8up4/2Hp888gIt
-5bxUCVv32eKOwuLjFREwtDDCIZl95ZlzDEyeB0TzvssWFtwj8do3WZ0O3OnmdiKn
-C/AqURj6KZmKgWFzELjde+W261N26oCciscgqu565QHo9ZJcAa0IXkTxVgFT+1d5
-aUhhFv4oVs64gyAsxGv9EoTdlc2COm5ISqzy6tjVtzsXqaXM0cl7VGTow03ZAgMB
-AAEwDQYJKoZIhvcNAQELBQADggEBAIaDnxJwXKe4riMT19LygsVoYExX+tKC6Z/J
-37iosZLzu6bzNhvsCSuqDdvCQQkuumlNQgd9XkxtieOMVyrt0MBY7aYdg+dXJXqv
-1Ft40590w0Yg6HoAnA2eMvV7D9G1ss6q7VjOae/zxh9UJCsYrVdTU/xYrfyN5HEa
-jH7a0BjznBqRSSYub49syKq4EL1oeCF0SMjxuACpriAJ/iAxYibVfO1O2x+AZb6Q
-1iFUtU70nOEUrGM0EZ1wZF7atJVgsmdGpsh6kyfsSIZQ5aoNIZHmDVWTfiYcygQd
-47Yd5b55SMXDYHGr9ZtRFGKj4IMXqs7R46arQpT4VCPeeSGJhdA=
------END CERTIFICATE-----`
+func TestClient_New_with_CABundleFile(t *testing.T) {
+	srv := httptest.NewTLSServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, err := fmt.Fprintln(w, "Test server")
+			assert.NoError(t, err)
+		}))
+	defer srv.Close()
 
-var privateKey = `-----BEGIN RSA PRIVATE KEY-----
-MIIEpAIBAAKCAQEAvMcaCpjCQIzxEjFrxGjp/wORxm+mXcDNDDQEC+m9lKRndaHv
-AEXKyZDMQ9KbbWCRSgi2Ik1WSEnxf8aiboUHrmj6R4FPpQ6BjW/xxd0PGJVH5rmZ
-LcOObd24mSkS1A2pbPxGGQa8DzvvLqeP9h6fPPICLeW8VAlb99nijsLi4xURMLQw
-wiGZfeWZcwxMngdE877LFhbcI/HaN1mdDtzp5nYipwvwKlEY+imZioFhcxC43Xvl
-tutTduqAnIrHIKrueuUB6PWSXAGtCF5E8VYBU/tXeWlIYRb+KFbOuIMgLMRr/RKE
-3ZXNgjpuSEqs8urY1bc7F6mlzNHJe1Rk6MNN2QIDAQABAoIBAQCd4nepPTHaAwbs
-jGDxmD18h2O4b1DZQJM+DZME0603UHknLRRTSgvcoTn1z4Mm64kYPkj2T3BGbXGJ
-yHu5q5FNEYehnkkaZxN7U5EGR2iEyvWjxr6SQ+gvgy0NDAkvSW3WNPf7nmJS63GT
-t5jz45CSzGV+NZJZRqqglJ6jf+N6v4grEZEcIjVuOL5NppVCJE7mpOqAQlJG0kqu
-sb41VoHEfy2DHuHX3fby3LaCl+EpHbZG+zbEksEO08mbcPKj8qfg81QyQFzuUIkH
-+E2tcVKhoR834fQ+n2MzI/4yR4pkNFghdjCwK3nn+3UUt7agKzo/VmEF6sCt6y29
-TnshnhIBAoGBAN7eLRpZ91znRNp6fmdbT0vQIpAtoGtvqyp6YZmR0ho8mxvBLROJ
-QIhI5Mc/cwPeOCwX2tzRjUmQjfRfl275NYi3tWQVJpSTGZdR8jYn6zt1ZA5H/VJj
-RJMrp4qksapCXPT0nv3Q7SRIhwT3V2TbJ0ssmDwahsSdtcDDguvjgR4xAoGBANjX
-iSRHmvm5LfYIzbMm6ZZ78JfFX7rPfkIunBM5F6GZJkAJGmDZCXi4M5JPePwv8xAC
-lOIc8HX8m53IvIC6MzBtU7k5/yhPsM7GRuQ4j6trrcs3IgkU87gwKEz1nrLIbWxI
-S6/4hNG2P2QVnMlt3FoRSgmsbk46W1SVYt99tvgpAoGBAINxDbDI9rb4PweLzxku
-JSpVas0V29MBXTYET6O++Oc4b1KDMA6hmEnIlAVfSnoxiXeX6iDqBiYo90/1QN7W
-Y9hqYLTSNJrT1vgEAJIoIPhEV+qEUsdQfJU/3eRLFe2Qjjp6O3r+yZ3omJk5N3Xo
-Oth/SJnKG0nCqfsyU/jDiNdBAoGAT+2auom+YUBV5bO3BstYHMUQmRECyVxEYObH
-VvqbcFCAXeg9FefKavoS4GJ06RhPkt4wvOwH4qW7QrzEZvq7daVG0CbFm7lMJdvG
-M8d5halKRXbMD+buMz1lDYEX/zSLyPcZFwMXCioQUbb5tPHO4FAxJ0Gs4x71nUb3
-TAQN1okCgYA+Oi0KYss+6kVfmin27Loo08UrGQwAgRPcHPeKHVBt1yCQD2QKBEkw
-r8q6iHv2b4jEsEWM2+V/ratUvN9ji/WKxhbQAARIW58n11kAJsE48hwpPBGPTnFX
-x4W9xFO4kHze4qDxeIBh2OlyUqA9eUptrkkzie5CSlYE2A7JqkB43g==
------END RSA PRIVATE KEY-----`
+	// Given test server is working
+	_, err := srv.Client().Get(srv.URL)
+	require.NoError(t, err)
 
-var quit = make(chan os.Signal, 1)
-var done = make(chan bool)
-
-func startHTTPServer(file, keyFile string) {
-	srv := &http.Server{Addr: "localhost:8080"}
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = io.WriteString(w, "Test server\n")
-	})
-	go func() {
-		<-quit
-		if err := srv.ListenAndServeTLS(file, keyFile); err != nil {
-			// cannot panic, because this probably is an intentional close
-			log.Printf("Httpserver: ListenAndServe() error: %s", err)
-		}
-		close(done)
+	// Then create temp dir
+	tmpDir, err := ioutil.TempDir("", "test")
+	require.NoError(t, err)
+	defer func() {
+		err := os.RemoveAll(tmpDir)
+		require.NoError(t, err)
 	}()
 
-}
+	// Extract ca.pem from TLS server
+	err = writeCApem(t, err, srv, tmpDir, "ca.pem")
 
-func TestClient_NewWithCert(t *testing.T) {
+	// New should return new client
+	client, err := New(filepath.Join(tmpDir, "ca.pem"), "", time.Second)
+	require.NoError(t, err)
 
-	file, err := ioutil.TempFile("/tmp/", "ca.pem")
-	assert.NoError(t, err)
-
-	_, err = file.WriteString(caCert)
-	assert.NoError(t, err)
-	defer func() { _ = os.Remove(file.Name()) }()
-
-	keyFile, err := ioutil.TempFile("/tmp/", "key.pem")
-	assert.NoError(t, err)
-
-	_, err = keyFile.WriteString(privateKey)
-	assert.NoError(t, err)
-	defer func() { _ = os.Remove(keyFile.Name()) }()
-
-	signal.Notify(quit, os.Interrupt)
-
-	startHTTPServer(file.Name(), keyFile.Name())
-
-	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
-	}
-
-	client, err := New("ca.pem", "/tmp/", 30)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	resp, err := client.Get("https://localhost:8080")
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	// And http get should work
+	resp, err := client.Get(srv.URL)
+	require.NoError(t, err)
 
 	_, err = ioutil.ReadAll(resp.Body)
 	assert.NoError(t, err)
-	// Stop http server
-	<-done
 }
 
-func TestClient_NewWithEmptyCert(t *testing.T) {
-	_, err := New("", "/tmp/", 30)
+func TestClient_New_with_CABundleDir(t *testing.T) {
+	srv := httptest.NewTLSServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, err := fmt.Fprintln(w, "Test server")
+			assert.NoError(t, err)
+		}))
+	defer srv.Close()
+
+	// Given test server is working
+	_, err := srv.Client().Get(srv.URL)
+	require.NoError(t, err)
+
+	// Then create temp dir
+	tmpDir, err := ioutil.TempDir("", "test")
+	require.NoError(t, err)
+	defer func() {
+		err := os.RemoveAll(tmpDir)
+		require.NoError(t, err)
+	}()
+
+	// Extract ca.pem from TLS server
+	err = writeCApem(t, err, srv, tmpDir, "ca.pem")
+
+	// New should return new client
+	client, err := New("", tmpDir, time.Second)
+	require.NoError(t, err)
+
+	// And http get should work
+	resp, err := client.Get(srv.URL)
+	require.NoError(t, err)
+
+	_, err = ioutil.ReadAll(resp.Body)
+	assert.NoError(t, err)
+}
+
+func TestClient_New_with_CABundleFile_and_CABundleDir(t *testing.T) {
+	srv := httptest.NewTLSServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, err := fmt.Fprintln(w, "Test server")
+			assert.NoError(t, err)
+		}))
+	defer srv.Close()
+
+	// Given test server is working
+	_, err := srv.Client().Get(srv.URL)
+	require.NoError(t, err)
+
+	// Then create temp dir
+	tmpDir, err := ioutil.TempDir("", "test")
+	require.NoError(t, err)
+	defer func() {
+		err := os.RemoveAll(tmpDir)
+		require.NoError(t, err)
+	}()
+
+	// Extract ca.pem from TLS server
+	err = writeCApem(t, err, srv, tmpDir, "ca")
+
+	// New should return new client
+	client, err := New("ca", tmpDir, time.Second)
+	require.NoError(t, err)
+
+	// And http get should work
+	resp, err := client.Get(srv.URL)
+	require.NoError(t, err)
+
+	_, err = ioutil.ReadAll(resp.Body)
+	assert.NoError(t, err)
+}
+
+func TestClient_New_with_CABundleFile_full_path_and_CABundleDir(t *testing.T) {
+	srv := httptest.NewTLSServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, err := fmt.Fprintln(w, "Test server")
+			assert.NoError(t, err)
+		}))
+	defer srv.Close()
+
+	// Given test server is working
+	_, err := srv.Client().Get(srv.URL)
+	require.NoError(t, err)
+
+	// Then create temp dir
+	tmpDir, err := ioutil.TempDir("", "test")
+	require.NoError(t, err)
+	defer func() {
+		err := os.RemoveAll(tmpDir)
+		require.NoError(t, err)
+	}()
+
+	// Extract ca.pem from TLS server
+	err = writeCApem(t, err, srv, tmpDir, "ca")
+
+	// New should return new client
+	client, err := New(filepath.Join(tmpDir, "ca"), tmpDir, time.Second)
+	require.NoError(t, err)
+
+	// And http get should work
+	resp, err := client.Get(srv.URL)
+	require.NoError(t, err)
+
+	_, err = ioutil.ReadAll(resp.Body)
+	assert.NoError(t, err)
+}
+
+func writeCApem(t *testing.T, err error, srv *httptest.Server, tmpDir string, certName string) error {
+	caPEM := new(bytes.Buffer)
+	err = pem.Encode(caPEM, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: srv.Certificate().Raw,
+	})
+	require.NoError(t, err)
+
+	// Then write the ca.pem to disk
+	caPem, err := os.Create(filepath.Join(tmpDir, certName))
+	require.NoError(t, err)
+	_, err = caPem.Write(caPEM.Bytes())
+	require.NoError(t, err)
+	return err
+}
+
+func Test_NewAcceptInvalidHostname(t *testing.T) {
+	srv := httptest.NewUnstartedServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, err := fmt.Fprintln(w, "Test server")
+			assert.NoError(t, err)
+		}))
+	defer srv.Close()
+
+	// Given a server certificate accepting a certain IP and hostname
+	var ip net.IP
+	ip = net.IPv4(127, 0, 0, 111)
+	serverTLSConf, err := certsetup("foo.bar", []net.IP{ip})
+	require.NoError(t, err)
+	srv.TLS = serverTLSConf
+
+	// And server is running HTTPS
+	srv.StartTLS()
+
+	// And folder in client to contain a certificate
+	tmpDir, err := ioutil.TempDir("", "test")
+	require.NoError(t, err)
+	defer func() {
+		err := os.RemoveAll(tmpDir)
+		require.NoError(t, err)
+	}()
+
+	// And ca.pem exists for client
+	err = writeCApem(t, err, srv, tmpDir, "ca.pem")
+
+	// 2 assertions:
+
+	// When HTTPS client is created accepting server certificated IP
+	sameIP := ip.String()
+	client, err := NewAcceptInvalidHostname(filepath.Join(tmpDir, "ca.pem"), "", time.Second, sameIP)
+	require.NoError(t, err)
+
+	// Then HTTPS should work even for different hostname and source IP (127.0.0.1)
+	req, err := http.NewRequest("GET", srv.URL, nil)
+	require.NoError(t, err)
+	req.Host = "different.hostname"
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+
+	_, err = ioutil.ReadAll(resp.Body)
+	assert.NoError(t, err)
+
+	// When HTTPS client is created accepting server certificated hostname
+	client, err = NewAcceptInvalidHostname(filepath.Join(tmpDir, "ca.pem"), "", time.Second, "foo.bar")
+	require.NoError(t, err)
+
+	// Then HTTPS should work
+	req, err = http.NewRequest("GET", srv.URL, nil)
+	require.NoError(t, err)
+	req.Host = "different.hostname"
+	resp, err = client.Do(req)
+	require.NoError(t, err)
+
+	_, err = ioutil.ReadAll(resp.Body)
+	assert.NoError(t, err)
+}
+
+func certsetup(hostname string, ips []net.IP) (serverTLSConf *tls.Config, err error) {
+	// set up our CA certificate
+	ca := &x509.Certificate{
+		SerialNumber: big.NewInt(2019),
+		Subject: pkix.Name{
+			Organization:  []string{"Company, INC."},
+			Country:       []string{"US"},
+			Province:      []string{""},
+			Locality:      []string{"San Francisco"},
+			StreetAddress: []string{"Golden Gate Bridge"},
+			PostalCode:    []string{"94016"},
+			CommonName:    hostname,
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(10, 0, 0),
+		IsCA:                  true,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+	}
+
+	// create our private and public key
+	caPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
-		log.Println(err)
 		return
 	}
-	assert.NoError(t, err)
+
+	// create the CA
+	caBytes, err := x509.CreateCertificate(rand.Reader, ca, ca, &caPrivKey.PublicKey, caPrivKey)
+	if err != nil {
+		return
+	}
+
+	// pem encode
+	caPEM := new(bytes.Buffer)
+	err = pem.Encode(caPEM, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: caBytes,
+	})
+	if err != nil {
+		return
+	}
+
+	caPrivKeyPEM := new(bytes.Buffer)
+	err = pem.Encode(caPrivKeyPEM, &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(caPrivKey),
+	})
+	if err != nil {
+		return
+	}
+
+	// set up our server certificate
+	cert := &x509.Certificate{
+		SerialNumber: big.NewInt(2019),
+		Subject: pkix.Name{
+			Organization:  []string{"Company, INC."},
+			Country:       []string{"US"},
+			Province:      []string{""},
+			Locality:      []string{"San Francisco"},
+			StreetAddress: []string{"Golden Gate Bridge"},
+			PostalCode:    []string{"94016"},
+		},
+		DNSNames:     []string{hostname},
+		IPAddresses:  ips,
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().AddDate(10, 0, 0),
+		SubjectKeyId: []byte{1, 2, 3, 4, 6},
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+	}
+
+	certPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
+	if err != nil {
+		return
+	}
+
+	certBytes, err := x509.CreateCertificate(rand.Reader, cert, ca, &certPrivKey.PublicKey, caPrivKey)
+	if err != nil {
+		return
+	}
+
+	certPEM := new(bytes.Buffer)
+	err = pem.Encode(certPEM, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: certBytes,
+	})
+	if err != nil {
+		return
+	}
+
+	certPrivKeyPEM := new(bytes.Buffer)
+	err = pem.Encode(certPrivKeyPEM, &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(certPrivKey),
+	})
+	if err != nil {
+		return
+	}
+
+	serverCert, err := tls.X509KeyPair(certPEM.Bytes(), certPrivKeyPEM.Bytes())
+	if err != nil {
+		return
+	}
+
+	serverTLSConf = &tls.Config{
+		Certificates: []tls.Certificate{serverCert},
+	}
+
+	return
 }

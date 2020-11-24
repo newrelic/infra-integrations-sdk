@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - New integration protocol v4. It supports dimensional metric data format.
 - New metric types: `count`, `summary`, `cumulative-count` and `cumulative-rate`.
+- Package `http` can now create a client that validate certificates but also
+  accepts invalid hostnames via `NewAcceptInvalidHostname`.
 
 ### Changed
 
@@ -20,6 +22,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
     * `ATTRIBUTE` has been removed. Now you can add generic metadata or tags to all metric types.
 - Start using go modules.
 - Go version requirement changed to 1.13.
+
+### 3.6.3
+
+### Fixed
+
+- Improvement for jmx error handling.
+
+### 3.6.2
+
+### Fixed
+
+- Fix issue on the global logger to log debug messages when verbose is enabled.
+>>>>>>> master
 
 ### 3.6.1
 

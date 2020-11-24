@@ -184,6 +184,8 @@ _integration_version_),
 [metrics data](https://docs.newrelic.com/docs/create-integration-executable-file#metric-data) (with
 the mandatory _event_type_ field), and an empty structure for [inventory](https://docs.newrelic.com/docs/create-integration-executable-file#inventory) and [events data](https://docs.newrelic.com/docs/create-integration-executable-file#event-data).
 
+Each `event_type` will be automatically decorated by the infrastructure-agent with a `timestamp` attribute. The integration can overwrite this attribute, but it's not recomended as it can impact the alerts configured for this `event_type`.
+
 The SDK package contains a function called `integration.New`, which initializes a new instance of integration data. If you run the following simplified `main` function that calls `integration.New`:
 ```go
 func main() {

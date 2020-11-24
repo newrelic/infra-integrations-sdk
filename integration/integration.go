@@ -87,6 +87,10 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 	defaultArgs := args.GetDefaultArgs(i.args)
 	i.prettyOutput = defaultArgs.Pretty
 
+	if defaultArgs.Verbose {
+		log.SetupLogging(defaultArgs.Verbose)
+	}
+
 	// Setting default values, if not set yet
 	if i.logger == nil {
 		i.logger = log.NewStdErr(defaultArgs.Verbose)
