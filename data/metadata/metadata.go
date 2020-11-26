@@ -13,7 +13,6 @@ type Map map[string]interface{}
 
 // Metadata stores entity Metadata. Serialized as "entity"
 type Metadata struct {
-	// TODO: not a fan of having the fields exposed
 	Name        string `json:"name"`
 	DisplayName string `json:"displayName"`
 	EntityType  string `json:"type"`

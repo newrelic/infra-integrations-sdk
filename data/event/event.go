@@ -61,7 +61,6 @@ func (e *Event) AddAttribute(key string, value interface{}) error {
 	if len(key) == 0 {
 		return err.ParameterCannotBeEmpty("key")
 	}
-	// TODO validate value type (bool, number, string) ?
 	e.Attributes[key] = value
 	return nil
 }

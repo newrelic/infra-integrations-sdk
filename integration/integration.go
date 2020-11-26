@@ -242,7 +242,7 @@ func PrometheusSummary(timestamp time.Time, metricName string, sampleCount uint6
 // -- private
 // is entity empty?
 func notEmpty(entity *Entity) bool {
-	return len(entity.Events) > 0 || len(entity.Metrics) > 0 || len(entity.Inventory.Items()) > 0
+	return len(entity.Events) > 0 || len(entity.Metrics) > 0 || entity.Inventory.Len() > 0
 }
 
 func (i *Integration) checkArguments() error {

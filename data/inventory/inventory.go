@@ -59,6 +59,11 @@ func (i *Inventory) Items() Items {
 	return i.items
 }
 
+// Len returns the number of elements stored in Inventory.
+func (i *Inventory) Len() int {
+	return len(i.items)
+}
+
 // New creates new inventory.
 func New() *Inventory {
 	return &Inventory{
