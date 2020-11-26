@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"github.com/newrelic/infra-integrations-sdk/data/event"
 	"io/ioutil"
 	"math"
 	"os"
@@ -373,13 +374,13 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	e.AddMetric(count)
 	e.AddMetric(summary)
 	// add 1st event to entity 1
-	ev1, err := i.NewEvent(time.Unix(10000000, 0), "evnt1sum", "evnt1cat")
+	ev1, err := event.New(time.Unix(10000000, 0), "evnt1sum", "evnt1cat")
 	assert.NoError(t, err)
 	_ = ev1.AddAttribute("attr1", "attr1Val")
 	_ = ev1.AddAttribute("attr2", 42)
 	e.AddEvent(ev1)
 	// add 2nd event to entity 1
-	ev2, err := i.NewEvent(time.Unix(10000000, 0), "evnt2sum", "evnt2cat")
+	ev2, err := event.New(time.Unix(10000000, 0), "evnt2sum", "evnt2cat")
 	assert.NoError(t, err)
 	e.AddEvent(ev2)
 	// add inventory to entity 1. only one because order is not guaranteed and the test is comparing with a static string
@@ -403,7 +404,7 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	assert.NoError(t, err)
 
 	// add event to the "host" entity (will not create one, inventory before already created it)
-	ev3, err := i.NewEvent(time.Unix(10000000, 0), "evnt2sum", "evnt2cat")
+	ev3, err := event.New(time.Unix(10000000, 0), "evnt2sum", "evnt2cat")
 	assert.NoError(t, err)
 	i.HostEntity.AddEvent(ev3)
 

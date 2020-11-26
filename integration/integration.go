@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/newrelic/infra-integrations-sdk/data/event"
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 
 	"github.com/newrelic/infra-integrations-sdk/args"
@@ -120,11 +119,6 @@ func (i *Integration) NewEntity(name string, entityType string, displayName stri
 // AddEntity adds an entity to the list of entities. No check for "duplicates" is performed
 func (i *Integration) AddEntity(e *Entity) {
 	i.Entities = append(i.Entities, e)
-}
-
-// NewEvent creates a new event
-func (i *Integration) NewEvent(timestamp time.Time, summary string, category string) (*event.Event, error) {
-	return event.New(timestamp, summary, category)
 }
 
 // Publish writes the data to output (stdout) and resets the integration "object"
