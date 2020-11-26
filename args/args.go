@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // DefaultArgumentList includes the minimal set of necessary arguments for an integration.
@@ -47,9 +46,9 @@ func (d *DefaultArgumentList) HasInventory() bool {
 // HTTPClientArgumentList are meant to be used as flags from a custom integrations. With this you could
 // send this arguments from the command line.
 type HTTPClientArgumentList struct {
-	HTTPCaBundleFile string        `default:"" help:"Name of the certificate file"`
-	HTTPCaBundleDir  string        `default:"" help:"Path where the certificate exists"`
-	HTTPTimeout      time.Duration `default:"30" help:"Client http timeout in seconds"`
+	HTTPCaBundleFile string `default:"" help:"Name of the certificate file"`
+	HTTPCaBundleDir  string `default:"" help:"Path where the certificate exists"`
+	HTTPTimeout      int    `default:"30" help:"Client http timeout in seconds"`
 }
 
 func getArgsFromEnv() func(f *flag.Flag) {
@@ -155,7 +154,7 @@ func defineFlags(args interface{}) error {
 			flag.StringVar(argDefault, argName, defaultValue, helpValue)
 		case *JSON:
 			jsonVar(argDefault, argName, helpValue)
-		case *DefaultArgumentList:
+		case *DefaultArgumentList, *HTTPClientArgumentList:
 			err := defineFlags(argDefault)
 			if err != nil {
 				return err
