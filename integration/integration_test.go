@@ -1,13 +1,14 @@
 package integration
 
 import (
-	"github.com/newrelic/infra-integrations-sdk/data/event"
 	"io/ioutil"
 	"math"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/newrelic/infra-integrations-sdk/data/event"
 
 	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/stretchr/testify/assert"
