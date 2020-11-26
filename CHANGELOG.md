@@ -34,7 +34,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 
 - Fix issue on the global logger to log debug messages when verbose is enabled.
->>>>>>> master
 
 ### 3.6.1
 
