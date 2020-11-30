@@ -38,3 +38,16 @@ func Test_Event_NewEventsWithAttributes(t *testing.T) {
 	assert.Equal(t, "category", e.Category)
 	assert.Equal(t, "attrVal", e.Attributes["attrKey"])
 }
+
+func Test_Event_ReserverAttributeReturnsError(t *testing.T) {
+	now := time.Now()
+	e, err := New(now, "summary", "category")
+	assert.NoError(t, err)
+
+	assert.Equal(t, now.Unix(), e.Timestamp)
+	assert.Equal(t, "summary", e.Summary)
+	assert.Equal(t, "category", e.Category)
+
+	err = e.AddAttribute("timestamp", 123456)
+	assert.Error(t, err)
+}

@@ -1,9 +1,11 @@
 package event
 
 import (
+	"fmt"
 	"time"
 
 	err "github.com/newrelic/infra-integrations-sdk/data/errors"
+	agentEventPkg "github.com/newrelic/infrastructure-agent/pkg/event"
 )
 
 const (
@@ -60,6 +62,10 @@ func NewNotification(summary string) (*Event, error) {
 func (e *Event) AddAttribute(key string, value interface{}) error {
 	if len(key) == 0 {
 		return err.ParameterCannotBeEmpty("key")
+	}
+
+	if agentEventPkg.IsReserved(key) {
+		return fmt.Errorf("attribute '%s' is reserved", key)
 	}
 	e.Attributes[key] = value
 	return nil
