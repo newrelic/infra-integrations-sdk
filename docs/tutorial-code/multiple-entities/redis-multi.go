@@ -1,14 +1,15 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/data/event"
-	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 )
 
@@ -35,7 +36,7 @@ func queryGaugeRedisInfo(query string, port int) (float64, error) {
 	}
 	splittedLine := strings.Split(string(output), ":")
 	if len(splittedLine) != 2 {
-		return 0, fmt.Errorf("Cannot split the output line")
+		return 0, errors.New("cannot split the output line")
 	}
 	return strconv.ParseFloat(strings.TrimSpace(splittedLine[1]), 64)
 }
@@ -59,18 +60,20 @@ func main() {
 	panicOnErr(err)
 
 	// Create Entity, entities name must be unique
-	e1, err := i.Entity("instance-1", "redis")
+	e1, err := i.NewEntity("instance-1", "instance-1", "redis")
 	panicOnErr(err)
 	// Add event when redis starts
 	if args.All() || args.Events {
 		uptime, err := queryGaugeRedisInfo("uptime_in_seconds:", instanceOnePort)
 		panicOnErr(err)
 		if uptime < 60 {
-			err = e1.AddEvent(event.NewNotification("Redis Server recently started"))
+			ev, _ := event.NewNotification("Redis Server recently started")
+			e1.AddEvent(ev)
 		}
 		panicOnErr(err)
 		if uptime < 60 {
-			err = e1.AddEvent(event.New("Redis Server recently started", "redis-server"))
+			ev, _ := event.New(time.Now(), "summary", "category")
+			e1.AddEvent(ev)
 		}
 		panicOnErr(err)
 	}
@@ -79,22 +82,24 @@ func main() {
 	if args.All() || args.Inventory {
 		key, value := queryAttrRedisInfo("redis_version", instanceOnePort)
 		if key != "" {
-			err = e1.SetInventoryItem(key, "value", value)
+			err = e1.AddInventoryItem(key, "value", value)
 		}
 		panicOnErr(err)
 	}
 
 	// Add Metric
 	if args.All() || args.Metrics {
-		m1 := e1.NewMetricSet("MyorgRedisSample")
 		metricValue, err := queryGaugeRedisInfo("instantaneous_ops_per_sec:", instanceOnePort)
 		panicOnErr(err)
-		err = m1.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
-		panicOnErr(err)
+		g, _ := integration.Gauge(time.Now(), "query.instantaneousOpsPerSecond", metricValue)
+		e1.AddMetric(g)
 	}
 
+	// Add the first entity to the integration
+	i.AddEntity(e1)
+
 	// Create another Entity
-	e2, err := i.Entity("instance-2", "redis")
+	e2, err := i.NewEntity("instance-2", "my-instance", "redis")
 	panicOnErr(err)
 
 	// Add event when redis starts
@@ -102,11 +107,13 @@ func main() {
 		uptime, err := queryGaugeRedisInfo("uptime_in_seconds:", instanceOnePort)
 		panicOnErr(err)
 		if uptime < 60 {
-			err = e2.AddEvent(event.NewNotification("Redis Server recently started"))
+			ev, _ := event.NewNotification("Redis Server recently started")
+			e2.AddEvent(ev)
 		}
 		panicOnErr(err)
 		if uptime < 60 {
-			err = e2.AddEvent(event.New("Redis Server recently started", "redis-server"))
+			ev, _ := event.New(time.Now(), "summary", "category")
+			e2.AddEvent(ev)
 		}
 		panicOnErr(err)
 	}
@@ -115,19 +122,22 @@ func main() {
 	if args.All() || args.Inventory {
 		key, value := queryAttrRedisInfo("redis_version", instanceTwoPort)
 		if key != "" {
-			err = e2.SetInventoryItem(key, "value", value)
+			err = e2.AddInventoryItem(key, "value", value)
 		}
 		panicOnErr(err)
 	}
 
 	if args.All() || args.Metrics {
-		m2 := e2.NewMetricSet("MyorgRedisSample")
 		metricValue, err := queryGaugeRedisInfo("instantaneous_ops_per_sec:", instanceTwoPort)
 		panicOnErr(err)
-		err = m2.SetMetric("query.instantaneousOpsPerSecond", metricValue, metric.GAUGE)
-		panicOnErr(err)
+		g, _ := integration.Gauge(time.Now(), "query.instantaneousOpsPerSecond", metricValue)
+		e2.AddMetric(g)
 	}
 
+	// Add the second entity to the integration
+	i.AddEntity(e2)
+
+	// Print the JSON document to stdout
 	panicOnErr(i.Publish())
 }
 

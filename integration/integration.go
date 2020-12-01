@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,43 +9,42 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
+
+	"github.com/newrelic/infra-integrations-sdk/data/metric"
 
 	"github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/log"
-	"github.com/newrelic/infra-integrations-sdk/persist"
 )
 
 // Custom attribute keys:
 const (
-	CustomAttrPrefix  = "NRI_"
-	CustomAttrCluster = "cluster_name"
-	CustomAttrService = "service_name"
-)
-
-// Standard attributes
-const (
-	AttrReportingEntity   = "reportingEntityKey"
-	AttrReportingEndpoint = "reportingEndpoint"
+	CustomAttrPrefix = "NRI_"
 )
 
 // NR infrastructure agent protocol version
 const (
-	protocolVersion = "3"
+	protocolVersion = "4"
 )
+
+// Metadata describes the integration
+type Metadata struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
+}
 
 // Integration defines the format of the output JSON that integrations will return for protocol 2.
 type Integration struct {
-	Name               string    `json:"name"`
-	ProtocolVersion    string    `json:"protocol_version"`
-	IntegrationVersion string    `json:"integration_version"`
-	Entities           []*Entity `json:"data"`
-	addHostnameToMeta  bool
-	locker             sync.Locker
-	storer             persist.Storer
-	prettyOutput       bool
-	writer             io.Writer
-	logger             log.Logger
-	args               interface{}
+	ProtocolVersion string    `json:"protocol_version"`
+	Metadata        Metadata  `json:"integration"`
+	Entities        []*Entity `json:"data"`
+	// HostEntity is an "entity" that serves as dumping ground for metrics not associated with a specific entity
+	HostEntity   *Entity `json:"-"` //skip json serializing
+	locker       sync.Locker
+	prettyOutput bool
+	writer       io.Writer
+	logger       log.Logger
+	args         interface{}
 }
 
 // New creates new integration with sane default values.
@@ -63,12 +61,12 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 	}
 
 	i = &Integration{
-		Name:               name,
-		ProtocolVersion:    protocolVersion,
-		IntegrationVersion: version,
-		Entities:           []*Entity{},
-		writer:             os.Stdout,
-		locker:             &sync.Mutex{},
+
+		ProtocolVersion: protocolVersion,
+		Metadata:        Metadata{name, version},
+		Entities:        []*Entity{},
+		writer:          os.Stdout,
+		locker:          &sync.Mutex{},
 	}
 
 	for _, opt := range opts {
@@ -87,7 +85,6 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 	}
 	defaultArgs := args.GetDefaultArgs(i.args)
 	i.prettyOutput = defaultArgs.Pretty
-	i.addHostnameToMeta = defaultArgs.NriAddHostname
 
 	if defaultArgs.Verbose {
 		log.SetupLogging(defaultArgs.Verbose)
@@ -98,115 +95,46 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 		i.logger = log.NewStdErr(defaultArgs.Verbose)
 	}
 
-	if i.storer == nil {
-		var err error
-		i.storer, err = persist.NewFileStore(persist.DefaultPath(i.Name), i.logger, persist.DefaultTTL)
-		if err != nil {
-			return nil, fmt.Errorf("can't create store: %s", err)
-		}
-	}
+	i.HostEntity = newHostEntity()
 
 	return
 }
 
-// LocalEntity retrieves default (local) entity to monitorize.
-func (i *Integration) LocalEntity() *Entity {
+// NewEntity method creates a new (uniquely named) Entity.
+// The `name` of the Entity must be unique for the account otherwise it will cause conflicts
+func (i *Integration) NewEntity(name string, entityType string, displayName string) (e *Entity, err error) {
 	i.locker.Lock()
 	defer i.locker.Unlock()
 
-	for _, e := range i.Entities {
-		if e.isLocalEntity() {
-			return e
-		}
-	}
-
-	e := newLocalEntity(i.storer, i.addHostnameToMeta)
-
-	i.Entities = append(i.Entities, e)
-
-	return e
-}
-
-// EntityReportedBy entity being reported from another entity that is not producing the actual entity data.
-func (i *Integration) EntityReportedBy(reportingEntity EntityKey, reportedEntityName, reportedEntityNamespace string, idAttributes ...IDAttribute) (e *Entity, err error) {
-	e, err = i.Entity(reportedEntityName, reportedEntityNamespace, idAttributes...)
-	if err != nil {
-		return
-	}
-
-	e.setCustomAttribute(AttrReportingEntity, reportingEntity.String())
-	return
-}
-
-// EntityReportedVia entity being reported from a known endpoint.
-func (i *Integration) EntityReportedVia(endpoint, reportedEntityName, reportedEntityNamespace string, idAttributes ...IDAttribute) (e *Entity, err error) {
-	e, err = i.Entity(reportedEntityName, reportedEntityNamespace, idAttributes...)
-	if err != nil {
-		return
-	}
-
-	e.setCustomAttribute(AttrReportingEndpoint, endpoint)
-	return
-}
-
-// Entity method creates or retrieves an already created entity.
-func (i *Integration) Entity(name, namespace string, idAttributes ...IDAttribute) (e *Entity, err error) {
-	i.locker.Lock()
-	defer i.locker.Unlock()
-
-	e, err = newEntity(name, namespace, i.storer, i.addHostnameToMeta, idAttributes...)
+	e, err = newEntity(name, entityType, displayName)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, eIt := range i.Entities {
-		if e.SameAs(eIt) {
-			return eIt, nil
-		}
-	}
+	err = i.addDefaultAttributes(e)
 
-	defaultArgs := args.GetDefaultArgs(i.args)
-
-	if defaultArgs.Metadata {
-		for _, element := range os.Environ() {
-			variable := strings.Split(element, "=")
-			prefix := fmt.Sprintf("%s%s_", CustomAttrPrefix, strings.ToUpper(i.Name))
-			if strings.HasPrefix(variable[0], prefix) {
-				e.setCustomAttribute(strings.TrimPrefix(variable[0], prefix), variable[1])
-			}
-		}
-	}
-
-	if defaultArgs.NriCluster != "" {
-		e.setCustomAttribute(CustomAttrCluster, defaultArgs.NriCluster)
-	}
-	if defaultArgs.NriService != "" {
-		e.setCustomAttribute(CustomAttrService, defaultArgs.NriService)
-	}
-
-	i.Entities = append(i.Entities, e)
-
-	return e, nil
+	return e, err
 }
 
-// Publish runs all necessary tasks before publishing the data. Currently, it
-// stores the Storer, prints the JSON representation of the integration using a writer (stdout by default)
-// and re-initializes the integration object (allowing re-use it during the
-// execution of your code).
-func (i *Integration) Publish() error {
-	if i.storer != nil {
-		if err := i.storer.Save(); err != nil {
-			return err
-		}
-	}
+// AddEntity adds an entity to the list of entities. No check for "duplicates" is performed
+func (i *Integration) AddEntity(e *Entity) {
+	i.Entities = append(i.Entities, e)
+}
 
+// Publish writes the data to output (stdout) and resets the integration "object"
+func (i *Integration) Publish() error {
+	defer i.Clear()
+
+	// add the host entity to the list of entities to be serialized, if not empty
+	if notEmpty(i.HostEntity) {
+		i.Entities = append(i.Entities, i.HostEntity)
+	}
 	output, err := i.toJSON(i.prettyOutput)
 	if err != nil {
 		return err
 	}
 	output = append(output, []byte{'\n'}...)
 	_, err = i.writer.Write(output)
-	defer i.Clear()
 
 	return err
 }
@@ -217,6 +145,8 @@ func (i *Integration) Clear() {
 	i.locker.Lock()
 	defer i.locker.Unlock()
 	i.Entities = []*Entity{} // empty array preferred instead of null on marshaling.
+	// reset the host entity
+	i.HostEntity = newHostEntity()
 }
 
 // MarshalJSON serializes integration to JSON, fulfilling Marshaler interface.
@@ -229,26 +159,84 @@ func (i *Integration) MarshalJSON() (output []byte, err error) {
 	return
 }
 
+// toJSON serializes integration as JSON. If the pretty attribute is
+// set to true, the JSON will be indented for easy reading.
+func (i *Integration) toJSON(pretty bool) (output []byte, err error) {
+	if !pretty {
+		return i.MarshalJSON()
+	}
+
+	return json.MarshalIndent(*i, "", "\t")
+}
+
 // Logger returns the integration logger instance.
 func (i *Integration) Logger() log.Logger {
 	return i.logger
 }
 
-// toJSON serializes integration as JSON. If the pretty attribute is
-// set to true, the JSON will be indented for easy reading.
-func (i *Integration) toJSON(pretty bool) (output []byte, err error) {
-	output, err = i.MarshalJSON()
-	if !pretty {
-		return
+// FindEntity finds ad return an entity by name. returns false if entity does not exist in the integration
+func (i *Integration) FindEntity(name string) (*Entity, bool) {
+	if i.Entities == nil {
+		return &Entity{}, false
 	}
+	for _, e := range i.Entities {
+		// nil metadata usually means the "host" entity, so keep searching
+		if e == nil || e.Metadata == nil {
+			continue
+		}
 
-	var buf bytes.Buffer
-	err = json.Indent(&buf, output, "", "\t")
-	if err != nil {
-		return nil, err
+		if e.Metadata.Name == name {
+			return e, true
+		}
 	}
+	return &Entity{}, false
+}
 
-	return buf.Bytes(), nil
+// Gauge creates a metric of type gauge
+func Gauge(timestamp time.Time, metricName string, value float64) (metric.Metric, error) {
+	return metric.NewGauge(timestamp, metricName, value)
+}
+
+// Count creates a metric of type count
+func Count(timestamp time.Time, metricName string, value float64) (metric.Metric, error) {
+	return metric.NewCount(timestamp, metricName, value)
+}
+
+// Summary creates a metric of type summary
+func Summary(timestamp time.Time, metricName string, count float64,
+	average float64, sum float64, min float64, max float64) (metric.Metric, error) {
+	return metric.NewSummary(timestamp, metricName, count, average, sum, min, max)
+}
+
+// CumulativeCount creates metric of type cumulative count
+func CumulativeCount(timestamp time.Time, metricName string, value float64) (metric.Metric, error) {
+	return metric.NewCumulativeCount(timestamp, metricName, value)
+}
+
+// Rate creates a metric of type rate
+func Rate(timestamp time.Time, metricName string, value float64) (metric.Metric, error) {
+	return metric.NewRate(timestamp, metricName, value)
+}
+
+// CumulativeRate creates a metric of type cumulative rate
+func CumulativeRate(timestamp time.Time, metricName string, value float64) (metric.Metric, error) {
+	return metric.NewCumulativeRate(timestamp, metricName, value)
+}
+
+// PrometheusHistogram creates a metric of type prometheus histogram
+func PrometheusHistogram(timestamp time.Time, metricName string, sampleCount uint64, sampleSum float64) (*metric.PrometheusHistogram, error) {
+	return metric.NewPrometheusHistogram(timestamp, metricName, sampleCount, sampleSum)
+}
+
+// PrometheusSummary creates a metric of type prometheus summary
+func PrometheusSummary(timestamp time.Time, metricName string, sampleCount uint64, sampleSum float64) (*metric.PrometheusSummary, error) {
+	return metric.NewPrometheusSummary(timestamp, metricName, sampleCount, sampleSum)
+}
+
+// -- private
+// is entity empty?
+func notEmpty(entity *Entity) bool {
+	return len(entity.Events) > 0 || len(entity.Metrics) > 0 || entity.Inventory.Len() > 0
 }
 
 func (i *Integration) checkArguments() error {
@@ -263,4 +251,24 @@ func (i *Integration) checkArguments() error {
 	}
 
 	return errors.New("arguments must be a pointer to a struct (or nil)")
+}
+
+func (i *Integration) addDefaultAttributes(e *Entity) error {
+	defaultArgs := args.GetDefaultArgs(i.args)
+
+	// get env vars values for "custom" prefixed vars (NRIA_) and add them as attributes to the entity
+	if defaultArgs.Metadata {
+		for _, element := range os.Environ() {
+			variable := strings.Split(element, "=")
+			prefix := fmt.Sprintf("%s%s_", CustomAttrPrefix, strings.ToUpper(i.Metadata.Name))
+			if strings.HasPrefix(variable[0], prefix) {
+				err := e.AddTag(strings.TrimPrefix(variable[0], prefix), variable[1])
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
 }

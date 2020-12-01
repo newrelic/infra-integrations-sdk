@@ -25,12 +25,13 @@ type Inventory struct {
 }
 
 // MarshalJSON Marshals the items map into a JSON
-func (i Inventory) MarshalJSON() ([]byte, error) {
+func (i *Inventory) MarshalJSON() ([]byte, error) {
 	return json.Marshal(i.items)
 }
 
-// SetItem stores a value into the inventory, key is limited to 375 characters.
-func (i Inventory) SetItem(key string, field string, value interface{}) error {
+// SetItem stores a value into the inventory, updating if already exists an item with the same key
+// key is limited to 375 characters.
+func (i *Inventory) SetItem(key string, field string, value interface{}) error {
 	if len(key) > MaxKeyLen {
 		return fmt.Errorf("maximum inventory key length is %d, current key %s has %d characters", MaxKeyLen, key, len(key))
 	}
@@ -48,14 +49,19 @@ func (i Inventory) SetItem(key string, field string, value interface{}) error {
 }
 
 // Item returns stored item
-func (i Inventory) Item(key string) (item Item, exists bool) {
+func (i *Inventory) Item(key string) (item Item, exists bool) {
 	item, exists = i.items[key]
 	return
 }
 
 // Items returns all stored items
-func (i Inventory) Items() Items {
+func (i *Inventory) Items() Items {
 	return i.items
+}
+
+// Len returns the number of elements stored in Inventory.
+func (i *Inventory) Len() int {
+	return len(i.items)
 }
 
 // New creates new inventory.

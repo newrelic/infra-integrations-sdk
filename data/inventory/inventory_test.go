@@ -7,37 +7,52 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestInventory_SetItem(t *testing.T) {
+func Test_Inventory_SetItemAddsInventoryItem(t *testing.T) {
 	i := New()
-	i.SetItem("foo", "bar", "baz")
+	err := i.SetItem("foo", "bar", "baz")
+	assert.NoError(t, err)
 
+	err = i.SetItem("foo1", "bar1", "baz1")
+	assert.NoError(t, err)
+
+	assert.Len(t, i.items, 2)
 	assert.Equal(t, i.items["foo"]["bar"], "baz")
-	// Test update already existing element
-	i.SetItem("foo", "bar", "quux")
+	assert.Equal(t, i.items["foo1"]["bar1"], "baz1")
+}
+
+func Test_Inventory_SetItemWithSameKeyUpdatesExisting(t *testing.T) {
+	i := New()
+	err := i.SetItem("foo", "bar", "baz")
+	assert.NoError(t, err)
+	assert.Equal(t, i.items["foo"]["bar"], "baz")
+
+	// updates already existing element
+	err = i.SetItem("foo", "bar", "quux")
+	assert.NoError(t, err)
 	assert.Equal(t, i.items["foo"]["bar"], "quux")
 
 }
 
-func TestInventory_Item(t *testing.T) {
+func Test_Inventory_GetItemByKey(t *testing.T) {
 	i := New()
-	i.SetItem("foo", "bar", "baz")
+	_ = i.SetItem("foo", "bar", "baz")
 	element, exists := i.Item("foo")
 	assert.Equal(t, exists, true)
 	assert.Equal(t, element["bar"], "baz")
 }
 
-func TestInventory_Items(t *testing.T) {
+func Test_Inventory_GetAllItems(t *testing.T) {
 	i := New()
 	// Add 4 elements
-	i.SetItem("foo", "bar", "baz")
-	i.SetItem("qux", "bar", "baz")
-	i.SetItem("bar", "bar", "baz")
-	i.SetItem("baz", "bar", "baz")
+	_ = i.SetItem("foo", "bar", "baz")
+	_ = i.SetItem("qux", "bar", "baz")
+	_ = i.SetItem("bar", "bar", "baz")
+	_ = i.SetItem("baz", "bar", "baz")
 
 	assert.Equal(t, len(i.Items()), 4)
 }
 
-func TestInventory_SetItemForbidsLargeKeys(t *testing.T) {
+func Test_Inventory_SetItemForbidsLargeKeys(t *testing.T) {
 	i := New()
 
 	randStringWithLen := func(n int) string {

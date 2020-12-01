@@ -41,7 +41,7 @@ func TestMain(m *testing.M) {
 	if testType == "" {
 		// Set the NR_JMX_TOOL to ourselves (the test binary) with the extra
 		// parameter test.type=helper and run the tests as usual.
-		os.Setenv("NR_JMX_TOOL", fmt.Sprintf("%s -test.type helper --", os.Args[0]))
+		_ = os.Setenv("NR_JMX_TOOL", fmt.Sprintf("%s -test.type helper --", os.Args[0]))
 		os.Exit(m.Run())
 	} else if testType == "helper" {
 		// The test suite becomes a JMX Tool
@@ -59,10 +59,12 @@ func TestMain(m *testing.M) {
 				fmt.Println("{}")
 			} else if command == cmdBigPayload {
 				// Create a payload of more than 64K
-				fmt.Println(fmt.Sprintf("{\"first\": 1%s}", strings.Repeat(", \"s\": 2", 70*1024)))
+				str := fmt.Sprintf("{\"first\": 1%s}", strings.Repeat(", \"s\": 2", 70*1024))
+				fmt.Println(str)
 			} else if command == cmdBigPayloadErr {
 				// Create a payload of more than 4M
-				fmt.Println(fmt.Sprintf("{\"first\": 1%s}", strings.Repeat(", \"s\": 2", 4*1024*1024)))
+				str := fmt.Sprintf("{\"first\": 1%s}", strings.Repeat(", \"s\": 2", 4*1024*1024))
+				fmt.Println(str)
 			}
 
 		}

@@ -1,0 +1,28 @@
+linters:
+  enable:
+    - govet
+    - golint
+    - goimports
+    - unused
+    - goconst
+    - errcheck
+  enable-all: false
+  disable-all: true
+  fast: false
+
+# all available settings of specific linters
+linters-settings:
+  golint:
+    # minimal confidence for issues, default is 0.8
+    min-confidence: 0.3
+
+issues:
+  exclude-use-default: false
+  exclude:
+    - "don't use ALL_CAPS in Go names; use CamelCase"
+
+misspell:
+  locale: US
+
+lll:
+  line-length: 100

@@ -1,20 +1,15 @@
 package integration
 
 import (
-	"bytes"
-	"flag"
 	"io/ioutil"
+	"math"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/newrelic/infra-integrations-sdk/data/attribute"
 	"github.com/newrelic/infra-integrations-sdk/data/event"
 
-	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,329 +19,334 @@ var (
 	integrationVersion = "1.0"
 )
 
-func TestCreation(t *testing.T) {
+func Test_Integration_CreateIntegrationInitializesCorrectly(t *testing.T) {
 	i := newTestIntegration(t)
 
-	assert.Equal(t, "TestIntegration", i.Name)
-	assert.Equal(t, "1.0", i.IntegrationVersion)
-	assert.Equal(t, "3", i.ProtocolVersion)
+	assert.Equal(t, "TestIntegration", i.Metadata.Name)
+	assert.Equal(t, "1.0", i.Metadata.Version)
+	assert.Equal(t, "4", i.ProtocolVersion)
 	assert.Len(t, i.Entities, 0)
 }
 
-func TestDefaultIntegrationWritesToStdout(t *testing.T) {
+func Test_Integration_DefaultIntegrationWritesToStdout(t *testing.T) {
 	// capture stdout to file
 	f, err := ioutil.TempFile("", "stdout")
 	assert.NoError(t, err)
 	back := os.Stdout
 	defer func() {
 		os.Stdout = back
+		_ = os.Remove(f.Name())
 	}()
 	os.Stdout = f
 
-	i, err := New("integration", "4.0", InMemoryStore())
+	i, err := New("integration", "4.0")
 
 	assert.NoError(t, err)
-	assert.Equal(t, "integration", i.Name)
-	assert.Equal(t, "4.0", i.IntegrationVersion)
-	assert.Equal(t, "3", i.ProtocolVersion)
+	assert.Equal(t, "integration", i.Metadata.Name)
+	assert.Equal(t, "4.0", i.Metadata.Version)
+	assert.Equal(t, "4", i.ProtocolVersion)
 	assert.Equal(t, 0, len(i.Entities))
 
 	assert.NoError(t, i.Publish())
 
 	// integration published metadata to stdout
-	f.Close()
+	_ = f.Close()
 	payload, err := ioutil.ReadFile(f.Name())
 	assert.NoError(t, err)
-	assert.Equal(t, `{"name":"integration","protocol_version":"3","integration_version":"4.0","data":[]}`+"\n", string(payload))
+	assert.Equal(t, stripBlanks([]byte(`{"protocol_version":"4","integration":{"name":"integration","version":"4.0"},"data":[]}`)), stripBlanks(payload))
 }
 
-func TestIntegration_LocalEntity(t *testing.T) {
+func Test_Integration_EntitiesWithSameBasicMetadataAreEqual(t *testing.T) {
 	i := newTestIntegration(t)
 
-	e1 := i.LocalEntity()
-	e2 := i.LocalEntity()
+	e1, err := i.NewEntity("name", "displayName", "type")
+	assert.NoError(t, err)
+
+	e2, err := i.NewEntity("name", "displayName", "type")
+	assert.NoError(t, err)
+
 	assert.Equal(t, e1, e2)
 }
 
-func TestIntegration_Entity(t *testing.T) {
+func Test_Integration_EntitiesWithSameMetadataAreEqual(t *testing.T) {
 	i := newTestIntegration(t)
 
-	e1, err := i.Entity("name", "ns")
+	e1, err := i.NewEntity("name", "displayName", "type")
 	assert.NoError(t, err)
-	e2, err := i.Entity("name2", "ns")
+
+	e2, err := i.NewEntity("name", "displayName", "type")
 	assert.NoError(t, err)
-	e3, err := i.Entity("name", "ns")
+
+	assert.Equal(t, e1, e2)
+}
+
+func Test_Integration_EntitiesWithDifferentMetadataAreNotEqual(t *testing.T) {
+	i := newTestIntegration(t)
+
+	e1, err := i.NewEntity("name", "ns", "")
+	assert.NoError(t, err)
+	e2, err := i.NewEntity("name2", "ns", "")
+	assert.NoError(t, err)
+	e3, err := i.NewEntity("name", "ns", "")
 	assert.NoError(t, err)
 
 	assert.NotEqual(t, e1, e2, "Different names create different entities")
-	assert.Equal(t, e1, e3, "Same namespace & name create/retrieve same entity")
+	assert.Equal(t, e1, e3, "Same type & name create same entity")
 }
 
-func TestIntegration_Entity_WithIDAttrs(t *testing.T) {
+func Test_Integration_EntitiesWithDifferentTagsAreNotEqual(t *testing.T) {
 	i := newTestIntegration(t)
 
-	idAttr := NewIDAttribute("k", "v")
+	e1, err := i.NewEntity("name", "ns", "")
+	assert.NoError(t, err)
+	_ = e1.AddTag("k", "v")
 
-	e1, err := i.Entity("name", "ns", idAttr)
-	assert.NoError(t, err)
-	e2, err := i.Entity("name", "ns")
-	assert.NoError(t, err)
-	e3, err := i.Entity("name", "ns", idAttr)
+	e2, err := i.NewEntity("name", "ns", "")
 	assert.NoError(t, err)
 
-	assert.NotEqual(t, e1, e2, "Different id-attributes create different entities")
-	assert.Equal(t, e1, e3, "Same namespace, name and id-attributes create/retrieve same entity")
+	e3, err := i.NewEntity("name", "ns", "")
+	assert.NoError(t, err)
+	_ = e3.AddTag("k", "v")
+
+	assert.False(t, e1.SameAs(e2), "Different tags create different entities")
+	assert.True(t, e1.SameAs(e3), "Same metadata creates/retrieves same entity")
 }
 
-func TestIntegration_EntityReportedBy(t *testing.T) {
+func Test_Integration_EntitiesWithSameMetadataAreTheSame(t *testing.T) {
 	i := newTestIntegration(t)
 
-	e, err := i.EntityReportedBy("reporting:entity:key", "name", "ns")
+	e1, err := i.NewEntity("Entity1", "test", "")
 	assert.NoError(t, err)
 
-	reportingEntityExists := false
-	for _, a := range e.customAttributes {
-		if a.Key == AttrReportingEntity {
-			reportingEntityExists = true
-			assert.Equal(t, a.Value, "reporting:entity:key")
-		}
-	}
-	require.True(t, reportingEntityExists)
+	e2, err := i.NewEntity("Entity1", "test", "")
+	assert.NoError(t, err)
+
+	assert.True(t, e1.SameAs(e2))
+
+	i.AddEntity(e1)
+	i.AddEntity(e2)
+
+	assert.Len(t, i.Entities, 2)
 }
 
-func TestIntegration_EntityReportedVia(t *testing.T) {
-	i := newTestIntegration(t)
-
-	e, err := i.EntityReportedVia("reporting.endpoint:123", "name", "ns")
+func Test_Integration_LoggerReturnsDefaultLogger(t *testing.T) {
+	i, err := New(integrationName, integrationVersion)
 	assert.NoError(t, err)
 
-	reportingEndpointExists := false
-	for _, a := range e.customAttributes {
-		if a.Key == AttrReportingEndpoint {
-			reportingEndpointExists = true
-			assert.Equal(t, a.Value, "reporting.endpoint:123")
-		}
-	}
-	require.True(t, reportingEndpointExists)
+	assert.Equal(t, i.logger, i.Logger())
 }
 
-func TestDefaultArguments(t *testing.T) {
-	al := sdk_args.DefaultArgumentList{}
+func Test_Integration_LoggerReturnsInjectedInstance(t *testing.T) {
+	l := log.NewStdErr(false)
 
-	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
+	i, err := New(integrationName, integrationVersion, Logger(l))
 	assert.NoError(t, err)
 
-	assert.Equal(t, "TestIntegration", i.Name)
-	assert.Equal(t, "1.0", i.IntegrationVersion)
-	assert.Equal(t, "3", i.ProtocolVersion)
-	assert.Len(t, i.Entities, 0)
-	assert.True(t, al.All())
-	assert.False(t, al.Pretty)
-	assert.False(t, al.Verbose)
+	assert.Equal(t, l, i.Logger())
 }
 
-func TestClusterAndServiceArgumentsAreAddedToMetadata(t *testing.T) {
-	al := sdk_args.DefaultArgumentList{}
-
-	os.Setenv("NRI_CLUSTER", "foo")
-	os.Setenv("NRI_SERVICE", "bar")
-	defer os.Clearenv()
-	os.Args = []string{"cmd"}
-	flag.CommandLine = flag.NewFlagSet("cmd", flag.ContinueOnError)
-
-	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
-	assert.NoError(t, err)
-
-	e, err := i.Entity("name", "ns")
-	assert.NoError(t, err)
-
-	assert.Equal(t, []attribute.Attribute{
-		{
-			Key:   CustomAttrCluster,
-			Value: "foo",
-		},
-		{
-			Key:   CustomAttrService,
-			Value: "bar",
-		},
-	}, e.customAttributes)
-}
-
-func TestAddHostnameFlagDecoratesEntities(t *testing.T) {
-	al := sdk_args.DefaultArgumentList{}
-
-	os.Args = []string{"cmd", "-nri_add_hostname"}
-	flag.CommandLine = flag.NewFlagSet("cmd", flag.ContinueOnError)
-
-	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
-	assert.NoError(t, err)
-
-	assert.True(t, i.LocalEntity().AddHostname)
-
-	e, err := i.Entity("name", "ns")
-	assert.NoError(t, err)
-
-	assert.True(t, e.AddHostname)
-}
-
-func TestCustomArguments(t *testing.T) {
-	type argumentList struct {
-		sdk_args.DefaultArgumentList
-	}
-
-	os.Args = []string{"cmd", "--pretty", "--verbose"}
-	flag.CommandLine = flag.NewFlagSet("name", 0)
-
-	var al argumentList
-	_, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
-	assert.NoError(t, err)
-
-	if !al.All() {
-		t.Error()
-	}
-	if !al.Pretty {
-		t.Error()
-	}
-	if !al.Verbose {
-		t.Error()
-	}
-}
-
-func TestVerboseLog(t *testing.T) {
-	type argumentList struct {
-		sdk_args.DefaultArgumentList
-	}
-
-	// Given an integration set in verbose mode
-	os.Args = []string{"cmd", "--verbose"}
-	flag.CommandLine = flag.NewFlagSet("name", 0)
-
-	// Whose log messages are written in the standard error
-	r, w, err := os.Pipe()
-	assert.NoError(t, err)
-	back := os.Stderr
-	os.Stderr = w
-	defer func() {
-		os.Stderr = back
-	}()
-	defer r.Close()
-
-	var al argumentList
-	i, err := New("TestIntegration", "1.0", Args(&al))
-	assert.NoError(t, err)
-
-	// When logging a debug message
-	i.logger.Debugf("hello everybody")
-	assert.NoError(t, w.Close())
-
-	// The message is correctly submitted to the standard error
-	stdErrBytes := new(bytes.Buffer)
-	stdErrBytes.ReadFrom(r)
-	assert.Contains(t, stdErrBytes.String(), "hello everybody")
-}
-
-func TestNonVerboseLog(t *testing.T) {
-	type argumentList struct {
-		sdk_args.DefaultArgumentList
-	}
-
-	// Given an integration set in non-verbose mode
-	os.Args = []string{"cmd"}
-	flag.CommandLine = flag.NewFlagSet("name", 0)
-
-	// Whose log messages are written in the standard error
-	r, w, err := os.Pipe()
-	assert.NoError(t, err)
-	back := os.Stderr
-	os.Stderr = w
-	defer func() {
-		os.Stderr = back
-	}()
-	defer r.Close()
-
-	var al argumentList
-	i, err := New("TestIntegration", "1.0", Args(&al))
-	assert.NoError(t, err)
-
-	// When logging info, error and debug messages
-	i.logger.Debugf("this is a debug")
-	i.logger.Infof("this is an info")
-	i.logger.Errorf("this is an error")
-	assert.NoError(t, w.Close())
-
-	// The standard error shows all the message levels but debug
-	stdErrBytes := new(bytes.Buffer)
-	stdErrBytes.ReadFrom(r)
-	assert.Contains(t, stdErrBytes.String(), "this is an error")
-	assert.Contains(t, stdErrBytes.String(), "this is an info")
-	assert.NotContains(t, stdErrBytes.String(), "this is a debug")
-}
-
-func TestIntegration_Publish(t *testing.T) {
+func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	w := testWriter{
 		func(integrationBytes []byte) {
 			expectedOutputRaw := []byte(`
 			{
-			  "name": "TestIntegration",
-			  "protocol_version": "3",
-			  "integration_version": "1.0",
+			  "protocol_version": "4",
+			  "integration": {
+				"name": "TestIntegration",
+				"version": "1.0"
+			  },
 			  "data": [
 				{
+				  "common": {},
 				  "entity": {
 					"name": "EntityOne",
+					"displayName": "",
 					"type": "test",
-					"id_attributes": [
-					  {
-						"Key":"env",
-						"Value":"prod"
-					  }
-					]
+					"metadata": {
+					  "tags.env": "prod"
+					}
 				  },
 				  "metrics": [
 					{
-					  "event_type": "EventTypeForEntityOne",
-					  "metricBool": 1,
-					  "metricOne": 1,
-					  "metricTwo": "test"
-					}
-				  ],
-				  "inventory": {},
-				  "events": [
-					{
-					  "summary": "evnt1sum",
-					  "category": "evnt1cat",
-						"attributes": {
-							"attr1": "attr1Val",
-							"attr2": 42
-						}
+					  "timestamp": 10000000,
+					  "name": "metric-gauge",
+					  "type": "gauge",
+					  "attributes": {},
+					  "value": 1
 					},
 					{
+					  "timestamp": 10000000,
+					  "name": "metric-count",
+					  "type": "count",
+					  "attributes": {
+						"cpu": "amd"
+					  },
+					  "value": 100
+					},
+					{
+					  "timestamp": 10000000,
+					  "name": "metric-summary",
+					  "type": "summary",
+					  "attributes": {
+						"distribution": "debian",
+						"os": "linux"
+					  },
+					  "value": {
+						"count": 1,
+						"average": 10,
+						"sum": 100,
+						"min": 1,
+						"max": 100
+					  }
+					}
+				  ],
+				  "inventory": {
+					"custom/example": {
+					  "version": "1.2.3"
+					}
+				  },
+				  "events": [
+					{
+					  "timestamp": 10000000,
+					  "summary": "evnt1sum",
+					  "category": "evnt1cat",
+					  "attributes": {
+						"attr1": "attr1Val",
+						"attr2": 42
+					  }
+					},
+					{
+					  "timestamp": 10000000,
 					  "summary": "evnt2sum",
 					  "category": "evnt2cat"
 					}
 				  ]
 				},
 				{
+				  "common": {},
 				  "entity": {
 					"name": "EntityTwo",
+					"displayName": "",
 					"type": "test",
-					"id_attributes": []
+					"metadata": {}
 				  },
 				  "metrics": [
 					{
-					  "event_type": "EventTypeForEntityTwo",
-					  "metricOne": 2
+					  "timestamp": 10000000,
+					  "name": "metricOne",
+					  "type": "gauge",
+					  "attributes": {
+						"processName": "java"
+					  },
+					  "value": 2
 					}
 				  ],
 				  "inventory": {},
 				  "events": []
 				},
 				{
-				  "metrics": [],
-                  "inventory":{
-			        "inv":{"key":"val"}
-                  },
+				  "common": {},
+				  "entity": {
+					"name": "EntityThree",
+					"displayName": "",
+					"type": "test",
+					"metadata": {}
+				  },
+				  "metrics": [
+					{
+					  "timestamp": 10000000,
+					  "name": "metric-summary-with-nan",
+					  "type": "summary",
+					  "attributes": {},
+					  "value": {
+						"count": 1,
+						"average": null,
+						"sum": 100,
+						"min": null,
+						"max": null
+					  }
+					}
+				  ],
+				  "inventory": {},
 				  "events": []
+				},
+				{
+				  "common": {},
+				  "metrics": [
+					{
+					  "timestamp": 10000000,
+					  "name": "cumulative-count",
+					  "type": "cumulative-count",
+					  "attributes": {},
+					  "value": 120
+					},
+					{
+					  "timestamp": 10000000,
+					  "name": "rate",
+					  "type": "rate",
+					  "attributes": {},
+					  "value": 120
+					},
+					{
+					  "timestamp": 10000000,
+					  "name": "cumulative-rate",
+					  "type": "cumulative-rate",
+					  "attributes": {},
+					  "value": 120
+					},
+					{
+					  "timestamp": 10000000,
+					  "name": "prometheus-histogram",
+					  "type": "prometheus-histogram",
+					  "attributes": {},
+					  "value": {
+						"sample_count": 2,
+						"sample_sum": 3,
+						"buckets": [
+						  {
+							"cumulative_count": 1,
+							"upper_bound": 1
+						  },
+						  {
+							"cumulative_count": 2,
+							"upper_bound": 2
+						  }
+						]
+					  }
+					},
+					{
+					  "timestamp": 10000000,
+					  "name": "prometheus-summary",
+					  "type": "prometheus-summary",
+					  "attributes": {},
+					  "value": {
+						"sample_count": 2,
+						"sample_sum": 2,
+						"quantiles": [
+						  {
+							"quantile": 0.5,
+							"value": 1
+						  },
+						  {
+							"quantile": 0.9,
+							"value": 1
+						  }
+						]
+					  }
+					}
+				  ],
+				  "inventory": {
+					"some-inventory": {
+					  "some-field": "some-value"
+					}
+				  },
+				  "events": [
+					{
+					  "timestamp": 10000000,
+					  "summary": "evnt2sum",
+					  "category": "evnt2cat"
+					}
+				  ]
 				}
 			  ]
 			}`)
@@ -359,32 +359,119 @@ func TestIntegration_Publish(t *testing.T) {
 	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(w))
 	assert.NoError(t, err)
 
-	e, err := i.Entity("EntityOne", "test", NewIDAttribute("env", "prod"))
+	e, err := i.NewEntity("EntityOne", "test", "")
 	assert.NoError(t, err)
-	ms := e.NewMetricSet("EventTypeForEntityOne")
-	assert.NoError(t, ms.SetMetric("metricOne", 1, metric.GAUGE))
-	assert.NoError(t, ms.SetMetric("metricTwo", "test", metric.ATTRIBUTE))
-	assert.NoError(t, ms.SetMetric("metricBool", true, metric.GAUGE))
+	_ = e.AddTag("env", "prod")
 
-	assert.NoError(t, e.AddEvent(event.NewWithAttributes(
-		"evnt1sum",
-		"evnt1cat",
-		map[string]interface{}{
-			"attr1": "attr1Val",
-			"attr2": 42,
-		},
-	)))
-	assert.NoError(t, e.AddEvent(event.New("evnt2sum", "evnt2cat")))
-
-	e2, err := i.Entity("EntityTwo", "test")
+	gauge, _ := Gauge(time.Unix(10000000, 0), "metric-gauge", 1)
+	count, _ := Count(time.Unix(10000000, 0), "metric-count", 100)
+	_ = count.AddDimension("cpu", "amd")
+	summary, _ := Summary(time.Unix(10000000, 0), "metric-summary", 1, 10, 100, 1, 100)
+	// attributes should be ordered by key in lexicographic order
+	_ = summary.AddDimension("os", "linux")
+	_ = summary.AddDimension("distribution", "debian")
+	// add metrics to entity 1
+	e.AddMetric(gauge)
+	e.AddMetric(count)
+	e.AddMetric(summary)
+	// add 1st event to entity 1
+	ev1, err := event.New(time.Unix(10000000, 0), "evnt1sum", "evnt1cat")
 	assert.NoError(t, err)
-	ms = e2.NewMetricSet("EventTypeForEntityTwo")
-	assert.NoError(t, ms.SetMetric("metricOne", 2, metric.GAUGE))
+	_ = ev1.AddAttribute("attr1", "attr1Val")
+	_ = ev1.AddAttribute("attr2", 42)
+	e.AddEvent(ev1)
+	// add 2nd event to entity 1
+	ev2, err := event.New(time.Unix(10000000, 0), "evnt2sum", "evnt2cat")
+	assert.NoError(t, err)
+	e.AddEvent(ev2)
+	// add inventory to entity 1. only one because order is not guaranteed and the test is comparing with a static string
+	err = e.AddInventoryItem("custom/example", "version", "1.2.3")
+	assert.NoError(t, err)
+	// add entity 1 to integration
+	i.AddEntity(e)
 
-	e3 := i.LocalEntity()
-	assert.NoError(t, e3.SetInventoryItem("inv", "key", "val"))
+	// add entity 2
+	e2, err := i.NewEntity("EntityTwo", "test", "")
+	assert.NoError(t, err)
+	// add metric to entity 2
+	gauge, _ = Gauge(time.Unix(10000000, 0), "metricOne", 2)
+	_ = gauge.AddDimension("processName", "java")
+	e2.AddMetric(gauge)
+	// add entity 2 to integration
+	i.AddEntity(e2)
+
+	// add inventory to the "host" entity
+	err = i.HostEntity.AddInventoryItem("some-inventory", "some-field", "some-value")
+	assert.NoError(t, err)
+
+	// add event to the "host" entity (will not create one, inventory before already created it)
+	ev3, err := event.New(time.Unix(10000000, 0), "evnt2sum", "evnt2cat")
+	assert.NoError(t, err)
+	i.HostEntity.AddEvent(ev3)
+
+	// add a cumulative count metric to the host entity
+	ccount, _ := CumulativeCount(time.Unix(10000000, 0), "cumulative-count", 120)
+	i.HostEntity.AddMetric(ccount)
+	// add a rate metric to the host entity
+	rate, _ := Rate(time.Unix(10000000, 0), "rate", 120)
+	i.HostEntity.AddMetric(rate)
+
+	// add a cumulative rate metric to the host entity
+	crate, _ := CumulativeRate(time.Unix(10000000, 0), "cumulative-rate", 120)
+	i.HostEntity.AddMetric(crate)
+
+	// add entity 3
+	e3, err := i.NewEntity("EntityThree", "test", "")
+	assert.NoError(t, err)
+	// add metric to entity 2
+	summary2, _ := Summary(time.Unix(10000000, 0), "metric-summary-with-nan", 1, math.NaN(), 100, math.NaN(), math.NaN())
+	e3.AddMetric(summary2)
+	// add entity 3 to integration
+	i.AddEntity(e3)
+
+	phisto, _ := PrometheusHistogram(time.Unix(10000000, 0), "prometheus-histogram", 2, 3)
+	phisto.AddBucket(1, 1)
+	phisto.AddBucket(2, 2)
+	i.HostEntity.AddMetric(phisto)
+
+	psum, _ := PrometheusSummary(time.Unix(10000000, 0), "prometheus-summary", 2, 2)
+	psum.AddQuantile(0.5, 1)
+	psum.AddQuantile(0.9, 1)
+	i.HostEntity.AddMetric(psum)
 
 	assert.NoError(t, i.Publish())
+
+	// check integration  was reset
+	assert.Empty(t, i.Entities)
+}
+
+func Test_Integration_FindEntity(t *testing.T) {
+	i := newTestIntegration(t)
+
+	_, found := i.FindEntity("some-entity-name")
+	assert.False(t, found)
+
+	e, err := i.NewEntity("some-entity-name", "test", "")
+	assert.NoError(t, err)
+	assert.NotNil(t, e)
+	// not added yet
+	_, found = i.FindEntity("some-entity-name")
+	assert.False(t, found)
+
+	i.AddEntity(e)
+	// after adding
+	assert.Len(t, i.Entities, 1)
+	e1, found1 := i.FindEntity("some-entity-name")
+	assert.True(t, found1)
+	assert.True(t, e.SameAs(e1))
+}
+
+//--- helpers
+func newTestIntegration(t *testing.T) *Integration {
+	i, err := New(integrationName, integrationVersion, Logger(log.Discard), Writer(ioutil.Discard))
+	assert.NoError(t, err)
+
+	return i
 }
 
 func stripBlanks(b []byte) string {
@@ -395,61 +482,6 @@ func stripBlanks(b []byte) string {
 				" ", "", -1),
 			"\n", "", -1),
 		"\t", "", -1)
-}
-
-func TestIntegration_EntityReturnsExistingEntity(t *testing.T) {
-	i := newTestIntegration(t)
-
-	e1, err := i.Entity("Entity1", "test")
-	if err != nil {
-		t.Fail()
-	}
-
-	e2, err := i.Entity("Entity1", "test")
-	if err != nil {
-		t.Fail()
-	}
-
-	assert.Equal(t, e1, e2)
-
-	if len(i.Entities) > 1 {
-		t.Error()
-	}
-}
-
-func TestIntegration_LoggerReturnsDefaultLogger(t *testing.T) {
-	i, err := New(integrationName, integrationVersion)
-	assert.NoError(t, err)
-
-	assert.Equal(t, i.logger, i.Logger())
-}
-
-func TestIntegration_LoggerReturnsInjectedInstance(t *testing.T) {
-	l := log.NewStdErr(false)
-
-	i, err := New(integrationName, integrationVersion, Logger(l))
-	assert.NoError(t, err)
-
-	assert.Equal(t, l, i.Logger())
-}
-
-func newTestIntegration(t *testing.T) *Integration {
-	i, err := New(integrationName, integrationVersion, Logger(log.Discard), Writer(ioutil.Discard), InMemoryStore())
-	assert.NoError(t, err)
-
-	return i
-}
-
-func TestIntegration_CreateLocalAndRemoteEntities(t *testing.T) {
-	i, err := New(integrationName, integrationVersion)
-	assert.NoError(t, err)
-
-	local := i.LocalEntity()
-	assert.NotEqual(t, local, nil)
-
-	remote, err := i.Entity("Entity1", "test")
-	assert.NoError(t, err)
-	assert.NotEqual(t, remote, nil)
 }
 
 type testWriter struct {

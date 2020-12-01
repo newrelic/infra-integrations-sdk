@@ -3,7 +3,7 @@ package args_test
 import (
 	"flag"
 	"os"
-	"reflect"
+	"runtime"
 	"testing"
 
 	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
@@ -22,21 +22,27 @@ func TestSetupArgsDefault(t *testing.T) {
 	}
 	var args argumentList
 
-	os.Setenv("HOSTNAME", "")
-	defer os.Clearenv()
+	_ = os.Setenv("HOSTNAME", "")
+	defer func() { _ = os.Unsetenv("HOSTNAME") }()
 	os.Args = []string{"cmd"}
 
 	clearFlagSet()
 	assert.NoError(t, sdk_args.SetupArgs(&args))
 
-	expected := argumentList{
-		Verbose: false, Pretty: false, Hostname: "localhost", Port: 3306,
-		Username: "", Password: "",
+	var expected argumentList
+	if runtime.GOOS == "windows" {
+		expected = argumentList{
+			Verbose: false, Pretty: false, Hostname: "localhost", Port: 3306,
+			Username: os.Getenv("USERNAME"), Password: "",
+		}
+	} else {
+		expected = argumentList{
+			Verbose: false, Pretty: false, Hostname: "localhost", Port: 3306,
+			Username: "", Password: "",
+		}
 	}
 
-	if !reflect.DeepEqual(args, expected) {
-		t.Errorf("expected args list: %+v not equal to result: %+v", expected, args)
-	}
+	assert.Equal(t, expected, args, "expected args list: %+v not equal to result: %+v", expected, args)
 }
 
 func TestSetupArgsCommandLine(t *testing.T) {
@@ -52,8 +58,9 @@ func TestSetupArgsCommandLine(t *testing.T) {
 	}
 	var args argumentList
 
-	os.Setenv("HOSTNAME", "")
-	defer os.Clearenv()
+	_ = os.Setenv("HOSTNAME", "")
+	defer func() { _ = os.Unsetenv("HOSTNAME") }()
+
 	os.Args = []string{
 		"cmd",
 		"-verbose",
@@ -95,12 +102,19 @@ func TestSetupArgsEnvironment(t *testing.T) {
 	}
 	var args argumentList
 
-	os.Setenv("USERNAME", "")
-	os.Setenv("VERBOSE", "true")
-	os.Setenv("HOSTNAME", "otherhost")
-	os.Setenv("PORT", "1234")
-	os.Setenv("CONFIG", "{\"arg1\": 2}")
-	defer os.Clearenv()
+	_ = os.Setenv("USERNAME", "")
+	_ = os.Setenv("VERBOSE", "true")
+	_ = os.Setenv("HOSTNAME", "otherhost")
+	_ = os.Setenv("PORT", "1234")
+	_ = os.Setenv("CONFIG", "{\"arg1\": 2}")
+	defer func() {
+		_ = os.Unsetenv("HOSTNAME")
+		_ = os.Unsetenv("USERNAME")
+		_ = os.Unsetenv("VERBOSE")
+		_ = os.Unsetenv("HOSTNAME")
+		_ = os.Unsetenv("PORT")
+		_ = os.Unsetenv("CONFIG")
+	}()
 	os.Args = []string{"cmd"}
 
 	clearFlagSet()
@@ -120,8 +134,8 @@ func TestCliArgsOverrideEnvironmentArgs(t *testing.T) {
 		Verbose bool `default:"false" help:"Print more information to logs."`
 	}
 
-	os.Setenv("VERBOSE", "false")
-	defer os.Clearenv()
+	_ = os.Setenv("VERBOSE", "false")
+	defer func() { _ = os.Unsetenv("VERBOSE") }()
 	os.Args = []string{
 		"cmd",
 		"-verbose",
@@ -162,8 +176,8 @@ func TestClusterFlagViaCli(t *testing.T) {
 func TestClusterFlagViaEnvVar(t *testing.T) {
 	var args sdk_args.DefaultArgumentList
 
-	os.Setenv("NRI_CLUSTER", "bar")
-	defer os.Clearenv()
+	_ = os.Setenv("NRI_CLUSTER", "bar")
+	defer func() { _ = os.Unsetenv("NRI_CLUSTER") }()
 	os.Args = []string{"cmd"}
 	clearFlagSet()
 
@@ -188,8 +202,8 @@ func TestServiceFlagViaCli(t *testing.T) {
 func TestServiceFlagViaEnvVar(t *testing.T) {
 	var args sdk_args.DefaultArgumentList
 
-	os.Setenv("NRI_SERVICE", "bar")
-	defer os.Clearenv()
+	_ = os.Setenv("NRI_SERVICE", "bar")
+	defer func() { _ = os.Unsetenv("NRI_SERVICE") }()
 	os.Args = []string{"cmd"}
 
 	clearFlagSet()
@@ -340,9 +354,7 @@ func TestDefaultArgumentList_HasInventory(t *testing.T) {
 }
 
 func assertEqualArgs(t *testing.T, expected interface{}, args interface{}) {
-	if !reflect.DeepEqual(args, expected) {
-		t.Errorf("expected args list:\n\t%+v\n not equal to result:\n\t%+v", expected, args)
-	}
+	assert.Equal(t, expected, args)
 }
 
 func clearFlagSet() {
