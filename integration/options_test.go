@@ -8,11 +8,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/newrelic/infra-integrations-sdk/log"
-
 	"github.com/stretchr/testify/assert"
 
-	"github.com/newrelic/infra-integrations-sdk/args"
+	"github.com/newrelic/infra-integrations-sdk/v4/args"
+	"github.com/newrelic/infra-integrations-sdk/v4/log"
 )
 
 func Test_PublishWritesUsingSelectedWriter(t *testing.T) {

@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/newrelic/infra-integrations-sdk/data/metric"
+	"github.com/newrelic/infra-integrations-sdk/v4/data/metric"
 
-	"github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/log"
+	"github.com/newrelic/infra-integrations-sdk/v4/args"
+	"github.com/newrelic/infra-integrations-sdk/v4/log"
 )
 
 // Custom attribute keys:

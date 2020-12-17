@@ -3,7 +3,7 @@ package integration
 import (
 	"io"
 
-	"github.com/newrelic/infra-integrations-sdk/log"
+	"github.com/newrelic/infra-integrations-sdk/v4/log"
 )
 
 // Option sets an option on integration level.

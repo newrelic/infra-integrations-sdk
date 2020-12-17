@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	err "github.com/newrelic/infra-integrations-sdk/data/errors"
+	err "github.com/newrelic/infra-integrations-sdk/v4/data/errors"
 	agentEventPkg "github.com/newrelic/infrastructure-agent/pkg/event"
 )
 
