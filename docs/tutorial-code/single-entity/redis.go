@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/data/event"
-	"github.com/newrelic/infra-integrations-sdk/integration"
+	sdkArgs "github.com/newrelic/infra-integrations-sdk/v4/args"
+	"github.com/newrelic/infra-integrations-sdk/v4/data/event"
+	"github.com/newrelic/infra-integrations-sdk/v4/integration"
 )
 
 type argumentList struct {

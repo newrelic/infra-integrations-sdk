@@ -4,7 +4,7 @@ import (
 	"math"
 	"time"
 
-	err "github.com/newrelic/infra-integrations-sdk/data/errors"
+	err "github.com/newrelic/infra-integrations-sdk/v4/data/errors"
 )
 
 // Dimensions stores the metric dimensions

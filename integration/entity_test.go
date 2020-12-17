@@ -1,17 +1,16 @@
 package integration
 
 import (
+	"encoding/json"
+	"strconv"
+	"sync"
 	"testing"
 	"time"
 
-	"strconv"
-	"sync"
-
-	"encoding/json"
-
-	"github.com/newrelic/infra-integrations-sdk/data/event"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/newrelic/infra-integrations-sdk/v4/data/event"
 )
 
 func Test_Entity_NewEntityInitializesCorrectly(t *testing.T) {

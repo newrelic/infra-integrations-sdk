@@ -4,10 +4,10 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/newrelic/infra-integrations-sdk/data/event"
-	"github.com/newrelic/infra-integrations-sdk/data/inventory"
-	"github.com/newrelic/infra-integrations-sdk/data/metadata"
-	"github.com/newrelic/infra-integrations-sdk/data/metric"
+	"github.com/newrelic/infra-integrations-sdk/v4/data/event"
+	"github.com/newrelic/infra-integrations-sdk/v4/data/inventory"
+	"github.com/newrelic/infra-integrations-sdk/v4/data/metadata"
+	"github.com/newrelic/infra-integrations-sdk/v4/data/metric"
 )
 
 // Entity is the producer of the data. Entity could be a host, a container, a pod, or whatever unit of meaning.

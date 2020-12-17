@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/newrelic/infra-integrations-sdk/data/event"
-
-	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/newrelic/infra-integrations-sdk/v4/data/event"
+	"github.com/newrelic/infra-integrations-sdk/v4/log"
 )
 
 var (
