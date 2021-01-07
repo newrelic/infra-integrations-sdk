@@ -81,6 +81,10 @@ func SetupLogging(verbose bool) {
 	}
 }
 
+func SetOutput(w io.Writer) {
+	globalLogger.logger.SetOutput(w)
+}
+
 // Debug logs a formatted message at level Debug.
 func Debug(format string, args ...interface{}) {
 	globalLogger.Debugf(format, args...)
