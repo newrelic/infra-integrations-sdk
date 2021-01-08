@@ -81,6 +81,7 @@ func SetupLogging(verbose bool) {
 	}
 }
 
+// SetOutput sets output stream
 func SetOutput(w io.Writer) {
 	globalLogger.logger.SetOutput(w)
 }
