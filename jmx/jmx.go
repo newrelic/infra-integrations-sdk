@@ -342,7 +342,7 @@ func Query(objectPattern string, timeoutMillis int) (result map[string]interface
 
 // receiveResult checks for channels to receive result from nrjmx command.
 func receiveResult(lineC chan []byte, queryErrC chan error, cancelFn context.CancelFunc, objectPattern string, timeout time.Duration) (result map[string]interface{}, err error) {
-	defer logAvailableWarnings()
+	defer logAvailableWarnings(cmdWarnC)
 	var warn string
 	for {
 		select {
@@ -385,12 +385,11 @@ func receiveResult(lineC chan []byte, queryErrC chan error, cancelFn context.Can
 	}
 }
 
-func logAvailableWarnings() {
+func logAvailableWarnings(channel chan string) {
 	var warn string
 	for {
-
 		select {
-		case warn = <-cmdWarnC:
+		case warn = <-channel:
 			{
 				log.Warn(warn)
 			}
