@@ -390,9 +390,7 @@ func logAvailableWarnings(channel chan string) {
 	for {
 		select {
 		case warn = <-channel:
-			{
-				log.Warn(warn)
-			}
+			log.Warn(warn)
 		default:
 			return
 		}
