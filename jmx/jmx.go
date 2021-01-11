@@ -80,7 +80,7 @@ func (cfg *connectionConfig) isSSL() bool {
 }
 
 func (cfg *connectionConfig) command() []string {
-	c := make([]string, 0)
+	var c []string
 	if os.Getenv("NR_JMX_TOOL") != "" {
 		c = strings.Split(os.Getenv("NR_JMX_TOOL"), " ")
 	} else {
@@ -337,11 +337,12 @@ func Query(objectPattern string, timeoutMillis int) (result map[string]interface
 	// Send the query async to the underlying process so we can timeout it
 	go doQuery(ctx, lineCh, queryErrors, []byte(fmt.Sprintf("%s\n", objectPattern)))
 
-	return receiveResult(lineCh, queryErrors, cancelFn, objectPattern, outTimeout)
+	return receiveResult(lineCh, cmdErrC, queryErrors, cancelFn, objectPattern, outTimeout)
 }
 
 // receiveResult checks for channels to receive result from nrjmx command.
-func receiveResult(lineC chan []byte, queryErrC chan error, cancelFn context.CancelFunc, objectPattern string, timeout time.Duration) (result map[string]interface{}, err error) {
+func receiveResult(lineC chan []byte, cmdErrC chan error, queryErrC chan error, cancelFn context.CancelFunc, objectPattern string, timeout time.Duration) (result map[string]interface{}, err error) {
+	defer logAvailableWarnings(cmdWarnC)
 	var warn string
 	for {
 		select {
@@ -362,12 +363,11 @@ func receiveResult(lineC chan []byte, queryErrC chan error, cancelFn context.Can
 			for k, v := range r {
 				result[k] = v
 			}
+
 			return
 
 		case warn = <-cmdWarnC:
-			// change on the API is required to return warnings
 			log.Warn(warn)
-			return
 
 		case err = <-cmdErrC:
 			return
@@ -380,6 +380,18 @@ func receiveResult(lineC chan []byte, queryErrC chan error, cancelFn context.Can
 			cancelFn()
 			Close()
 			err = fmt.Errorf("timeout waiting for query: %s", objectPattern)
+			return
+		}
+	}
+}
+
+func logAvailableWarnings(channel chan string) {
+	var warn string
+	for {
+		select {
+		case warn = <-channel:
+			log.Warn(warn)
+		default:
 			return
 		}
 	}

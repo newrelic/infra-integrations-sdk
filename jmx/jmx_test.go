@@ -2,6 +2,7 @@ package jmx
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/newrelic/infra-integrations-sdk/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -41,7 +43,7 @@ func TestMain(m *testing.M) {
 	if testType == "" {
 		// Set the NR_JMX_TOOL to ourselves (the test binary) with the extra
 		// parameter test.type=helper and run the tests as usual.
-		os.Setenv("NR_JMX_TOOL", fmt.Sprintf("%s -test.type helper --", os.Args[0]))
+		_ = os.Setenv("NR_JMX_TOOL", fmt.Sprintf("%s -test.type helper --", os.Args[0]))
 		os.Exit(m.Run())
 	} else if testType == "helper" {
 		// The test suite becomes a JMX Tool
@@ -59,10 +61,12 @@ func TestMain(m *testing.M) {
 				fmt.Println("{}")
 			} else if command == cmdBigPayload {
 				// Create a payload of more than 64K
-				fmt.Println(fmt.Sprintf("{\"first\": 1%s}", strings.Repeat(", \"s\": 2", 70*1024)))
+				str := fmt.Sprintf("{\"first\": 1%s}", strings.Repeat(", \"s\": 2", 70*1024))
+				fmt.Println(str)
 			} else if command == cmdBigPayloadErr {
 				// Create a payload of more than 4M
-				fmt.Println(fmt.Sprintf("{\"first\": 1%s}", strings.Repeat(", \"s\": 2", 4*1024*1024)))
+				str := fmt.Sprintf("{\"first\": 1%s}", strings.Repeat(", \"s\": 2", 4*1024*1024))
+				fmt.Println(str)
 			}
 
 		}
@@ -177,17 +181,26 @@ func openWaitWithSSL(hostname, port, username, password, keyStore, keyStorePassw
 }
 
 func Test_receiveResult_warningsDoNotBreakResultReception(t *testing.T) {
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+
 	_, cancelFn := context.WithCancel(context.Background())
 
 	resultCh := make(chan []byte, 1)
 	queryErrCh := make(chan error)
+	cmdErrC := make(chan error)
 	outTimeout := time.Duration(timeoutMillis) * time.Millisecond
+	warningMessage := fmt.Sprint("WARNING foo bar")
+	cmdWarnC <- warningMessage
 
-	_, _ = receiveResult(resultCh, queryErrCh, cancelFn, "empty", outTimeout)
+	resultCh <- []byte("{\"foo\":1}")
 
-	cmdErrC <- fmt.Errorf("WARNING foo bar")
-	assert.Equal(t, <-cmdErrC, fmt.Errorf("WARNING foo bar"))
+	result, err := receiveResult(resultCh, cmdErrC, queryErrCh, cancelFn, "foo", outTimeout)
 
-	resultCh <- []byte("{foo}")
-	assert.Equal(t, string(<-resultCh), "{foo}")
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{
+		"foo": 1.,
+	}, result)
+	assert.Equal(t, fmt.Sprintf("[WARN] %s\n", warningMessage), buf.String())
 }
