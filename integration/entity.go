@@ -12,16 +12,13 @@ import (
 
 // Entity is the producer of the data. Entity could be a host, a container, a pod, or whatever unit of meaning.
 type Entity struct {
-	Common    *Common              `json:"common"`
-	Metadata  *metadata.Metadata   `json:"entity,omitempty"`
-	Metrics   metric.Metrics       `json:"metrics"`
-	Inventory *inventory.Inventory `json:"inventory"`
-	Events    event.Events         `json:"events"`
-	lock      sync.Locker
+	CommonDimensions map[string]string    `json:"common"` // dimensions common to every entity metric
+	Metadata         *metadata.Metadata   `json:"entity,omitempty"`
+	Metrics          metric.Metrics       `json:"metrics"`
+	Inventory        *inventory.Inventory `json:"inventory"`
+	Events           event.Events         `json:"events"`
+	lock             sync.Locker
 }
-
-// Common is a common set of attributes
-type Common struct{}
 
 // SameAs return true when is same entity
 func (e *Entity) SameAs(b *Entity) bool {
@@ -58,6 +55,14 @@ func (e *Entity) AddInventoryItem(key string, field string, value interface{}) e
 	return e.Inventory.SetItem(key, field, value)
 }
 
+// AddCommonDimension adds a new dimension to every metric within the entity.
+func (e *Entity) AddCommonDimension(key string, value string) {
+	e.lock.Lock()
+	defer e.lock.Unlock()
+
+	e.CommonDimensions[key] = value
+}
+
 // GetMetadata returns all the Entity's metadata
 func (e *Entity) GetMetadata() metadata.Map {
 	return e.Metadata.Metadata
@@ -91,13 +96,12 @@ func (e *Entity) Name() string {
 // newHostEntity creates a entity without metadata.
 func newHostEntity() *Entity {
 	return &Entity{
-		Common:   &Common{},
-		Metadata: nil,
-		// empty array or object preferred instead of null on marshaling.
-		Metrics:   metric.Metrics{},
-		Inventory: inventory.New(),
-		Events:    event.Events{},
-		lock:      &sync.Mutex{},
+		CommonDimensions: make(metric.Dimensions),
+		Metadata:         nil,
+		Metrics:          metric.Metrics{},
+		Inventory:        inventory.New(),
+		Events:           event.Events{},
+		lock:             &sync.Mutex{},
 	}
 }
 
@@ -107,23 +111,14 @@ func (e *Entity) isHostEntity() bool {
 }
 
 // newEntity creates a new entity with with metadata.
-func newEntity(
-	name,
-	entityType string,
-	displayName string) (*Entity, error) {
+func newEntity(name, entityType string, displayName string) (*Entity, error) {
 
 	if name == "" || entityType == "" {
 		return nil, errors.New("entity name and type cannot be empty")
 	}
 
-	e := &Entity{
-		// empty array or object preferred instead of null on marshaling.
-		Common:    &Common{},
-		Metadata:  metadata.New(name, entityType, displayName),
-		Metrics:   metric.Metrics{},
-		Inventory: inventory.New(),
-		Events:    []*event.Event{},
-		lock:      &sync.Mutex{},
-	}
+	e := newHostEntity()
+	e.Metadata = metadata.New(name, entityType, displayName)
+
 	return e, nil
 }
