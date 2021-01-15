@@ -2,6 +2,7 @@ package jmx
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/newrelic/infra-integrations-sdk/v4/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -179,17 +181,25 @@ func openWaitWithSSL(hostname, port, username, password, keyStore, keyStorePassw
 }
 
 func Test_receiveResult_warningsDoNotBreakResultReception(t *testing.T) {
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+
 	_, cancelFn := context.WithCancel(context.Background())
 
 	resultCh := make(chan []byte, 1)
 	queryErrCh := make(chan error)
 	outTimeout := time.Duration(timeoutMillis) * time.Millisecond
+	warningMessage := fmt.Sprint("WARNING foo bar")
+	cmdWarnC <- warningMessage
 
-	_, _ = receiveResult(resultCh, queryErrCh, cancelFn, "empty", outTimeout)
+	resultCh <- []byte("{\"foo\":1}")
 
-	cmdErrC <- fmt.Errorf("WARNING foo bar")
-	assert.Equal(t, <-cmdErrC, fmt.Errorf("WARNING foo bar"))
+	result, err := receiveResult(resultCh, queryErrCh, cancelFn, "foo", outTimeout)
 
-	resultCh <- []byte("{foo}")
-	assert.Equal(t, string(<-resultCh), "{foo}")
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{
+		"foo": 1.,
+	}, result)
+	assert.Equal(t, fmt.Sprintf("[WARN] %s\n", warningMessage), buf.String())
 }
