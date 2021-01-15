@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/newrelic/infra-integrations-sdk/v4/data/inventory"
+	"github.com/newrelic/infra-integrations-sdk/v4/data/metric"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -211,4 +213,41 @@ func Test_Entity_EntitiesWithSameMetadataAreSameAs(t *testing.T) {
 
 	assert.True(t, e1.SameAs(e2))
 	assert.False(t, e1.SameAs(e3))
+}
+
+func TestEntity_AddCommonDimension(t *testing.T) {
+	tests := []struct {
+		name      string
+		commons   metric.Dimensions
+		expeceted *Entity
+	}{
+		{"empty", nil, newHostEntity()},
+		{"one entry", metric.Dimensions{"k": "v"}, &Entity{
+			CommonDimensions: metric.Dimensions{"k": "v"},
+			Metadata:         nil,
+			Metrics:          metric.Metrics{},
+			Inventory:        inventory.New(),
+			Events:           event.Events{},
+			lock:             &sync.Mutex{},
+		}},
+		{"two entries", metric.Dimensions{"k1": "v1", "k2": "v2"}, &Entity{
+			CommonDimensions: metric.Dimensions{"k1": "v1", "k2": "v2"},
+			Metadata:         nil,
+			Metrics:          metric.Metrics{},
+			Inventory:        inventory.New(),
+			Events:           event.Events{},
+			lock:             &sync.Mutex{},
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got := newHostEntity()
+			for k, v := range tt.commons {
+				got.AddCommonDimension(k, v)
+			}
+
+			assert.Equal(t, tt.expeceted, got)
+		})
+	}
 }
