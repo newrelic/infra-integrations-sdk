@@ -7,5 +7,5 @@ instructions. */
 package jmx
 
 const (
-	defaultNrjmxExec = "c:\\program files\\new relicº\nrjmx\\nrjmx.bat" // defaultNrjmxExec default nrjmx tool executable path
+	defaultNrjmxExec = "c:\\program files\\new relic\nrjmx\\nrjmx.bat" // defaultNrjmxExec default nrjmx tool executable path
 )
