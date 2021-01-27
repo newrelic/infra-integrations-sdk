@@ -23,7 +23,6 @@ import (
 const (
 	jmxLineInitialBuffer = 4 * 1024 // initial 4KB per line, it'll be increased when required
 	cmdStdChanLen        = 1000
-	defaultNrjmxExec     = "/usr/bin/nrjmx" // defaultNrjmxExec default nrjmx tool executable path
 )
 
 // Error vars to ease Query response handling.
