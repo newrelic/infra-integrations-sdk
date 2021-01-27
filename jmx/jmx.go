@@ -13,6 +13,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -132,7 +133,7 @@ func Open(hostname, port, username, password string, opts ...Option) error {
 		port:           port,
 		username:       username,
 		password:       password,
-		executablePath: defaultNrjmxExec,
+		executablePath: filepath.Clean(defaultNrjmxExec),
 	}
 
 	for _, opt := range opts {

@@ -1,4 +1,4 @@
-// +build unix
+// +build linux darwin
 
 /*
 Package jmx is a library to get metrics through JMX. It requires additional
