@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -202,4 +203,16 @@ func Test_receiveResult_warningsDoNotBreakResultReception(t *testing.T) {
 		"foo": 1.,
 	}, result)
 	assert.Equal(t, fmt.Sprintf("[WARN] %s\n", warningMessage), buf.String())
+}
+
+func Test_DefaultPath_IsCorrectForOs(t *testing.T) {
+	os := runtime.GOOS
+	switch os {
+	case "windows":
+	case "darwin":
+	case "linux":
+		assert.True(t, len(defaultNrjmxExec) > 0)
+	default:
+		t.Fatal("unexpected value")
+	}
 }
