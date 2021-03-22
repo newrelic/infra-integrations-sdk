@@ -452,6 +452,38 @@ func TestIntegration_CreateLocalAndRemoteEntities(t *testing.T) {
 	assert.NotEqual(t, remote, nil)
 }
 
+func TestIntegration_CreateUniqueID_Default(t *testing.T) {
+	type argumentList struct {
+		sdk_args.DefaultArgumentList
+		StatusURL string `default:"http://127.0.0.1/status" help:"NGINX status URL. If you are using ngx_http_api_module be sure to include the full path ending with the API version number"`
+	}
+	flag.CommandLine = flag.NewFlagSet("cmd", flag.ContinueOnError)
+
+	var al argumentList
+
+	i, err := New("testIntegration", "0.0.0", Args(&al))
+	assert.NoError(t, err)
+
+	assert.Equal(t, i.CreateUniqueID(), "3071eb6863e28435e6c7e0c2bbe55ecd")
+}
+
+func TestIntegration_CreateUniqueID_EnvironmentVar(t *testing.T) {
+	type argumentList struct {
+		sdk_args.DefaultArgumentList
+		StatusURL string `default:"http://127.0.0.1/status" help:"NGINX status URL. If you are using ngx_http_api_module be sure to include the full path ending with the API version number"`
+	}
+	var al argumentList
+	flag.CommandLine = flag.NewFlagSet("cmd", flag.ContinueOnError)
+
+	os.Setenv("STATUS_URL", "bar")
+	defer os.Clearenv()
+
+	i, err := New("testIntegration", "0.0.0", Args(&al))
+	assert.NoError(t, err)
+
+	assert.Equal(t, i.CreateUniqueID(), "2d998100982b7de9b4e446c85c3bed78")
+}
+
 type testWriter struct {
 	testFunc func([]byte)
 }

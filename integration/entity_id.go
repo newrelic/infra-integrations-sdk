@@ -83,7 +83,8 @@ func (a IDAttributes) Less(i, j int) bool {
 
 func (a *IDAttributes) removeEmptyAndDuplicates() {
 
-	var uniques IDAttributes
+	uniques := make(IDAttributes, 0)
+
 	var prev IDAttribute
 	for i, attr := range *a {
 		if prev.Key != attr.Key && attr.Key != "" {

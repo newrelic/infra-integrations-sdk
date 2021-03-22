@@ -111,8 +111,13 @@ func (e *Entity) SameAs(b *Entity) bool {
 
 // NewMetricSet returns a new instance of Set with its sample attached to the integration.
 func (e *Entity) NewMetricSet(eventType string, nameSpacingAttributes ...attribute.Attribute) *metric.Set {
-
 	s := metric.NewSet(eventType, e.storer, nameSpacingAttributes...)
+
+	if e.Metadata != nil {
+		if key, err := e.Metadata.Key(); err == nil {
+			s.AddNamespaceAttributes(attribute.Attr("entityKey", key.String()))
+		}
+	}
 
 	if len(e.customAttributes) > 0 {
 		metric.AddCustomAttributes(s, e.customAttributes)
