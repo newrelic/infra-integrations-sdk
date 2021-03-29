@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -189,18 +190,29 @@ func Test_receiveResult_warningsDoNotBreakResultReception(t *testing.T) {
 
 	resultCh := make(chan []byte, 1)
 	queryErrCh := make(chan error)
-	cmdErrC := make(chan error)
 	outTimeout := time.Duration(timeoutMillis) * time.Millisecond
 	warningMessage := fmt.Sprint("WARNING foo bar")
 	cmdWarnC <- warningMessage
 
 	resultCh <- []byte("{\"foo\":1}")
 
-	result, err := receiveResult(resultCh, cmdErrC, queryErrCh, cancelFn, "foo", outTimeout)
+	result, err := receiveResult(resultCh, queryErrCh, cancelFn, "foo", outTimeout)
 
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{
 		"foo": 1.,
 	}, result)
 	assert.Equal(t, fmt.Sprintf("[WARN] %s\n", warningMessage), buf.String())
+}
+
+func Test_DefaultPath_IsCorrectForOs(t *testing.T) {
+	os := runtime.GOOS
+	switch os {
+	case "windows":
+	case "darwin":
+	case "linux":
+		assert.True(t, len(defaultNrjmxExec) > 0)
+	default:
+		t.Fatal("unexpected value")
+	}
 }

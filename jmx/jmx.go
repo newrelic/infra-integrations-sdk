@@ -13,6 +13,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -23,7 +24,6 @@ import (
 const (
 	jmxLineInitialBuffer = 4 * 1024 // initial 4KB per line, it'll be increased when required
 	cmdStdChanLen        = 1000
-	defaultNrjmxExec     = "/usr/bin/nrjmx" // defaultNrjmxExec default nrjmx tool executable path
 )
 
 // Error vars to ease Query response handling.
@@ -133,7 +133,7 @@ func Open(hostname, port, username, password string, opts ...Option) error {
 		port:           port,
 		username:       username,
 		password:       password,
-		executablePath: defaultNrjmxExec,
+		executablePath: filepath.Clean(defaultNrjmxExec),
 	}
 
 	for _, opt := range opts {
@@ -337,11 +337,11 @@ func Query(objectPattern string, timeoutMillis int) (result map[string]interface
 	// Send the query async to the underlying process so we can timeout it
 	go doQuery(ctx, lineCh, queryErrors, []byte(fmt.Sprintf("%s\n", objectPattern)))
 
-	return receiveResult(lineCh, cmdErrC, queryErrors, cancelFn, objectPattern, outTimeout)
+	return receiveResult(lineCh, queryErrors, cancelFn, objectPattern, outTimeout)
 }
 
 // receiveResult checks for channels to receive result from nrjmx command.
-func receiveResult(lineC chan []byte, cmdErrC chan error, queryErrC chan error, cancelFn context.CancelFunc, objectPattern string, timeout time.Duration) (result map[string]interface{}, err error) {
+func receiveResult(lineC chan []byte, queryErrC chan error, cancelFn context.CancelFunc, objectPattern string, timeout time.Duration) (result map[string]interface{}, err error) {
 	defer logAvailableWarnings(cmdWarnC)
 	var warn string
 	for {
