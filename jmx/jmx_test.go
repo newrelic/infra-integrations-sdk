@@ -188,6 +188,8 @@ func Test_receiveResult_warningsDoNotBreakResultReception(t *testing.T) {
 
 	_, cancelFn := context.WithCancel(context.Background())
 
+	// clean cmdErrC global variable to avoid test fail on different execution orders.
+	cmdErrC = make(chan error, cmdStdChanLen)
 	resultCh := make(chan []byte, 1)
 	queryErrCh := make(chan error)
 	outTimeout := time.Duration(timeoutMillis) * time.Millisecond
