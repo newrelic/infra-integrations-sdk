@@ -13,6 +13,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -23,7 +24,6 @@ import (
 const (
 	jmxLineInitialBuffer = 4 * 1024 // initial 4KB per line, it'll be increased when required
 	cmdStdChanLen        = 1000
-	defaultNrjmxExec     = "/usr/bin/nrjmx" // defaultNrjmxExec default nrjmx tool executable path
 )
 
 // Error vars to ease Query response handling.
@@ -80,7 +80,7 @@ func (cfg *connectionConfig) isSSL() bool {
 }
 
 func (cfg *connectionConfig) command() []string {
-	c := make([]string, 0)
+	var c []string
 	if os.Getenv("NR_JMX_TOOL") != "" {
 		c = strings.Split(os.Getenv("NR_JMX_TOOL"), " ")
 	} else {
@@ -133,7 +133,7 @@ func Open(hostname, port, username, password string, opts ...Option) error {
 		port:           port,
 		username:       username,
 		password:       password,
-		executablePath: defaultNrjmxExec,
+		executablePath: filepath.Clean(defaultNrjmxExec),
 	}
 
 	for _, opt := range opts {
@@ -342,6 +342,7 @@ func Query(objectPattern string, timeoutMillis int) (result map[string]interface
 
 // receiveResult checks for channels to receive result from nrjmx command.
 func receiveResult(lineC chan []byte, queryErrC chan error, cancelFn context.CancelFunc, objectPattern string, timeout time.Duration) (result map[string]interface{}, err error) {
+	defer logAvailableWarnings(cmdWarnC)
 	var warn string
 	for {
 		select {
@@ -362,12 +363,11 @@ func receiveResult(lineC chan []byte, queryErrC chan error, cancelFn context.Can
 			for k, v := range r {
 				result[k] = v
 			}
+
 			return
 
 		case warn = <-cmdWarnC:
-			// change on the API is required to return warnings
 			log.Warn(warn)
-			return
 
 		case err = <-cmdErrC:
 			return
@@ -380,6 +380,18 @@ func receiveResult(lineC chan []byte, queryErrC chan error, cancelFn context.Can
 			cancelFn()
 			Close()
 			err = fmt.Errorf("timeout waiting for query: %s", objectPattern)
+			return
+		}
+	}
+}
+
+func logAvailableWarnings(channel chan string) {
+	var warn string
+	for {
+		select {
+		case warn = <-channel:
+			log.Warn(warn)
+		default:
 			return
 		}
 	}
