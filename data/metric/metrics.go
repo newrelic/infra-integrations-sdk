@@ -59,6 +59,13 @@ func AddCustomAttributes(metricSet *Set, customAttributes []attribute.Attribute)
 	}
 }
 
+// AddNamespaceAttributes add attributes to MetricSet namespace.
+func (ms *Set) AddNamespaceAttributes(attributes ...attribute.Attribute) {
+	for _, attr := range attributes {
+		ms.nsAttributes = append(ms.nsAttributes, attr)
+	}
+}
+
 // SetMetric adds a metric to the Set object or updates the metric value if the metric already exists.
 // It calculates elapsed difference for RATE and DELTA types.
 func (ms *Set) SetMetric(name string, value interface{}, sourceType SourceType) (err error) {

@@ -2,6 +2,7 @@ package integration
 
 import (
 	"bytes"
+	"crypto/md5"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -99,8 +100,14 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 	}
 
 	if i.storer == nil {
-		var err error
-		i.storer, err = persist.NewFileStore(persist.DefaultPath(i.Name), i.logger, persist.DefaultTTL)
+		storePath, err := persist.NewStorePath(i.Name, i.CreateUniqueID(), i.logger, persist.DefaultTTL)
+		if err != nil {
+			return nil, fmt.Errorf("can't create temporary directory for store: %s", err)
+		}
+
+		storePath.CleanOldFiles()
+
+		i.storer, err = persist.NewFileStore(storePath.GetFilePath(), i.logger, persist.DefaultTTL)
 		if err != nil {
 			return nil, fmt.Errorf("can't create store: %s", err)
 		}
@@ -232,6 +239,14 @@ func (i *Integration) MarshalJSON() (output []byte, err error) {
 // Logger returns the integration logger instance.
 func (i *Integration) Logger() log.Logger {
 	return i.logger
+}
+
+// CreateUniqueID will generate an md5 string from integration arguments
+// to unique identify the integration instance.
+func (i *Integration) CreateUniqueID() string {
+	h := md5.New()
+	h.Write([]byte(fmt.Sprintf("%v", i.args)))
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 // toJSON serializes integration as JSON. If the pretty attribute is

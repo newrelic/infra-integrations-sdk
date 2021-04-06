@@ -97,6 +97,23 @@ func TestSet_SetMetricCachesRateAndDeltas(t *testing.T) {
 	}
 }
 
+func TestSet_SetMetricCache_NameSpaceSpecialChars(t *testing.T) {
+	storer := persist.NewInMemoryStore()
+
+	ms := NewSet("some-event-type", storer, attribute.Attr("::==::::==", "::==::::"))
+	err := ms.SetMetric("test", 3, DELTA)
+	assert.NoError(t, err)
+
+	nameSpace := ms.namespace("test")
+
+	assert.Equal(t, "::==::::====::==::::::test", nameSpace)
+	var v interface{}
+	_, err = storer.Get(nameSpace, &v)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 3.0, v)
+}
+
 func TestSet_SetMetricsRatesAndDeltas(t *testing.T) {
 	var testCases = []struct {
 		sourceType  SourceType

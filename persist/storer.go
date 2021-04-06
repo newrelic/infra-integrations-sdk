@@ -75,16 +75,22 @@ func SetNow(newNow func() time.Time) {
 	now = newNow
 }
 
-// DefaultPath returns a default folder/filename path to a Storer for an integration from the given name. The name of
+// DefaultPath returns a default folder/filename dir to a Storer for an integration from the given name. The name of
 // the file will be the name of the integration with the .json extension.
 func DefaultPath(integrationName string) string {
+	dir := tmpIntegrationDir()
+	file := filepath.Join(dir, integrationName+".json")
+
+	return file
+}
+
+func tmpIntegrationDir() string {
 	dir := filepath.Join(os.TempDir(), integrationsDir)
-	baseDir := path.Join(dir, integrationName+".json")
 	// Create integrations Storer directory
 	if os.MkdirAll(dir, dirFilePerm) != nil {
-		baseDir = os.TempDir()
+		dir = os.TempDir()
 	}
-	return baseDir
+	return dir
 }
 
 // NewInMemoryStore will create and initialize an in-memory Storer (not persistent).
@@ -96,7 +102,7 @@ func NewInMemoryStore() Storer {
 	}
 }
 
-// NewFileStore returns a disk-backed Storer using the provided file path
+// NewFileStore returns a disk-backed Storer using the provided file dir
 func NewFileStore(storagePath string, ilog log.Logger, ttl time.Duration) (Storer, error) {
 	ms := NewInMemoryStore().(*inMemoryStore)
 
