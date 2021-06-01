@@ -44,6 +44,9 @@ var cmdErrC = make(chan error, cmdStdChanLen)
 var cmdWarnC = make(chan string, cmdStdChanLen)
 var done sync.WaitGroup
 
+var jmxHost string
+var jmxPort string
+
 // jmxClientError error is returned when the nrjmx tool can not continue
 type jmxClientError string
 
@@ -214,6 +217,9 @@ func openConnection(config *connectionConfig) (err error) {
 	var ctx context.Context
 
 	cliCommand := config.command()
+
+	jmxHost = config.hostname
+	jmxPort = config.port
 
 	ctx, cancel = context.WithCancel(context.Background())
 	cmd = exec.CommandContext(ctx, cliCommand[0], cliCommand[1:]...)
@@ -395,4 +401,14 @@ func logAvailableWarnings(channel chan string) {
 			return
 		}
 	}
+}
+
+// HostName returns the host the nrjmx is connected to
+func HostName() string {
+	return jmxHost
+}
+
+// Port returns the port the nrjmx is connected to
+func Port() string {
+	return jmxPort
 }
