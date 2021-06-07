@@ -49,6 +49,7 @@ These are the most important changes:
           "attributes":{}                     # set of key-value pairs that define the dimensions of the metric
         }
       ],
+      "common":{...}                          # Map of dimensions common to every entity metric. Only string supported.
       "inventory":{...},                      # Inventory remains the same
       "events":[...]                          # Events remain the same
     }
