@@ -19,11 +19,11 @@ Infrastructure agent. If you want to work with `v1` JSON schema you can still wo
 
 JSON Schemas support table:
 
-||JSON `v1`|JSON `v2`|
-|--:|:-:|:-:|
-|GoSDK `v1.x`|✅|❌|
-|GoSDK `v2.x`|✅|❌|
-|GoSDK `v3`|❌|✅|
+||JSON `v1`|JSON `v2`|JSON `v3`|
+|--:|:-:|:-:|:-:|
+|GoSDK `v1.x`|✅|❌|❌|
+|GoSDK `v2.x`|✅|❌|❌|
+|GoSDK `v3`|❌|✅|✅|
 
 ## JSON `v2` schema changes
 
@@ -48,16 +48,14 @@ following two fields:
 * `type`: the kind of the entity. It will be used by the Agent as a namespace to compose a unique
 identifier, in conjunction with `name`.
 
-<!--
-HIDDEN, since this probably will be set by the agent.
-
 The `v2` JSON schema also adds the following fields for each entry in the `metrics` list:
 * `entityName`: which should match the concatenation of values from `entity.type:entity.name`.
 * `displayName`: expected display name in the New Relic User Interface.
--->
+
+In the `v3` JSON schema, `entityName` is no longer required in the `metrics` list.
 
 ### `v2` JSON full sample
-      
+
 ```json
 {
   "name": "my.company.integration",
