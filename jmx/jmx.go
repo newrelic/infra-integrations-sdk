@@ -360,7 +360,7 @@ func receiveResult(lineC chan []byte, queryErrC chan error, cancelFn context.Can
 			}
 			var r map[string]interface{}
 			if err = json.Unmarshal(line, &r); err != nil {
-				err = fmt.Errorf("invalid return value for query: %s, error: %s", objectPattern, err)
+				err = fmt.Errorf("invalid return value for query: %s, error: %s, line: %s", objectPattern, err, line)
 				return
 			}
 			if result == nil {

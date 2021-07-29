@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -207,6 +208,25 @@ func Test_receiveResult_warningsDoNotBreakResultReception(t *testing.T) {
 		"foo": 1.,
 	}, result)
 	assert.Equal(t, fmt.Sprintf("[WARN] %s\n", warningMessage), buf.String())
+}
+
+func Test_receiveResult_invalidJsonIsPrintedInError(t *testing.T) {
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+
+	_, cancelFn := context.WithCancel(context.Background())
+
+	resultCh := make(chan []byte, 2)
+	queryErrCh := make(chan error)
+	outTimeout := time.Duration(timeoutMillis) * time.Millisecond
+
+	resultCh <- []byte("#this is an invalid json")
+
+	result, err := receiveResult(resultCh, queryErrCh, cancelFn, "foo", outTimeout)
+
+	assert.Equal(t, err, errors.New("invalid return value for query: foo, error: invalid character '#' looking for beginning of value, line: #this is an invalid json"))
+	assert.Nil(t, result)
 }
 
 func Test_DefaultPath_IsCorrectForOs(t *testing.T) {
