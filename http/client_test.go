@@ -47,7 +47,7 @@ func TestClient_New_with_CABundleFile(t *testing.T) {
 	err = writeCApem(t, err, srv, tmpDir, "ca.pem")
 
 	// New should return new client
-	client, err := New(time.Second, WithCABundle(filepath.Join(tmpDir, "ca.pem"), ""))
+	client, err := New(WithTimeout(time.Second), WithCABundle(filepath.Join(tmpDir, "ca.pem"), ""))
 	require.NoError(t, err)
 
 	// And http get should work
@@ -82,7 +82,7 @@ func TestClient_New_with_CABundleDir(t *testing.T) {
 	err = writeCApem(t, err, srv, tmpDir, "ca.pem")
 
 	// New should return new client
-	client, err := New(time.Second, WithCABundle("", tmpDir))
+	client, err := New(WithTimeout(time.Second), WithCABundle("", tmpDir))
 	require.NoError(t, err)
 
 	// And http get should work
@@ -117,7 +117,7 @@ func TestClient_New_with_CABundleFile_and_CABundleDir(t *testing.T) {
 	err = writeCApem(t, err, srv, tmpDir, "ca")
 
 	// New should return new client
-	client, err := New(time.Second, WithCABundle("ca", tmpDir))
+	client, err := New(WithTimeout(time.Second), WithCABundle("ca", tmpDir))
 	require.NoError(t, err)
 
 	// And http get should work
@@ -152,7 +152,7 @@ func TestClient_New_with_CABundleFile_full_path_and_CABundleDir(t *testing.T) {
 	err = writeCApem(t, err, srv, tmpDir, "ca")
 
 	// New should return new client
-	client, err := New(time.Second, WithCABundle(filepath.Join(tmpDir, "ca"), tmpDir))
+	client, err := New(WithTimeout(time.Second), WithCABundle(filepath.Join(tmpDir, "ca"), tmpDir))
 	require.NoError(t, err)
 
 	// And http get should work
@@ -212,7 +212,7 @@ func Test_NewAcceptInvalidHostname(t *testing.T) {
 
 	// When HTTPS client is created accepting server certificated IP
 	sameIP := ip.String()
-	client, err := New(time.Second, WithAcceptInvalidHostname(filepath.Join(tmpDir, "ca.pem"), "", sameIP))
+	client, err := New(WithTimeout(time.Second), WithAcceptInvalidHostname(filepath.Join(tmpDir, "ca.pem"), "", sameIP))
 	require.NoError(t, err)
 
 	// Then HTTPS should work even for different hostname and source IP (127.0.0.1)
@@ -226,7 +226,7 @@ func Test_NewAcceptInvalidHostname(t *testing.T) {
 	assert.NoError(t, err)
 
 	// When HTTPS client is created accepting server certificated hostname
-	client, err = New(time.Second, WithAcceptInvalidHostname(filepath.Join(tmpDir, "ca.pem"), "", "foo.bar"))
+	client, err = New(WithTimeout(time.Second), WithAcceptInvalidHostname(filepath.Join(tmpDir, "ca.pem"), "", "foo.bar"))
 	require.NoError(t, err)
 
 	// Then HTTPS should work
@@ -264,7 +264,7 @@ func Test_WithInsecureSkipVerify(t *testing.T) {
 	err = writeCApem(t, err, srv, tmpDir, "ca.pem")
 
 	// New should return new client
-	client, err := New(time.Second, WithInsecureSkipVerify())
+	client, err := New(WithTimeout(time.Second), WithInsecureSkipVerify())
 	require.NoError(t, err)
 
 	// And http get should work
