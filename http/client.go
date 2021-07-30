@@ -14,43 +14,45 @@ import (
 	"time"
 )
 
-type TransportOption func(*http.Transport) error
+type ClientOption func(*http.Client) error
 
 // New creates a new http.Client with the Passed Transport Options
 // that will have a custom certificate if it is loaded from the passed CA Bundle file and/or
 // directory. If both CABundleFile and CABundleDir are empty arguments, it creates an unsecure HTTP client.
-func New(httpTimeout time.Duration, opts ...TransportOption) (*http.Client, error) {
+func New(opts ...ClientOption) (*http.Client, error) {
 	t := &http.Transport{
 		TLSClientConfig: &tls.Config{},
 	}
+
+	client := &http.Client{
+		Transport: t,
+	}
+
 	for _, opt := range opts {
-		if err := opt(t); err != nil {
+		if err := opt(client); err != nil {
 			return nil, err
 		}
 	}
 
-	return &http.Client{
-		Timeout:   httpTimeout,
-		Transport: t,
-	}, nil
+	return client, nil
 }
 
-func WithCABundle(CABundleFile, CABundleDir string) TransportOption {
-	return func(t *http.Transport) error {
+func WithCABundle(CABundleFile, CABundleDir string) ClientOption {
+	return func(c *http.Client) error {
 		if CABundleFile != "" || CABundleDir != "" {
 			certs, err := getCertPool(CABundleFile, CABundleDir)
 			if err != nil {
 				return err
 			}
-			t.TLSClientConfig.RootCAs = certs
+			c.Transport.(*http.Transport).TLSClientConfig.RootCAs = certs
 		}
 		return nil
 	}
 }
 
-func WithAcceptInvalidHostname(CABundleFile, CABundleDir, acceptInvalidHostname string) TransportOption {
-	return func(t *http.Transport) error {
-		err := WithCABundle(CABundleFile, CABundleDir)(t)
+func WithAcceptInvalidHostname(CABundleFile, CABundleDir, acceptInvalidHostname string) ClientOption {
+	return func(c *http.Client) error {
+		err := WithCABundle(CABundleFile, CABundleDir)(c)
 		if err != nil {
 			return err
 		}
@@ -59,16 +61,16 @@ func WithAcceptInvalidHostname(CABundleFile, CABundleDir, acceptInvalidHostname 
 			// Default validation is replaced with VerifyPeerCertificate.
 			// Note that when InsecureSkipVerify and VerifyPeerCertificate are in use,
 			// ConnectionState.VerifiedChains will be nil.
-			t.TLSClientConfig.InsecureSkipVerify = true
+			c.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify = true
 			// While packages like net/http will implicitly set ServerName, the
 			// VerifyPeerCertificate callback can't access that value, so it has to be set
 			// explicitly here or in VerifyPeerCertificate on the client side. If in
 			// an http.Transport DialTLS callback, this can be obtained by passing
 			// the addr argument to net.SplitHostPort.
-			t.TLSClientConfig.ServerName = acceptInvalidHostname
+			c.Transport.(*http.Transport).TLSClientConfig.ServerName = acceptInvalidHostname
 			// Approximately equivalent to what crypto/tls does normally:
 			// https://github.com/golang/go/commit/29cfb4d3c3a97b6f426d1b899234da905be699aa
-			t.TLSClientConfig.VerifyPeerCertificate = func(certificates [][]byte, _ [][]*x509.Certificate) error {
+			c.Transport.(*http.Transport).TLSClientConfig.VerifyPeerCertificate = func(certificates [][]byte, _ [][]*x509.Certificate) error {
 				certs := make([]*x509.Certificate, len(certificates))
 				for i, asn1Data := range certificates {
 					cert, err := x509.ParseCertificate(asn1Data)
@@ -79,7 +81,7 @@ func WithAcceptInvalidHostname(CABundleFile, CABundleDir, acceptInvalidHostname 
 				}
 
 				opts := x509.VerifyOptions{
-					Roots:         t.TLSClientConfig.RootCAs, // On the server side, use config.ClientCAs.
+					Roots:         c.Transport.(*http.Transport).TLSClientConfig.RootCAs, // On the server side, use config.ClientCAs.
 					DNSName:       acceptInvalidHostname,
 					Intermediates: x509.NewCertPool(),
 					// On the server side, set KeyUsages to ExtKeyUsageClientAuth. The
@@ -97,9 +99,16 @@ func WithAcceptInvalidHostname(CABundleFile, CABundleDir, acceptInvalidHostname 
 	}
 }
 
-func WithInsecureSkipVerify() TransportOption {
-	return func(t *http.Transport) error {
-		t.TLSClientConfig.InsecureSkipVerify = true
+func WithInsecureSkipVerify() ClientOption {
+	return func(c *http.Client) error {
+		c.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify = true
+		return nil
+	}
+}
+
+func WithTimeout(httpTimeout time.Duration) ClientOption {
+	return func(c *http.Client) error {
+		c.Timeout = httpTimeout
 		return nil
 	}
 }
