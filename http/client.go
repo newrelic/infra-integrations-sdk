@@ -14,30 +14,45 @@ import (
 	"time"
 )
 
-// New creates a new http.Client with a custom certificate, which can be loaded from the passed CA Bundle file and/or
+type TransportOption func(*http.Transport) error
+
+// New creates a new http.Client with the Passed Transport Options
+// that will have a custom certificate if it is loaded from the passed CA Bundle file and/or
 // directory. If both CABundleFile and CABundleDir are empty arguments, it creates an unsecure HTTP client.
-func New(CABundleFile, CABundleDir string, httpTimeout time.Duration) (*http.Client, error) {
-	return _new(CABundleFile, CABundleDir, httpTimeout, "")
-}
-
-// NewAcceptInvalidHostname new http.Client with ability to accept HTTPS certificates that don't
-// match the hostname of the server they are connecting to.
-func NewAcceptInvalidHostname(CABundleFile, CABundleDir string, httpTimeout time.Duration, hostname string) (*http.Client, error) {
-	return _new(CABundleFile, CABundleDir, httpTimeout, hostname)
-}
-
-func _new(CABundleFile, CABundleDir string, httpTimeout time.Duration, acceptInvalidHostname string) (*http.Client, error) {
-	// go default http transport settings
-	t := &http.Transport{}
-
-	if CABundleFile != "" || CABundleDir != "" {
-		certs, err := getCertPool(CABundleFile, CABundleDir)
-		if err != nil {
+func New(httpTimeout time.Duration, opts ...TransportOption) (*http.Client, error) {
+	t := &http.Transport{
+		TLSClientConfig: &tls.Config{},
+	}
+	for _, opt := range opts {
+		if err := opt(t); err != nil {
 			return nil, err
 		}
+	}
 
-		t.TLSClientConfig = &tls.Config{
-			RootCAs: certs,
+	return &http.Client{
+		Timeout:   httpTimeout,
+		Transport: t,
+	}, nil
+}
+
+func WithCABundle(CABundleFile, CABundleDir string) TransportOption {
+	return func(t *http.Transport) error {
+		if CABundleFile != "" || CABundleDir != "" {
+			certs, err := getCertPool(CABundleFile, CABundleDir)
+			if err != nil {
+				return err
+			}
+			t.TLSClientConfig.RootCAs = certs
+		}
+		return nil
+	}
+}
+
+func WithAcceptInvalidHostname(CABundleFile, CABundleDir, acceptInvalidHostname string) TransportOption {
+	return func(t *http.Transport) error {
+		err := WithCABundle(CABundleFile, CABundleDir)(t)
+		if err != nil {
+			return err
 		}
 
 		if acceptInvalidHostname != "" {
@@ -77,14 +92,16 @@ func _new(CABundleFile, CABundleDir string, httpTimeout time.Duration, acceptInv
 				_, err := certs[0].Verify(opts)
 				return err
 			}
-
 		}
+		return nil
 	}
+}
 
-	return &http.Client{
-		Timeout:   httpTimeout,
-		Transport: t,
-	}, nil
+func WithInsecureSkipVerify() TransportOption {
+	return func(t *http.Transport) error {
+		t.TLSClientConfig.InsecureSkipVerify = true
+		return nil
+	}
 }
 
 func getCertPool(certFile string, certDirectory string) (*x509.CertPool, error) {
