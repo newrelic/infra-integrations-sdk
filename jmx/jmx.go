@@ -269,7 +269,7 @@ func handleStdErr(ctx context.Context) {
 		if strings.HasPrefix(line, "WARNING") {
 			msg := line[7:]
 			if strings.Contains(msg, "Can't parse bean name") {
-				cmdErrC <- ErrBeanPattern
+				cmdErrC <- fmt.Errorf("%w: %s", ErrBeanPattern, msg)
 				return
 			}
 			cmdWarnC <- msg
@@ -277,7 +277,7 @@ func handleStdErr(ctx context.Context) {
 		if strings.HasPrefix(line, "SEVERE:") {
 			msg := line[7:]
 			if strings.Contains(msg, "jmx connection error") {
-				cmdErrC <- ErrConnection
+				cmdErrC <- fmt.Errorf("%w: %s", ErrConnection, msg)
 			} else {
 				cmdErrC <- errors.New(msg)
 			}
@@ -354,7 +354,7 @@ func receiveResult(lineC chan []byte, queryErrC chan error, cancelFn context.Can
 			}
 			var r map[string]interface{}
 			if err = json.Unmarshal(line, &r); err != nil {
-				err = fmt.Errorf("invalid return value for query: %s, error: %s, line: %s", objectPattern, err, line)
+				err = fmt.Errorf("invalid return value for query: %s, error: %w, line: %q", objectPattern, err, line)
 				return
 			}
 			if result == nil {
