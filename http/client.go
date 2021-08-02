@@ -57,7 +57,7 @@ func WithCABundleFile(CABundleFile, CABundleDir string) ClientOption {
 	}
 }
 
-// WithCABundleFile adds the CABundleDir looks for pem certs in the
+// WithCABundleDir adds the CABundleDir looks for pem certs in the
 // CABundleDir and adds them to the the client's certPool.
 func WithCABundleDir(CABundleDir string) ClientOption {
 	return func(c *http.Client) error {
