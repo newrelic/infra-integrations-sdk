@@ -16,12 +16,8 @@ import (
 var (
 	// ErrInvalidTransportType defines the error to be returned if the transport defined for the client is incorrect
 	ErrInvalidTransportType = errors.New("roundTripper transport invalid, should be http type")
-	// ErrEmptyCABundleFile defines the error to be returned if the WithCABundleFile option is called with an empty value
-	ErrEmptyCABundleFile = errors.New("caBundleFile can't be empty")
-	// ErrEmptyCABundleDir defines the error to be returned if the WithCABundleDir option is called with an empty value
-	ErrEmptyCABundleDir = errors.New("caBundleDir can't be empty")
-	// ErrEmptyAcceptInvalidHostname defines the error to be returned if the WithAcceptInvalidHostname option is called with an empty value
-	ErrEmptyAcceptInvalidHostname = errors.New("acceptInvalidHostname can't be empty")
+	// ErrEmptyArg defines the error to be returned if an option is defined with an empty argument
+	ErrEmptyArg = errors.New("argument is empty")
 )
 
 // ClientOption defines the format of the client option functions
@@ -54,7 +50,7 @@ func New(opts ...ClientOption) (*http.Client, error) {
 func WithCABundleFile(CABundleFile string) ClientOption {
 	return func(c *http.Client) error {
 		if CABundleFile == "" {
-			return ErrEmptyCABundleFile
+			return ErrEmptyArg
 		}
 
 		certPool, err := clientCertPool(c)
@@ -70,7 +66,7 @@ func WithCABundleFile(CABundleFile string) ClientOption {
 func WithCABundleDir(CABundleDir string) ClientOption {
 	return func(c *http.Client) error {
 		if CABundleDir == "" {
-			return ErrEmptyCABundleDir
+			return ErrEmptyArg
 		}
 
 		certPool, err := clientCertPool(c)
@@ -100,7 +96,7 @@ func WithCABundleDir(CABundleDir string) ClientOption {
 func WithAcceptInvalidHostname(acceptInvalidHostname string) ClientOption {
 	return func(c *http.Client) error {
 		if acceptInvalidHostname == "" {
-			return ErrEmptyAcceptInvalidHostname
+			return ErrEmptyArg
 		}
 
 		transport, ok := c.Transport.(*http.Transport)
@@ -147,7 +143,7 @@ func WithAcceptInvalidHostname(acceptInvalidHostname string) ClientOption {
 	}
 }
 
-// WithInsecureSkipVerify allows the client to call any host without checking the certificates.
+// WithTLSInsecureSkipVerify allows the client to call any host without checking the certificates.
 func WithTLSInsecureSkipVerify() ClientOption {
 	return func(c *http.Client) error {
 		transport, ok := c.Transport.(*http.Transport)
