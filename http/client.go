@@ -37,26 +37,46 @@ func New(opts ...ClientOption) (*http.Client, error) {
 	return client, nil
 }
 
-func WithCABundle(CABundleFile, CABundleDir string) ClientOption {
+func WithCABundleFile(CABundleFile, CABundleDir string) ClientOption {
 	return func(c *http.Client) error {
-		if CABundleFile != "" || CABundleDir != "" {
-			certs, err := getCertPool(CABundleFile, CABundleDir)
-			if err != nil {
-				return err
+		if CABundleFile != "" {
+			certPool := getClientCertPool(c)
+			if err := addCert(filepath.Join(CABundleDir, CABundleFile), certPool); err != nil {
+				if os.IsNotExist(err) {
+					if err = addCert(CABundleFile, certPool); err != nil {
+						return err
+					}
+				}
 			}
-			c.Transport.(*http.Transport).TLSClientConfig.RootCAs = certs
 		}
 		return nil
 	}
 }
 
-func WithAcceptInvalidHostname(CABundleFile, CABundleDir, acceptInvalidHostname string) ClientOption {
+func WithCABundleDir(CABundleDir string) ClientOption {
 	return func(c *http.Client) error {
-		err := WithCABundle(CABundleFile, CABundleDir)(c)
-		if err != nil {
-			return err
-		}
+		if CABundleDir != "" {
+			certPool := getClientCertPool(c)
+			files, err := ioutil.ReadDir(CABundleDir)
+			if err != nil {
+				return err
+			}
 
+			for _, f := range files {
+				if strings.Contains(f.Name(), ".pem") {
+					caCertFilePath := filepath.Join(CABundleDir, f.Name())
+					if err := addCert(caCertFilePath, certPool); err != nil {
+						return err
+					}
+				}
+			}
+		}
+		return nil
+	}
+}
+
+func WithAcceptInvalidHostname(acceptInvalidHostname string) ClientOption {
+	return func(c *http.Client) error {
 		if acceptInvalidHostname != "" {
 			// Default validation is replaced with VerifyPeerCertificate.
 			// Note that when InsecureSkipVerify and VerifyPeerCertificate are in use,
@@ -113,35 +133,11 @@ func WithTimeout(httpTimeout time.Duration) ClientOption {
 	}
 }
 
-func getCertPool(certFile string, certDirectory string) (*x509.CertPool, error) {
-	caCertPool := x509.NewCertPool()
-
-	if certFile != "" {
-		if err := addCert(filepath.Join(certDirectory, certFile), caCertPool); err != nil {
-			if os.IsNotExist(err) {
-				if err = addCert(certFile, caCertPool); err != nil {
-					return nil, err
-				}
-			}
-		}
+func getClientCertPool(c *http.Client) *x509.CertPool {
+	if c.Transport.(*http.Transport).TLSClientConfig.RootCAs == nil {
+		c.Transport.(*http.Transport).TLSClientConfig.RootCAs = x509.NewCertPool()
 	}
-
-	if certDirectory != "" {
-		files, err := ioutil.ReadDir(certDirectory)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, f := range files {
-			if strings.Contains(f.Name(), ".pem") {
-				caCertFilePath := filepath.Join(certDirectory, f.Name())
-				if err := addCert(caCertFilePath, caCertPool); err != nil {
-					return nil, err
-				}
-			}
-		}
-	}
-	return caCertPool, nil
+	return c.Transport.(*http.Transport).TLSClientConfig.RootCAs
 }
 
 func addCert(certFile string, caCertPool *x509.CertPool) error {
