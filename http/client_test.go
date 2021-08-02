@@ -62,6 +62,11 @@ func TestClient_New_with_CABundleFile(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestClient_New_with_Empty_CABundleFile(t *testing.T) {
+	_, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithCABundleFile(""))
+	require.ErrorIs(t, err, httpSDK.ErrEmptyCABundleFile)
+}
+
 func TestClient_New_with_CABundleDir(t *testing.T) {
 	srv := httptest.NewTLSServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -97,6 +102,11 @@ func TestClient_New_with_CABundleDir(t *testing.T) {
 
 	_, err = ioutil.ReadAll(resp.Body)
 	assert.NoError(t, err)
+}
+
+func TestClient_New_with_Empty_CABundleDir(t *testing.T) {
+	_, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithCABundleDir(""))
+	require.ErrorIs(t, err, httpSDK.ErrEmptyCABundleDir)
 }
 
 func TestClient_New_with_CABundleFile_and_CABundleDir(t *testing.T) {
@@ -254,6 +264,11 @@ func Test_NewAcceptInvalidHostname(t *testing.T) {
 
 	_, err = ioutil.ReadAll(resp.Body)
 	assert.NoError(t, err)
+}
+
+func TestClient_New_with_Empty_AcceptInvalidHostname(t *testing.T) {
+	_, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithAcceptInvalidHostname(""))
+	require.ErrorIs(t, err, httpSDK.ErrEmptyAcceptInvalidHostname)
 }
 
 func Test_WithInsecureSkipVerify(t *testing.T) {
