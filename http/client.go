@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+var ErrInvalidTransportType = errors.New("roundTripper transport invalid, should be http type")
+
 // ClientOption defines the format of the client option functions
 type ClientOption func(*http.Client) error
 
@@ -48,7 +50,11 @@ func WithCABundleFile(CABundleFile, CABundleDir string) ClientOption {
 			return nil
 		}
 
-		certPool := clientCertPool(c)
+		certPool, err := clientCertPool(c)
+		if err != nil {
+			return err
+		}
+
 		if err := addCert(filepath.Join(CABundleDir, CABundleFile), certPool); err != nil {
 			if os.IsNotExist(err) {
 				if err = addCert(CABundleFile, certPool); err != nil {
@@ -68,7 +74,11 @@ func WithCABundleDir(CABundleDir string) ClientOption {
 			return nil
 		}
 
-		certPool := clientCertPool(c)
+		certPool, err := clientCertPool(c)
+		if err != nil {
+			return err
+		}
+
 		files, err := ioutil.ReadDir(CABundleDir)
 		if err != nil {
 			return err
@@ -94,7 +104,10 @@ func WithAcceptInvalidHostname(acceptInvalidHostname string) ClientOption {
 			return nil
 		}
 
-		transport := c.Transport.(*http.Transport)
+		transport, ok := c.Transport.(*http.Transport)
+		if !ok {
+			return ErrInvalidTransportType
+		}
 		// Default validation is replaced with VerifyPeerCertificate.
 		// Note that when InsecureSkipVerify and VerifyPeerCertificate are in use,
 		// ConnectionState.VerifiedChains will be nil.
@@ -138,7 +151,12 @@ func WithAcceptInvalidHostname(acceptInvalidHostname string) ClientOption {
 // WithInsecureSkipVerify allows the client to call any host without checking the certificates.
 func WithInsecureSkipVerify() ClientOption {
 	return func(c *http.Client) error {
-		c.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify = true
+		transport, ok := c.Transport.(*http.Transport)
+		if !ok {
+			return ErrInvalidTransportType
+		}
+
+		transport.TLSClientConfig.InsecureSkipVerify = true
 		return nil
 	}
 }
@@ -151,12 +169,16 @@ func WithTimeout(httpTimeout time.Duration) ClientOption {
 	}
 }
 
-func clientCertPool(c *http.Client) *x509.CertPool {
-	transport := c.Transport.(*http.Transport)
+func clientCertPool(c *http.Client) (*x509.CertPool, error) {
+	transport, ok := c.Transport.(*http.Transport)
+	if !ok {
+		return nil, ErrInvalidTransportType
+	}
+
 	if transport.TLSClientConfig.RootCAs == nil {
 		transport.TLSClientConfig.RootCAs = x509.NewCertPool()
 	}
-	return transport.TLSClientConfig.RootCAs
+	return transport.TLSClientConfig.RootCAs, nil
 }
 
 func addCert(certFile string, caCertPool *x509.CertPool) error {
