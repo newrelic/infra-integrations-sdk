@@ -1,4 +1,4 @@
-package http
+package http_test
 
 import (
 	"bytes"
@@ -18,6 +18,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	httpSDK "github.com/newrelic/infra-integrations-sdk/http"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -46,7 +48,7 @@ func TestClient_New_with_CABundleFile(t *testing.T) {
 	writeCApem(t, srv, tmpDir, "ca.pem")
 
 	// New should return new client
-	client, err := New(WithTimeout(time.Second), WithCABundleFile(filepath.Join(tmpDir, "ca.pem"), ""))
+	client, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithCABundleFile(filepath.Join(tmpDir, "ca.pem"), ""))
 	require.NoError(t, err)
 
 	// And http get should work
@@ -83,7 +85,7 @@ func TestClient_New_with_CABundleDir(t *testing.T) {
 	writeCApem(t, srv, tmpDir, "ca.pem")
 
 	// New should return new client
-	client, err := New(WithTimeout(time.Second), WithCABundleDir(tmpDir))
+	client, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithCABundleDir(tmpDir))
 	require.NoError(t, err)
 
 	// And http get should work
@@ -121,7 +123,7 @@ func TestClient_New_with_CABundleFile_and_CABundleDir(t *testing.T) {
 	writeAnotherCApem(t, tmpDir, "ca2.pem")
 
 	// New should return new client
-	client, err := New(WithTimeout(time.Second), WithCABundleFile("ca", tmpDir), WithCABundleDir(tmpDir))
+	client, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithCABundleFile("ca", tmpDir), httpSDK.WithCABundleDir(tmpDir))
 	require.NoError(t, err)
 
 	// And http get should work
@@ -159,7 +161,7 @@ func TestClient_New_with_CABundleFile_full_path_and_CABundleDir(t *testing.T) {
 	writeAnotherCApem(t, tmpDir, "ca2.pem")
 
 	// New should return new client
-	client, err := New(WithTimeout(time.Second), WithCABundleFile(filepath.Join(tmpDir, "ca"), tmpDir), WithCABundleDir(tmpDir))
+	client, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithCABundleFile(filepath.Join(tmpDir, "ca"), tmpDir), httpSDK.WithCABundleDir(tmpDir))
 	require.NoError(t, err)
 
 	// And http get should work
@@ -264,7 +266,7 @@ func Test_NewAcceptInvalidHostname(t *testing.T) {
 
 	// When HTTPS client is created accepting server certificated IP
 	sameIP := ip.String()
-	client, err := New(WithTimeout(time.Second), WithAcceptInvalidHostname(sameIP), WithCABundleFile(filepath.Join(tmpDir, "ca.pem"), tmpDir))
+	client, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithAcceptInvalidHostname(sameIP), httpSDK.WithCABundleFile(filepath.Join(tmpDir, "ca.pem"), tmpDir))
 	require.NoError(t, err)
 
 	// Then HTTPS should work even for different hostname and source IP (127.0.0.1)
@@ -278,7 +280,7 @@ func Test_NewAcceptInvalidHostname(t *testing.T) {
 	assert.NoError(t, err)
 
 	// When HTTPS client is created accepting server certificated hostname
-	client, err = New(WithTimeout(time.Second), WithAcceptInvalidHostname("foo.bar"), WithCABundleFile(filepath.Join(tmpDir, "ca.pem"), tmpDir))
+	client, err = httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithAcceptInvalidHostname("foo.bar"), httpSDK.WithCABundleFile(filepath.Join(tmpDir, "ca.pem"), tmpDir))
 	require.NoError(t, err)
 
 	// Then HTTPS should work
@@ -316,7 +318,7 @@ func Test_WithInsecureSkipVerify(t *testing.T) {
 	writeCApem(t, srv, tmpDir, "ca.pem")
 
 	// New should return new client
-	client, err := New(WithTimeout(time.Second), WithInsecureSkipVerify())
+	client, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithInsecureSkipVerify())
 	require.NoError(t, err)
 
 	// And http get should work
