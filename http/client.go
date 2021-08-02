@@ -37,6 +37,10 @@ func New(opts ...ClientOption) (*http.Client, error) {
 	return client, nil
 }
 
+// WithCABundleFile adds the CABundleFile cert to the the client's certPool,
+// if a CABundleDir is passed it will be joined to the CABundleFile to try to get the file.
+// If the file is a full path, even it the CABundleDir is passed, it will be detected and the full
+// path will be used instead
 func WithCABundleFile(CABundleFile, CABundleDir string) ClientOption {
 	return func(c *http.Client) error {
 		if CABundleFile != "" {
@@ -53,6 +57,8 @@ func WithCABundleFile(CABundleFile, CABundleDir string) ClientOption {
 	}
 }
 
+// WithCABundleFile adds the CABundleDir looks for pem certs in the
+// CABundleDir and adds them to the the client's certPool.
 func WithCABundleDir(CABundleDir string) ClientOption {
 	return func(c *http.Client) error {
 		if CABundleDir != "" {
@@ -75,6 +81,8 @@ func WithCABundleDir(CABundleDir string) ClientOption {
 	}
 }
 
+// WithAcceptInvalidHostname allows the client to call the acceptInvalidHostname host
+// instead of the host from the certificates.
 func WithAcceptInvalidHostname(acceptInvalidHostname string) ClientOption {
 	return func(c *http.Client) error {
 		if acceptInvalidHostname != "" {
@@ -119,6 +127,7 @@ func WithAcceptInvalidHostname(acceptInvalidHostname string) ClientOption {
 	}
 }
 
+// WithInsecureSkipVerify allows the client to call any host without checking the certificates.
 func WithInsecureSkipVerify() ClientOption {
 	return func(c *http.Client) error {
 		c.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify = true
@@ -126,6 +135,7 @@ func WithInsecureSkipVerify() ClientOption {
 	}
 }
 
+// WithTimeout sets the timeout for the client, if not called the timeout will be 0 (no timeout).
 func WithTimeout(httpTimeout time.Duration) ClientOption {
 	return func(c *http.Client) error {
 		c.Timeout = httpTimeout
