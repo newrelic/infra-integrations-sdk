@@ -148,7 +148,7 @@ func WithAcceptInvalidHostname(acceptInvalidHostname string) ClientOption {
 }
 
 // WithInsecureSkipVerify allows the client to call any host without checking the certificates.
-func WithInsecureSkipVerify() ClientOption {
+func WithTLSInsecureSkipVerify() ClientOption {
 	return func(c *http.Client) error {
 		transport, ok := c.Transport.(*http.Transport)
 		if !ok {
