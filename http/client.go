@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -50,7 +51,7 @@ func New(opts ...ClientOption) (*http.Client, error) {
 func WithCABundleFile(CABundleFile string) ClientOption {
 	return func(c *http.Client) error {
 		if CABundleFile == "" {
-			return ErrEmptyArg
+			return fmt.Errorf("applying CABundleFile: %w", ErrEmptyArg)
 		}
 
 		certPool, err := clientCertPool(c)
@@ -66,7 +67,7 @@ func WithCABundleFile(CABundleFile string) ClientOption {
 func WithCABundleDir(CABundleDir string) ClientOption {
 	return func(c *http.Client) error {
 		if CABundleDir == "" {
-			return ErrEmptyArg
+			return fmt.Errorf("applying CABundleDir: %w", ErrEmptyArg)
 		}
 
 		certPool, err := clientCertPool(c)
@@ -96,7 +97,7 @@ func WithCABundleDir(CABundleDir string) ClientOption {
 func WithAcceptInvalidHostname(acceptInvalidHostname string) ClientOption {
 	return func(c *http.Client) error {
 		if acceptInvalidHostname == "" {
-			return ErrEmptyArg
+			return fmt.Errorf("applying AcceptInvalidHostname: %w", ErrEmptyArg)
 		}
 
 		transport, ok := c.Transport.(*http.Transport)
