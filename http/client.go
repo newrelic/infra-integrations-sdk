@@ -86,19 +86,20 @@ func WithCABundleDir(CABundleDir string) ClientOption {
 func WithAcceptInvalidHostname(acceptInvalidHostname string) ClientOption {
 	return func(c *http.Client) error {
 		if acceptInvalidHostname != "" {
+			transport := c.Transport.(*http.Transport)
 			// Default validation is replaced with VerifyPeerCertificate.
 			// Note that when InsecureSkipVerify and VerifyPeerCertificate are in use,
 			// ConnectionState.VerifiedChains will be nil.
-			c.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify = true
+			transport.TLSClientConfig.InsecureSkipVerify = true
 			// While packages like net/http will implicitly set ServerName, the
 			// VerifyPeerCertificate callback can't access that value, so it has to be set
 			// explicitly here or in VerifyPeerCertificate on the client side. If in
 			// an http.Transport DialTLS callback, this can be obtained by passing
 			// the addr argument to net.SplitHostPort.
-			c.Transport.(*http.Transport).TLSClientConfig.ServerName = acceptInvalidHostname
+			transport.TLSClientConfig.ServerName = acceptInvalidHostname
 			// Approximately equivalent to what crypto/tls does normally:
 			// https://github.com/golang/go/commit/29cfb4d3c3a97b6f426d1b899234da905be699aa
-			c.Transport.(*http.Transport).TLSClientConfig.VerifyPeerCertificate = func(certificates [][]byte, _ [][]*x509.Certificate) error {
+			transport.TLSClientConfig.VerifyPeerCertificate = func(certificates [][]byte, _ [][]*x509.Certificate) error {
 				certs := make([]*x509.Certificate, len(certificates))
 				for i, asn1Data := range certificates {
 					cert, err := x509.ParseCertificate(asn1Data)
@@ -109,7 +110,7 @@ func WithAcceptInvalidHostname(acceptInvalidHostname string) ClientOption {
 				}
 
 				opts := x509.VerifyOptions{
-					Roots:         c.Transport.(*http.Transport).TLSClientConfig.RootCAs, // On the server side, use config.ClientCAs.
+					Roots:         transport.TLSClientConfig.RootCAs, // On the server side, use config.ClientCAs.
 					DNSName:       acceptInvalidHostname,
 					Intermediates: x509.NewCertPool(),
 					// On the server side, set KeyUsages to ExtKeyUsageClientAuth. The
@@ -144,10 +145,11 @@ func WithTimeout(httpTimeout time.Duration) ClientOption {
 }
 
 func getClientCertPool(c *http.Client) *x509.CertPool {
-	if c.Transport.(*http.Transport).TLSClientConfig.RootCAs == nil {
-		c.Transport.(*http.Transport).TLSClientConfig.RootCAs = x509.NewCertPool()
+	transport := c.Transport.(*http.Transport)
+	if transport.TLSClientConfig.RootCAs == nil {
+		transport.TLSClientConfig.RootCAs = x509.NewCertPool()
 	}
-	return c.Transport.(*http.Transport).TLSClientConfig.RootCAs
+	return transport.TLSClientConfig.RootCAs
 }
 
 func addCert(certFile string, caCertPool *x509.CertPool) error {
