@@ -13,6 +13,7 @@ import (
 	"time"
 )
 
+// ErrInvalidTransportType defines the error to be returned if the transport defined for the client is incorrect
 var ErrInvalidTransportType = errors.New("roundTripper transport invalid, should be http type")
 
 // ClientOption defines the format of the client option functions
