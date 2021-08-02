@@ -16,7 +16,7 @@ import (
 
 type ClientOption func(*http.Client) error
 
-// New creates a new http.Client with the Passed Transport Options
+// New creates a new http.Client with the Passed Client Options
 // that will have a custom certificate if it is loaded from the passed CA Bundle file and/or
 // directory. If both CABundleFile and CABundleDir are empty arguments, it creates an unsecure HTTP client.
 func New(opts ...ClientOption) (*http.Client, error) {
