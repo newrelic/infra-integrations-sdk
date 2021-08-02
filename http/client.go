@@ -48,7 +48,7 @@ func WithCABundleFile(CABundleFile, CABundleDir string) ClientOption {
 			return nil
 		}
 
-		certPool := getClientCertPool(c)
+		certPool := clientCertPool(c)
 		if err := addCert(filepath.Join(CABundleDir, CABundleFile), certPool); err != nil {
 			if os.IsNotExist(err) {
 				if err = addCert(CABundleFile, certPool); err != nil {
@@ -68,7 +68,7 @@ func WithCABundleDir(CABundleDir string) ClientOption {
 			return nil
 		}
 
-		certPool := getClientCertPool(c)
+		certPool := clientCertPool(c)
 		files, err := ioutil.ReadDir(CABundleDir)
 		if err != nil {
 			return err
@@ -151,7 +151,7 @@ func WithTimeout(httpTimeout time.Duration) ClientOption {
 	}
 }
 
-func getClientCertPool(c *http.Client) *x509.CertPool {
+func clientCertPool(c *http.Client) *x509.CertPool {
 	transport := c.Transport.(*http.Transport)
 	if transport.TLSClientConfig.RootCAs == nil {
 		transport.TLSClientConfig.RootCAs = x509.NewCertPool()
