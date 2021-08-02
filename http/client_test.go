@@ -64,7 +64,7 @@ func TestClient_New_with_CABundleFile(t *testing.T) {
 
 func TestClient_New_with_Empty_CABundleFile(t *testing.T) {
 	_, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithCABundleFile(""))
-	require.ErrorIs(t, err, httpSDK.ErrEmptyCABundleFile)
+	require.ErrorIs(t, err, httpSDK.ErrEmptyArg)
 }
 
 func TestClient_New_with_CABundleDir(t *testing.T) {
@@ -106,7 +106,7 @@ func TestClient_New_with_CABundleDir(t *testing.T) {
 
 func TestClient_New_with_Empty_CABundleDir(t *testing.T) {
 	_, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithCABundleDir(""))
-	require.ErrorIs(t, err, httpSDK.ErrEmptyCABundleDir)
+	require.ErrorIs(t, err, httpSDK.ErrEmptyArg)
 }
 
 func TestClient_New_with_CABundleFile_and_CABundleDir(t *testing.T) {
@@ -268,7 +268,7 @@ func Test_NewAcceptInvalidHostname(t *testing.T) {
 
 func TestClient_New_with_Empty_AcceptInvalidHostname(t *testing.T) {
 	_, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithAcceptInvalidHostname(""))
-	require.ErrorIs(t, err, httpSDK.ErrEmptyAcceptInvalidHostname)
+	require.ErrorIs(t, err, httpSDK.ErrEmptyArg)
 }
 
 func Test_WithInsecureSkipVerify(t *testing.T) {
@@ -295,7 +295,7 @@ func Test_WithInsecureSkipVerify(t *testing.T) {
 	writeCApem(t, srv, tmpDir, "ca.pem")
 
 	// New should return new client
-	client, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithInsecureSkipVerify())
+	client, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithTLSInsecureSkipVerify())
 	require.NoError(t, err)
 
 	// And http get should work
