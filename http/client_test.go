@@ -48,7 +48,7 @@ func TestClient_New_with_CABundleFile(t *testing.T) {
 	writeCApem(t, srv, tmpDir, "ca.pem")
 
 	// New should return new client
-	client, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithCABundleFile(filepath.Join(tmpDir, "ca.pem"), ""))
+	client, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithCABundleFile(tmpDir+"/ca.pem"))
 	require.NoError(t, err)
 
 	// And http get should work
@@ -123,45 +123,7 @@ func TestClient_New_with_CABundleFile_and_CABundleDir(t *testing.T) {
 	writeAnotherCApem(t, tmpDir, "ca2.pem")
 
 	// New should return new client
-	client, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithCABundleFile("ca", tmpDir), httpSDK.WithCABundleDir(tmpDir))
-	require.NoError(t, err)
-
-	// And http get should work
-	resp, err := client.Get(srv.URL)
-	require.NoError(t, err)
-
-	// Number of certs loaded should be 2
-	require.Equal(t, 2, len(client.Transport.(*http.Transport).TLSClientConfig.RootCAs.Subjects()))
-
-	_, err = ioutil.ReadAll(resp.Body)
-	assert.NoError(t, err)
-}
-
-func TestClient_New_with_CABundleFile_full_path_and_CABundleDir(t *testing.T) {
-	srv := httptest.NewTLSServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			_, err := fmt.Fprintln(w, "Test server")
-			assert.NoError(t, err)
-		}))
-	defer srv.Close()
-
-	// Given test server is working
-	_, err := srv.Client().Get(srv.URL)
-	require.NoError(t, err)
-
-	// Then create temp dir
-	tmpDir, err := ioutil.TempDir("", "test")
-	require.NoError(t, err)
-	defer func() {
-		err := os.RemoveAll(tmpDir)
-		require.NoError(t, err)
-	}()
-
-	writeCApem(t, srv, tmpDir, "ca")
-	writeAnotherCApem(t, tmpDir, "ca2.pem")
-
-	// New should return new client
-	client, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithCABundleFile(filepath.Join(tmpDir, "ca"), tmpDir), httpSDK.WithCABundleDir(tmpDir))
+	client, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithCABundleFile(tmpDir+"/ca"), httpSDK.WithCABundleDir(tmpDir))
 	require.NoError(t, err)
 
 	// And http get should work
@@ -266,7 +228,7 @@ func Test_NewAcceptInvalidHostname(t *testing.T) {
 
 	// When HTTPS client is created accepting server certificated IP
 	sameIP := ip.String()
-	client, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithAcceptInvalidHostname(sameIP), httpSDK.WithCABundleFile(filepath.Join(tmpDir, "ca.pem"), tmpDir))
+	client, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithAcceptInvalidHostname(sameIP), httpSDK.WithCABundleFile(tmpDir+"/ca.pem"))
 	require.NoError(t, err)
 
 	// Then HTTPS should work even for different hostname and source IP (127.0.0.1)
@@ -280,7 +242,7 @@ func Test_NewAcceptInvalidHostname(t *testing.T) {
 	assert.NoError(t, err)
 
 	// When HTTPS client is created accepting server certificated hostname
-	client, err = httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithAcceptInvalidHostname("foo.bar"), httpSDK.WithCABundleFile(filepath.Join(tmpDir, "ca.pem"), tmpDir))
+	client, err = httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithAcceptInvalidHostname("foo.bar"), httpSDK.WithCABundleFile(tmpDir+"/ca.pem"))
 	require.NoError(t, err)
 
 	// Then HTTPS should work

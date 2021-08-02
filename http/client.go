@@ -8,7 +8,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -40,11 +39,8 @@ func New(opts ...ClientOption) (*http.Client, error) {
 	return client, nil
 }
 
-// WithCABundleFile adds the CABundleFile cert to the the client's certPool,
-// if a CABundleDir is passed it will be joined to the CABundleFile to try to get the file.
-// If the file is a full path, even it the CABundleDir is passed, it will be detected and the full
-// path will be used instead
-func WithCABundleFile(CABundleFile, CABundleDir string) ClientOption {
+// WithCABundleFile adds the CABundleFile cert to the the client's certPool
+func WithCABundleFile(CABundleFile string) ClientOption {
 	return func(c *http.Client) error {
 		if CABundleFile == "" {
 			return nil
@@ -54,15 +50,7 @@ func WithCABundleFile(CABundleFile, CABundleDir string) ClientOption {
 		if err != nil {
 			return err
 		}
-
-		if err := addCert(filepath.Join(CABundleDir, CABundleFile), certPool); err != nil {
-			if os.IsNotExist(err) {
-				if err = addCert(CABundleFile, certPool); err != nil {
-					return err
-				}
-			}
-		}
-		return nil
+		return addCert(CABundleFile, certPool)
 	}
 }
 
