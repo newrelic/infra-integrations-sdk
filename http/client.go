@@ -14,12 +14,12 @@ import (
 	"time"
 )
 
-type ClientOption func(*http.Client) error
+type clientOption func(*http.Client) error
 
 // New creates a new http.Client with the Passed Client Options
 // that will have a custom certificate if it is loaded from the passed CA Bundle file and/or
 // directory. If both CABundleFile and CABundleDir are empty arguments, it creates an unsecure HTTP client.
-func New(opts ...ClientOption) (*http.Client, error) {
+func New(opts ...clientOption) (*http.Client, error) {
 	t := &http.Transport{
 		TLSClientConfig: &tls.Config{},
 	}
@@ -41,7 +41,7 @@ func New(opts ...ClientOption) (*http.Client, error) {
 // if a CABundleDir is passed it will be joined to the CABundleFile to try to get the file.
 // If the file is a full path, even it the CABundleDir is passed, it will be detected and the full
 // path will be used instead
-func WithCABundleFile(CABundleFile, CABundleDir string) ClientOption {
+func WithCABundleFile(CABundleFile, CABundleDir string) clientOption {
 	return func(c *http.Client) error {
 		if CABundleFile != "" {
 			certPool := getClientCertPool(c)
@@ -59,7 +59,7 @@ func WithCABundleFile(CABundleFile, CABundleDir string) ClientOption {
 
 // WithCABundleDir adds the CABundleDir looks for pem certs in the
 // CABundleDir and adds them to the the client's certPool.
-func WithCABundleDir(CABundleDir string) ClientOption {
+func WithCABundleDir(CABundleDir string) clientOption {
 	return func(c *http.Client) error {
 		if CABundleDir != "" {
 			certPool := getClientCertPool(c)
@@ -83,7 +83,7 @@ func WithCABundleDir(CABundleDir string) ClientOption {
 
 // WithAcceptInvalidHostname allows the client to call the acceptInvalidHostname host
 // instead of the host from the certificates.
-func WithAcceptInvalidHostname(acceptInvalidHostname string) ClientOption {
+func WithAcceptInvalidHostname(acceptInvalidHostname string) clientOption {
 	return func(c *http.Client) error {
 		if acceptInvalidHostname != "" {
 			transport := c.Transport.(*http.Transport)
@@ -129,7 +129,7 @@ func WithAcceptInvalidHostname(acceptInvalidHostname string) ClientOption {
 }
 
 // WithInsecureSkipVerify allows the client to call any host without checking the certificates.
-func WithInsecureSkipVerify() ClientOption {
+func WithInsecureSkipVerify() clientOption {
 	return func(c *http.Client) error {
 		c.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify = true
 		return nil
@@ -137,7 +137,7 @@ func WithInsecureSkipVerify() ClientOption {
 }
 
 // WithTimeout sets the timeout for the client, if not called the timeout will be 0 (no timeout).
-func WithTimeout(httpTimeout time.Duration) ClientOption {
+func WithTimeout(httpTimeout time.Duration) clientOption {
 	return func(c *http.Client) error {
 		c.Timeout = httpTimeout
 		return nil
