@@ -25,6 +25,8 @@ var (
 )
 
 // ClientOption defines the format of the client option functions
+// Note that many options defined in this package rely on the Transport for the http.Client being of type *http.Transport.
+// Using a different Transport will cause these options to fail.
 type ClientOption func(*http.Client) error
 
 // New creates a new http.Client with the Passed Client Options
