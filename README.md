@@ -81,7 +81,7 @@ You can add metrics, events and inventory on both types of entities.
 
 ## Upgrading from SDK v3 to v4
 
-https://github.com/newrelic/infra-integrations-sdk/blob/sdk-v4/docs/v3tov4.md
+https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/v3tov4.md
 
 ### SDK and agent-protocol compatibility 
 
@@ -105,7 +105,7 @@ The GoSDK provides a helper HTTP package to create secure HTTPS clients that req
 
 ## Tools and FAQs related to previous SDK v3.
 
-https://github.com/newrelic/infra-integrations-sdk/blob/sdk-v4/docs/v3_tools_faqs.md
+https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/v3_tools_faqs.md
 
 ## Support
 
