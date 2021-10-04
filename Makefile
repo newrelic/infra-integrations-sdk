@@ -45,7 +45,7 @@ deps: tools
 .PHONY: test
 test: deps
 	@gocov test -race $(PKGS) | gocov-xml > coverage.xml
-	@gocov test github.com/newrelic/infra-integrations-sdk/jmx > /dev/null # TODO: fix race for jmx package
+	@gocov test github.com/newrelic/infra-integrations-sdk/v4/jmx > /dev/null # TODO: fix race for jmx package
 
 .PHONY: tools-golangci-lint
 tools-golangci-lint:
