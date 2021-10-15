@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -225,7 +224,7 @@ func Test_receiveResult_invalidJsonIsPrintedInError(t *testing.T) {
 
 	result, err := receiveResult(resultCh, queryErrCh, cancelFn, "foo", outTimeout)
 
-	assert.Equal(t, err, errors.New("invalid return value for query: foo, error: invalid character '#' looking for beginning of value, line: #this is an invalid json"))
+	assert.Equal(t, "invalid return value for query: foo, error: invalid character '#' looking for beginning of value, line: \"#this is an invalid json\"", err.Error())
 	assert.Nil(t, result)
 }
 
