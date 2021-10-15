@@ -183,6 +183,10 @@ func openWaitWithSSL(hostname, port, username, password, keyStore, keyStorePassw
 }
 
 func Test_receiveResult_warningsDoNotBreakResultReception(t *testing.T) {
+	// Make sure there is no unread errors or warnings.
+	// TODO: This should perhaps be done in Close()?
+	cmdErrC = make(chan error, cmdStdChanLen)
+	cmdWarnC = make(chan string, cmdStdChanLen)
 
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
