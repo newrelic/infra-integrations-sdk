@@ -215,7 +215,7 @@ you will receive the following output:
 }
 ```
 
-The complete files for the Redis integration can be found in [tutorial-code](tutorial-code/single-entity).
+The complete files for the Redis integration can be found in [tutorial-code-v3](tutorial-code-v3/single-entity). The sample code that use the latest SDK version can be found in [tutorial-code](tutorial-code/single-entity), note that the output may differ between SDK versions.
 
 ### Fetching metric data
 Let's start by defining the metric data. `Metric.Set` is the basic structure for storing metrics. The `NewMetricSet` function returns a new instance of Metric.Set with its sample attached to the integration data.
@@ -765,7 +765,7 @@ $ sudo cp $GOPATH/src/myorg-integrations/redis/myorg-redis-config.yml /etc/newre
 When all the above steps are done, restart the agent.
 
 ### View inventory data in Infrastructure
-Inventory data can be viewed in New Relic Infrastructure on the [Inventory page](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/infrastructure-ui-pages/infrastructure-inventory-page-search-your-entire-infrastructure). Filter by prefix `config/myorg-redis` (which was specified in the definition file) and you will see the inventory data collected by the redis integration and labels that you specified in [the config file](tutorial-code/myorg-redis-config.yml).
+Inventory data can be viewed in New Relic Infrastructure on the [Inventory page](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/infrastructure-ui-pages/infrastructure-inventory-page-search-your-entire-infrastructure). Filter by prefix `config/myorg-redis` (which was specified in the definition file) and you will see the inventory data collected by the redis integration and labels that you specified in [the config file](tutorial-code-v3/single-entity/myorg-redis-config.yml).
 
 ![Redis inventory](images/redis_inventory_view.png)
 
@@ -971,7 +971,7 @@ check that the integration was created properly (this output assume that your Re
 As you can see in the output above, there was a second event created, with a new category `redis-server`.
 
 ### Configuration of the integration (for events)
-To test the integration with the Infrastucture Agent, it's required to update [the config file](tutorial-code/myorg-redis-config.yml) and [the definition file](tutorial-code/myorg-redis-definition.yml). Let's start with the definition file by adding the `events` command. 
+To test the integration with the Infrastucture Agent, it's required to update [the config file](tutorial-code-v3/single-entity/myorg-redis-config.yml) and [the definition file](tutorial-code-v3/single-entity/myorg-redis-definition.yml). Let's start with the definition file by adding the `events` command.
 
 [Definition file](#Definition-file) will contain the `events` section:
 ```yaml

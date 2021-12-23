@@ -15,7 +15,7 @@ than one instance by host?
 With SDK v2 you won't be able to do that since they will share the same entity ID and you won't be able to distinguish them when running
 a query in [insights service](https://insights.newrelic.com/).
 
-In order to be able to setup this scenario we provide a `docker-compose.yml` in [here](tutorial-code/multiple-entities/docker-compose.yml).
+In order to be able to setup this scenario we provide a `docker-compose.yml` in [here](tutorial-code-v3/multiple-entities/docker-compose.yml).
 
 ## Overview
 
@@ -266,8 +266,8 @@ you will receive the following output:
 }
 ```
 
-The complete files for the Redis integration can be found in [tutorial-code](tutorial-code/multiple-entities). As the [docker-compose](tutorial-code/multiple-entities/docker-compose.yml)
-to setup two redis instances with different versions. To set it up run:
+The complete files for the Redis integration can be found in [tutorial-code-v3](tutorial-code-v3/multiple-entities). The sample code that use the latest SDK version can be found in [tutorial-code](tutorial-code/multiple-entities), note that the output may differ between SDK versions.
+The [docker-compose](tutorial-code-v3/multiple-entities/docker-compose.yml) file can be used to set up two different version Redis instances. To set it up run:
 
 ```bash
 docker-compose up -d
@@ -746,7 +746,7 @@ we receive
 ```
 
 ### View inventory data in Infrastructure
-Inventory data can be viewed in New Relic Infrastructure on the [Inventory page](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/infrastructure-ui-pages/infrastructure-inventory-page-search-your-entire-infrastructure). Filter by prefix `config/myorg-redis` (which was specified in the definition file) and you will see the inventory data collected by the redis integration and labels that you specified in [the config file](tutorial-code/myorg-redis-config.yml).
+Inventory data can be viewed in New Relic Infrastructure on the [Inventory page](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/infrastructure-ui-pages/infrastructure-inventory-page-search-your-entire-infrastructure). Filter by prefix `config/myorg-redis` (which was specified in the definition file) and you will see the inventory data collected by the redis integration and labels that you specified in [the config file](tutorial-code-v3/myorg-redis-config.yml).
 
 ![Redis inventory](images/redis_inventory_view_multiple.png)
 
@@ -1006,7 +1006,7 @@ check that the integration was created properly (this output assume that your Re
 As you can see in the output above, there was a second event created, with a new category `redis-server`.
 
 ### Configuration of the integration (for events)
-To test the integration with the Infrastucture Agent, it's required to update [the config file](tutorial-code/myorg-redis-config.yml) and [the definition file](tutorial-code/myorg-redis-definition.yml). Let's start with the definition file by adding the `events` command. 
+To test the integration with the Infrastucture Agent, it's required to update [the config file](tutorial-code-v3/multiple-entities/myorg-redis-multi-config.yml) and [the definition file](tutorial-code-v3/multiple-entities/myorg-redis-multi-definition.yml). Let's start with the definition file by adding the `events` command.
 
 [Definition file](#Definition-file) will contain the `events` section:
 ```yaml

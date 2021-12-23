@@ -1,0 +1,24 @@
+name: com.myorganization.redis
+description: Reports status and metrics for redis service
+protocol_version: 2
+os: linux
+
+commands:
+  metrics:
+    command:
+      - ./bin/myorg-redis
+      - --metrics
+    interval: 15
+
+  inventory:
+    command:
+      - ./bin/myorg-redis
+      - --inventory
+    prefix: config/myorg-redis
+    interval: 60
+
+  events:
+    command:
+      - ./bin/myorg-redis
+      - --events
+    interval: 60    

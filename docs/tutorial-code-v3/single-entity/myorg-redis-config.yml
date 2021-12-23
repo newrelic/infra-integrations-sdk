@@ -1,0 +1,23 @@
+integration_name: com.myorganization.redis
+
+instances:
+  - name: redis-metrics
+    command: metrics
+    labels:
+      env: production
+      role: cache
+
+  - name: redis-inventory
+    command: inventory
+    arguments:
+      hostname: localhost
+      port: 6379
+    labels:
+      env: production
+      role: cache
+
+  - name: redis-events
+    command: events
+    labels:
+      env: production
+      role: cache      
