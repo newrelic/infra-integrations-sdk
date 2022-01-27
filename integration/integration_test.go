@@ -223,7 +223,11 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 				  ]
 				},
 				{
-				  "common": {},
+				  "common": {
+					"attributes": {
+					  "targetName": "localhost"
+					}
+				  },
 				  "entity": {
 					"name": "EntityTwo",
 					"displayName": "",
@@ -245,7 +249,14 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 				  "events": []
 				},
 				{
-				  "common": {},
+				  "common": {
+					"attributes": {
+					  "scrapedTargetKind": "user_provided",
+					  "scrapedTargetName": "localhost:9122",
+					  "scrapedTargetURL": "http://localhost:9122/metrics",
+					  "targetName": "localhost:9122"
+					}
+				  },
 				  "entity": {
 					"name": "EntityThree",
 					"displayName": "",
@@ -393,6 +404,8 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	// add entity 2
 	e2, err := i.NewEntity("EntityTwo", "test", "")
 	assert.NoError(t, err)
+	// add common attributes
+	e2.AddCommonDimension("targetName", "localhost")
 	// add metric to entity 2
 	gauge, _ = Gauge(time.Unix(10000000, 0), "metricOne", 2)
 	_ = gauge.AddDimension("processName", "java")
@@ -423,7 +436,12 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	// add entity 3
 	e3, err := i.NewEntity("EntityThree", "test", "")
 	assert.NoError(t, err)
-	// add metric to entity 2
+	// add common attributes
+	e3.AddCommonDimension("scrapedTargetKind", "user_provided")
+	e3.AddCommonDimension("scrapedTargetName", "localhost:9122")
+	e3.AddCommonDimension("scrapedTargetURL", "http://localhost:9122/metrics")
+	e3.AddCommonDimension("targetName", "localhost:9122")
+	// add metric to entity 3
 	summary2, _ := Summary(time.Unix(10000000, 0), "metric-summary-with-nan", 1, math.NaN(), 100, math.NaN(), math.NaN())
 	e3.AddMetric(summary2)
 	// add entity 3 to integration
