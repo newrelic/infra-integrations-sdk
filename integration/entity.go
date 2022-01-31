@@ -3,6 +3,7 @@ package integration
 import (
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/newrelic/infra-integrations-sdk/v4/data/event"
 	"github.com/newrelic/infra-integrations-sdk/v4/data/inventory"
@@ -12,12 +13,21 @@ import (
 
 // Entity is the producer of the data. Entity could be a host, a container, a pod, or whatever unit of meaning.
 type Entity struct {
-	CommonDimensions map[string]string    `json:"common"` // dimensions common to every entity metric
+	CommonDimensions Common               `json:"common"` // dimensions common to every entity metric
 	Metadata         *metadata.Metadata   `json:"entity,omitempty"`
 	Metrics          metric.Metrics       `json:"metrics"`
 	Inventory        *inventory.Inventory `json:"inventory"`
 	Events           event.Events         `json:"events"`
 	lock             sync.Locker
+}
+
+// Common is the producer of the common dimensions/attributes.
+type Common struct {
+	Timestamp *int64 `json:"timestamp,omitempty"`
+	Interval  *int64 `json:"interval.ms,omitempty"`
+	// Attributes are optional, they represent additional information that
+	// can be attached to an event.
+	Attributes map[string]interface{} `json:"attributes,omitempty"`
 }
 
 // SameAs return true when is same entity
@@ -60,7 +70,25 @@ func (e *Entity) AddCommonDimension(key string, value string) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
-	e.CommonDimensions[key] = value
+	e.CommonDimensions.Attributes[key] = value
+}
+
+// AddCommonTimestamp adds a new common timestamp to the entity.
+func (e *Entity) AddCommonTimestamp(timestamp time.Time) {
+	e.lock.Lock()
+	defer e.lock.Unlock()
+
+	t := timestamp.Unix()
+	e.CommonDimensions.Timestamp = &t
+}
+
+// AddCommonInterval adds a common interval in milliseconds from a time.Duration (nanoseconds).
+func (e *Entity) AddCommonInterval(timestamp time.Duration) {
+	e.lock.Lock()
+	defer e.lock.Unlock()
+
+	t := timestamp.Milliseconds()
+	e.CommonDimensions.Interval = &t
 }
 
 // GetMetadata returns all the Entity's metadata
@@ -96,12 +124,14 @@ func (e *Entity) Name() string {
 // newHostEntity creates a entity without metadata.
 func newHostEntity() *Entity {
 	return &Entity{
-		CommonDimensions: make(metric.Dimensions),
-		Metadata:         nil,
-		Metrics:          metric.Metrics{},
-		Inventory:        inventory.New(),
-		Events:           event.Events{},
-		lock:             &sync.Mutex{},
+		CommonDimensions: Common{
+			Attributes: make(map[string]interface{}),
+		},
+		Metadata:  nil,
+		Metrics:   metric.Metrics{},
+		Inventory: inventory.New(),
+		Events:    event.Events{},
+		lock:      &sync.Mutex{},
 	}
 }
 

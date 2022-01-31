@@ -217,26 +217,35 @@ func Test_Entity_EntitiesWithSameMetadataAreSameAs(t *testing.T) {
 
 func TestEntity_AddCommonDimension(t *testing.T) {
 	tests := []struct {
-		name      string
-		commons   metric.Dimensions
-		expeceted *Entity
+		name     string
+		commons  metric.Dimensions
+		expected *Entity
 	}{
 		{"empty", nil, newHostEntity()},
 		{"one entry", metric.Dimensions{"k": "v"}, &Entity{
-			CommonDimensions: metric.Dimensions{"k": "v"},
-			Metadata:         nil,
-			Metrics:          metric.Metrics{},
-			Inventory:        inventory.New(),
-			Events:           event.Events{},
-			lock:             &sync.Mutex{},
+			CommonDimensions: Common{
+				Attributes: map[string]interface{}{
+					"k": "v",
+				},
+			},
+			Metadata:  nil,
+			Metrics:   metric.Metrics{},
+			Inventory: inventory.New(),
+			Events:    event.Events{},
+			lock:      &sync.Mutex{},
 		}},
 		{"two entries", metric.Dimensions{"k1": "v1", "k2": "v2"}, &Entity{
-			CommonDimensions: metric.Dimensions{"k1": "v1", "k2": "v2"},
-			Metadata:         nil,
-			Metrics:          metric.Metrics{},
-			Inventory:        inventory.New(),
-			Events:           event.Events{},
-			lock:             &sync.Mutex{},
+			CommonDimensions: Common{
+				Attributes: map[string]interface{}{
+					"k1": "v1",
+					"k2": "v2",
+				},
+			},
+			Metadata:  nil,
+			Metrics:   metric.Metrics{},
+			Inventory: inventory.New(),
+			Events:    event.Events{},
+			lock:      &sync.Mutex{},
 		}},
 	}
 	for _, tt := range tests {
@@ -247,7 +256,67 @@ func TestEntity_AddCommonDimension(t *testing.T) {
 				got.AddCommonDimension(k, v)
 			}
 
-			assert.Equal(t, tt.expeceted, got)
+			assert.Equal(t, tt.expected, got)
+		})
+	}
+}
+
+func TestEntity_AddCommonTimestamp(t *testing.T) {
+	asPtr := func(i int64) *int64 {
+		return &i
+	}
+	tests := []struct {
+		name      string
+		timestamp time.Time
+		expected  *Entity
+	}{
+		{"one entry", time.Unix(10000000, 0), &Entity{
+			CommonDimensions: Common{
+				Timestamp: asPtr(10000000),
+			},
+			Metadata:  nil,
+			Metrics:   metric.Metrics{},
+			Inventory: inventory.New(),
+			Events:    event.Events{},
+			lock:      &sync.Mutex{},
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := newHostEntity()
+			got.AddCommonTimestamp(tt.timestamp)
+			assert.NotNil(t, got.CommonDimensions.Timestamp)
+			assert.Equal(t, *tt.expected.CommonDimensions.Timestamp, *got.CommonDimensions.Timestamp)
+		})
+	}
+}
+
+func TestEntity_AddCommonInterval(t *testing.T) {
+	asPtr := func(i int64) *int64 {
+		return &i
+	}
+	tests := []struct {
+		name     string
+		interval time.Duration
+		expected *Entity
+	}{
+		{"one entry", time.Duration(100000000), &Entity{
+			CommonDimensions: Common{
+				Interval: asPtr(100),
+			},
+			Metadata:  nil,
+			Metrics:   metric.Metrics{},
+			Inventory: inventory.New(),
+			Events:    event.Events{},
+			lock:      &sync.Mutex{},
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := newHostEntity()
+			got.AddCommonInterval(tt.interval)
+			assert.NotNil(t, got.CommonDimensions.Interval)
+			assert.Equal(t, *tt.expected.CommonDimensions.Interval, *got.CommonDimensions.Interval)
 		})
 	}
 }
