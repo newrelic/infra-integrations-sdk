@@ -59,10 +59,10 @@ func Test_Integration_DefaultIntegrationWritesToStdout(t *testing.T) {
 func Test_Integration_EntitiesWithSameBasicMetadataAreEqual(t *testing.T) {
 	i := newTestIntegration(t)
 
-	e1, err := i.NewEntity("name", "displayName", "type")
+	e1, err := i.NewEntity("name", "displayName", "type", false)
 	assert.NoError(t, err)
 
-	e2, err := i.NewEntity("name", "displayName", "type")
+	e2, err := i.NewEntity("name", "displayName", "type", false)
 	assert.NoError(t, err)
 
 	assert.Equal(t, e1, e2)
@@ -71,10 +71,10 @@ func Test_Integration_EntitiesWithSameBasicMetadataAreEqual(t *testing.T) {
 func Test_Integration_EntitiesWithSameMetadataAreEqual(t *testing.T) {
 	i := newTestIntegration(t)
 
-	e1, err := i.NewEntity("name", "displayName", "type")
+	e1, err := i.NewEntity("name", "displayName", "type", false)
 	assert.NoError(t, err)
 
-	e2, err := i.NewEntity("name", "displayName", "type")
+	e2, err := i.NewEntity("name", "displayName", "type", false)
 	assert.NoError(t, err)
 
 	assert.Equal(t, e1, e2)
@@ -83,11 +83,11 @@ func Test_Integration_EntitiesWithSameMetadataAreEqual(t *testing.T) {
 func Test_Integration_EntitiesWithDifferentMetadataAreNotEqual(t *testing.T) {
 	i := newTestIntegration(t)
 
-	e1, err := i.NewEntity("name", "ns", "")
+	e1, err := i.NewEntity("name", "ns", "", false)
 	assert.NoError(t, err)
-	e2, err := i.NewEntity("name2", "ns", "")
+	e2, err := i.NewEntity("name2", "ns", "", false)
 	assert.NoError(t, err)
-	e3, err := i.NewEntity("name", "ns", "")
+	e3, err := i.NewEntity("name", "ns", "", false)
 	assert.NoError(t, err)
 
 	assert.NotEqual(t, e1, e2, "Different names create different entities")
@@ -97,14 +97,14 @@ func Test_Integration_EntitiesWithDifferentMetadataAreNotEqual(t *testing.T) {
 func Test_Integration_EntitiesWithDifferentTagsAreNotEqual(t *testing.T) {
 	i := newTestIntegration(t)
 
-	e1, err := i.NewEntity("name", "ns", "")
+	e1, err := i.NewEntity("name", "ns", "", false)
 	assert.NoError(t, err)
 	_ = e1.AddTag("k", "v")
 
-	e2, err := i.NewEntity("name", "ns", "")
+	e2, err := i.NewEntity("name", "ns", "", false)
 	assert.NoError(t, err)
 
-	e3, err := i.NewEntity("name", "ns", "")
+	e3, err := i.NewEntity("name", "ns", "", false)
 	assert.NoError(t, err)
 	_ = e3.AddTag("k", "v")
 
@@ -115,10 +115,10 @@ func Test_Integration_EntitiesWithDifferentTagsAreNotEqual(t *testing.T) {
 func Test_Integration_EntitiesWithSameMetadataAreTheSame(t *testing.T) {
 	i := newTestIntegration(t)
 
-	e1, err := i.NewEntity("Entity1", "test", "")
+	e1, err := i.NewEntity("Entity1", "test", "", false)
 	assert.NoError(t, err)
 
-	e2, err := i.NewEntity("Entity1", "test", "")
+	e2, err := i.NewEntity("Entity1", "test", "", false)
 	assert.NoError(t, err)
 
 	assert.True(t, e1.SameAs(e2))
@@ -370,7 +370,7 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(w))
 	assert.NoError(t, err)
 
-	e, err := i.NewEntity("EntityOne", "test", "")
+	e, err := i.NewEntity("EntityOne", "test", "", false)
 	assert.NoError(t, err)
 	_ = e.AddTag("env", "prod")
 
@@ -402,7 +402,7 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	i.AddEntity(e)
 
 	// add entity 2
-	e2, err := i.NewEntity("EntityTwo", "test", "")
+	e2, err := i.NewEntity("EntityTwo", "test", "", false)
 	assert.NoError(t, err)
 	// add common attributes
 	e2.AddCommonDimension("targetName", "localhost")
@@ -434,7 +434,7 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	i.HostEntity.AddMetric(crate)
 
 	// add entity 3
-	e3, err := i.NewEntity("EntityThree", "test", "")
+	e3, err := i.NewEntity("EntityThree", "test", "", false)
 	assert.NoError(t, err)
 	// add common attributes
 	e3.AddCommonDimension("scrapedTargetKind", "user_provided")
@@ -469,7 +469,7 @@ func Test_Integration_FindEntity(t *testing.T) {
 	_, found := i.FindEntity("some-entity-name")
 	assert.False(t, found)
 
-	e, err := i.NewEntity("some-entity-name", "test", "")
+	e, err := i.NewEntity("some-entity-name", "test", "", false)
 	assert.NoError(t, err)
 	assert.NotNil(t, e)
 	// not added yet

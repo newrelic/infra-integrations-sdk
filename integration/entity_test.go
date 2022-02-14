@@ -17,7 +17,7 @@ import (
 
 func Test_Entity_NewEntityInitializesCorrectly(t *testing.T) {
 
-	e, err := newEntity("name", "type", "displayName")
+	e, err := newEntity("name", "type", "displayName", false)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "name", e.Metadata.Name)
@@ -32,7 +32,7 @@ func Test_Entity_NewEntityInitializesCorrectly(t *testing.T) {
 }
 
 func Test_Entity_EntityAddTag(t *testing.T) {
-	e, err := newEntity("name", "type", "")
+	e, err := newEntity("name", "type", "", false)
 	assert.NoError(t, err)
 
 	_ = e.AddTag("key1", "val1")
@@ -41,7 +41,7 @@ func Test_Entity_EntityAddTag(t *testing.T) {
 }
 
 func Test_Entity_EntityCannotAddTagWithEmptyName(t *testing.T) {
-	e, err := newEntity("name", "type", "")
+	e, err := newEntity("name", "type", "", false)
 	assert.NoError(t, err)
 
 	err = e.AddTag("", "val1")
@@ -50,7 +50,7 @@ func Test_Entity_EntityCannotAddTagWithEmptyName(t *testing.T) {
 }
 
 func Test_Entity_AddTagReplacesExisting(t *testing.T) {
-	e, err := newEntity("name", "type", "displayName")
+	e, err := newEntity("name", "type", "displayName", false)
 	assert.NoError(t, err)
 
 	_ = e.AddTag("env", "prod")
@@ -64,13 +64,13 @@ func Test_Entity_AddTagReplacesExisting(t *testing.T) {
 }
 
 func Test_Entity_NameAndTypeCannotBeEmpty(t *testing.T) {
-	_, err := newEntity("", "", "")
+	_, err := newEntity("", "", "", false)
 
 	assert.Error(t, err)
 }
 
 func Test_Entity_AddNotificationEvent(t *testing.T) {
-	en, err := newEntity("Entity1", "Type1", "")
+	en, err := newEntity("Entity1", "Type1", "", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,7 +88,7 @@ func Test_Entity_AddNotificationEvent(t *testing.T) {
 }
 
 func Test_Entity_AddEventWithAttributes(t *testing.T) {
-	en, err := newEntity("Entity1", "displayName", "Type1")
+	en, err := newEntity("Entity1", "displayName", "Type1", false)
 	require.NoError(t, err)
 
 	ev, _ := event.New(time.Now(), "TestSummary", "TestCategory")
@@ -109,7 +109,7 @@ func Test_Entity_AddEventWithAttributes(t *testing.T) {
 }
 
 func Test_Entity_AddNotificationWithEmptySummaryFails(t *testing.T) {
-	en, err := newEntity("Entity1", "displayName", "Type1")
+	en, err := newEntity("Entity1", "displayName", "Type1", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +121,7 @@ func Test_Entity_AddNotificationWithEmptySummaryFails(t *testing.T) {
 }
 
 func Test_Entity_AddEventThrowsNoError(t *testing.T) {
-	en, err := newEntity("Entity1", "displayName", "Type1")
+	en, err := newEntity("Entity1", "displayName", "Type1", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +142,7 @@ func Test_Entity_AddEventThrowsNoError(t *testing.T) {
 }
 
 func Test_Entity_AddEventReturnsNoError(t *testing.T) {
-	en, err := newEntity("Entity1", "displayname", "Type1")
+	en, err := newEntity("Entity1", "displayname", "Type1", false)
 	assert.NoError(t, err)
 
 	ev, _ := event.New(time.Now(), "TestSummary", "")
@@ -157,7 +157,7 @@ func Test_Entity_AddEventReturnsNoError(t *testing.T) {
 }
 
 func Test_Entity_AddEventWithEmptySummaryReturnsError(t *testing.T) {
-	en, err := newEntity("Entity1", "displayName", "Type1")
+	en, err := newEntity("Entity1", "displayName", "Type1", false)
 	assert.NoError(t, err)
 
 	ev, err := event.New(time.Now(), "", "TestCategory")
@@ -167,7 +167,7 @@ func Test_Entity_AddEventWithEmptySummaryReturnsError(t *testing.T) {
 }
 
 func Test_Entity_AddInventoryConcurrent(t *testing.T) {
-	en, err := newEntity("Entity1", "displayName", "Type1")
+	en, err := newEntity("Entity1", "displayName", "Type1", false)
 	assert.NoError(t, err)
 
 	itemsAmount := 100
@@ -200,15 +200,15 @@ func Test_Entity_AnonymousEntityIsProperlySerialized(t *testing.T) {
 }
 
 func Test_Entity_EntitiesWithSameMetadataAreSameAs(t *testing.T) {
-	e1, err := newEntity("entity", "type", "")
+	e1, err := newEntity("entity", "type", "", false)
 	assert.NoError(t, err)
 	_ = e1.AddTag("env", "prod")
 
-	e2, err := newEntity("entity", "type", "")
+	e2, err := newEntity("entity", "type", "", false)
 	assert.NoError(t, err)
 	_ = e2.AddTag("env", "prod")
 
-	e3, err := newEntity("entity", "otherType", "ns")
+	e3, err := newEntity("entity", "otherType", "ns", false)
 	assert.NoError(t, err)
 
 	assert.True(t, e1.SameAs(e2))

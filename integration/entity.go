@@ -141,14 +141,16 @@ func (e *Entity) isHostEntity() bool {
 }
 
 // newEntity creates a new entity with with metadata.
-func newEntity(name, entityType string, displayName string) (*Entity, error) {
+func newEntity(name, entityType string, displayName string, ignoreHostEntity bool) (*Entity, error) {
 
 	if name == "" || entityType == "" {
 		return nil, errors.New("entity name and type cannot be empty")
 	}
 
 	e := newHostEntity()
-	e.Metadata = metadata.New(name, entityType, displayName)
+	if !ignoreHostEntity {
+		e.Metadata = metadata.New(name, entityType, displayName)
+	}
 
 	return e, nil
 }

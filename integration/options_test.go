@@ -66,7 +66,7 @@ func Test_ConcurrentModeHasNoDataRace(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		go func(i int) {
-			_, _ = in.NewEntity(fmt.Sprintf("entity%v", i), "", "test")
+			_, _ = in.NewEntity(fmt.Sprintf("entity%v", i), "", "test", false)
 		}(i)
 	}
 }
@@ -200,7 +200,7 @@ func Test_ClusterAndServiceArgumentsAreAddedToMetadata(t *testing.T) {
 	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(ioutil.Discard), Args(&al))
 	assert.NoError(t, err)
 
-	e, err := i.NewEntity("name", "ns", "")
+	e, err := i.NewEntity("name", "ns", "", false)
 	assert.NoError(t, err)
 
 	assert.Len(t, e.GetMetadata(), 0)

@@ -102,11 +102,11 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 
 // NewEntity method creates a new (uniquely named) Entity.
 // The `name` of the Entity must be unique for the account otherwise it will cause conflicts
-func (i *Integration) NewEntity(name string, entityType string, displayName string) (e *Entity, err error) {
+func (i *Integration) NewEntity(name string, entityType string, displayName string, ignoreHostEntity bool) (e *Entity, err error) {
 	i.locker.Lock()
 	defer i.locker.Unlock()
 
-	e, err = newEntity(name, entityType, displayName)
+	e, err = newEntity(name, entityType, displayName, ignoreHostEntity)
 	if err != nil {
 		return nil, err
 	}
