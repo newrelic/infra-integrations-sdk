@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/newrelic/infra-integrations-sdk/v4/args"
 	"github.com/newrelic/infra-integrations-sdk/v4/data/event"
 	"github.com/newrelic/infra-integrations-sdk/v4/log"
 )
@@ -17,6 +18,7 @@ import (
 var (
 	integrationName    = "TestIntegration"
 	integrationVersion = "1.0"
+	arguments          args.DefaultArgumentList
 )
 
 func Test_Integration_CreateIntegrationInitializesCorrectly(t *testing.T) {
@@ -456,6 +458,98 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	psum.AddQuantile(0.5, 1)
 	psum.AddQuantile(0.9, 1)
 	i.HostEntity.AddMetric(psum)
+
+	assert.NoError(t, i.Publish())
+
+	// check integration  was reset
+	assert.Empty(t, i.Entities)
+}
+
+func Test_Integration_HostId(t *testing.T) {
+	w := testWriter{
+		func(integrationBytes []byte) {
+			expectedOutputRaw := []byte(`
+{
+  "protocol_version": "4",
+  "integration": {
+    "name": "TestIntegration",
+    "version": "1.0"
+  },
+  "data": [
+    {
+      "common": {},
+      "entity": {
+        "name": "id-1234567890abc:8080",
+        "displayName": "",
+        "type": "test",
+        "metadata": {
+          "tags.env": "prod"
+        }
+      },
+      "metrics": [],
+      "inventory": {},
+      "events": []
+    },
+    {
+      "common": {
+        "attributes": {
+          "targetName": "id-1234567890abc"
+        }
+      },
+      "entity": {
+        "name": "EntityOne",
+        "displayName": "",
+        "type": "test",
+        "metadata": {}
+      },
+      "metrics": [
+        {
+          "timestamp": 10000000,
+          "name": "metricOne",
+          "type": "gauge",
+          "attributes": {
+            "processName": "java"
+          },
+          "value": 2
+        }
+      ],
+      "inventory": {},
+      "events": []
+    }
+  ]
+}`)
+
+			// awful but cannot compare with json.Unmarshal as it's not supported by Integration
+			assert.Equal(t, stripBlanks(expectedOutputRaw), stripBlanks(integrationBytes))
+		},
+	}
+
+	_ = os.Setenv("HOST_ID", "id-1234567890abc")
+
+	// os.ClearEnv breaks tests in Windows that use the fileStorer because clears the user env vars
+	defer func() {
+		_ = os.Unsetenv("HOST_ID")
+	}()
+
+	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(w), Args(&arguments))
+	assert.NoError(t, err)
+
+	e, err := i.NewEntity("localhost:8080", "test", "")
+	assert.NoError(t, err)
+	_ = e.AddTag("env", "prod")
+	i.AddEntity(e)
+
+	// add entity
+	e2, err := i.NewEntity("EntityOne", "test", "")
+	assert.NoError(t, err)
+	// add common attributes
+	e2.AddCommonDimension("targetName", i.GetHostID())
+	// add metric to entity 2
+	gauge, _ := Gauge(time.Unix(10000000, 0), "metricOne", 2)
+	_ = gauge.AddDimension("processName", "java")
+	e2.AddMetric(gauge)
+	// add entity 2 to integration
+	i.AddEntity(e2)
 
 	assert.NoError(t, i.Publish())
 

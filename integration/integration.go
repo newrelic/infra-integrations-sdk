@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -26,6 +27,10 @@ const (
 const (
 	protocolVersion = "4"
 )
+
+// A different regex is needed for replacing because `localhostRE` matches
+// IPV6 by using extra `:` that don't belong to the IP but are separators.
+var localhostReplaceRE = regexp.MustCompile(`(localhost|LOCALHOST|127(?:\.[0-9]+){0,2}\.[0-9]+|::1)`)
 
 // Metadata describes the integration
 type Metadata struct {
@@ -125,6 +130,15 @@ func (i *Integration) AddEntity(e *Entity) {
 func (i *Integration) Publish() error {
 	defer i.Clear()
 
+	hostID := i.GetHostID()
+	if hostID != "" {
+		for k := range i.Entities {
+			if i.Entities[k].Metadata != nil {
+				i.Entities[k].Metadata.Name = replaceLocalhost(i.Entities[k].Metadata.Name, hostID)
+			}
+		}
+	}
+
 	// add the host entity to the list of entities to be serialized, if not empty
 	if notEmpty(i.HostEntity) {
 		i.Entities = append(i.Entities, i.HostEntity)
@@ -157,6 +171,12 @@ func (i *Integration) MarshalJSON() (output []byte, err error) {
 	}
 
 	return
+}
+
+// GetHostID returns HostID or an empty string if not set
+func (i *Integration) GetHostID() string {
+	defaultArgs := args.GetDefaultArgs(i.args)
+	return defaultArgs.HostID
 }
 
 // toJSON serializes integration as JSON. If the pretty attribute is
@@ -271,4 +291,10 @@ func (i *Integration) addDefaultAttributes(e *Entity) error {
 	}
 
 	return nil
+}
+
+// ReplaceLocalhost replaces the occurrence of a localhost address with
+// the given hostname. This is done to avoid entity identifier collision.
+func replaceLocalhost(source, with string) string {
+	return localhostReplaceRE.ReplaceAllString(source, with)
 }

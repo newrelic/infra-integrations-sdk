@@ -21,6 +21,7 @@ type DefaultArgumentList struct {
 	Metadata   bool   `default:"false" help:"Add customer defined key-value attributes to the samples."`
 	NriCluster string `default:"" help:"Optional. Cluster name"`
 	NriService string `default:"" help:"Optional. Service name"`
+	HostID     string `default:"" help:"Optional. Host ID to be set in entity or/and in the payload"`
 }
 
 // All returns if all data should be published
