@@ -10,6 +10,7 @@ import (
 
 	"github.com/newrelic/infra-integrations-sdk/data/attribute"
 	"github.com/newrelic/infra-integrations-sdk/data/event"
+	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -247,4 +248,30 @@ func TestEntity_SameAs(t *testing.T) {
 
 	assert.True(t, e1.SameAs(e2))
 	assert.False(t, e1.SameAs(e3))
+}
+
+func TestEntity_NewMetricSet(t *testing.T) {
+	i, err := New(integrationName, integrationVersion)
+
+	entity, err := i.Entity("a-name", "a-type")
+	assert.NoError(t, err)
+
+	metricSetChan := make(chan *metric.Set)
+	go func(e *Entity) {
+		metricSetChan <- e.NewMetricSet("F5BigIpPoolMemberSample",
+			attribute.Attribute{Key: "displayName", Value: "entityName"},
+			attribute.Attribute{Key: "entityName", Value: "entityName"},
+			attribute.Attribute{Key: "poolName", Value: "description"},
+			attribute.Attribute{Key: "url", Value: "url"},
+		)
+	}(entity)
+
+	// We retrieve the entity at the same time to check for race conditions
+	go func(i *Integration) {
+		_, err := i.Entity("a-name", "a-type")
+		assert.NoError(t, err)
+	}(i)
+
+	metricSet := <-metricSetChan
+	assert.NotEmpty(t, metricSet)
 }

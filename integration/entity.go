@@ -105,12 +105,15 @@ func (e *Entity) SameAs(b *Entity) bool {
 	if e.Metadata == nil || b.Metadata == nil {
 		return false
 	}
-
+	b.lock.Lock()
+	defer b.lock.Unlock()
 	return e.Metadata.EqualsTo(b.Metadata)
 }
 
 // NewMetricSet returns a new instance of Set with its sample attached to the integration.
 func (e *Entity) NewMetricSet(eventType string, nameSpacingAttributes ...attribute.Attribute) *metric.Set {
+	e.lock.Lock()
+	defer e.lock.Unlock()
 	s := metric.NewSet(eventType, e.storer, nameSpacingAttributes...)
 
 	if e.Metadata != nil {
@@ -123,8 +126,6 @@ func (e *Entity) NewMetricSet(eventType string, nameSpacingAttributes ...attribu
 		metric.AddCustomAttributes(s, e.customAttributes)
 	}
 
-	e.lock.Lock()
-	defer e.lock.Unlock()
 	e.Metrics = append(e.Metrics, s)
 	return s
 }
