@@ -102,11 +102,11 @@ func (e *Entity) isLocalEntity() bool {
 
 // SameAs return true when is same entity
 func (e *Entity) SameAs(b *Entity) bool {
+	b.lock.Lock()
+	defer b.lock.Unlock()
 	if e.Metadata == nil || b.Metadata == nil {
 		return false
 	}
-	b.lock.Lock()
-	defer b.lock.Unlock()
 	return e.Metadata.EqualsTo(b.Metadata)
 }
 
