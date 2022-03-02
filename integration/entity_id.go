@@ -36,6 +36,9 @@ func (k EntityKey) String() string {
 
 // Key generates the entity key based on the entity metadata.
 func (m *EntityMetadata) Key() (EntityKey, error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
 	if len(m.Name) == 0 {
 		return EmptyKey, nil // Empty value means this agent's default entity identifier
 	}
