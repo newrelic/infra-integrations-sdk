@@ -29,6 +29,7 @@ type EntityMetadata struct {
 	Name      string       `json:"name"`
 	Namespace string       `json:"type"`          // For compatibility reasons we keep the type.
 	IDAttrs   IDAttributes `json:"id_attributes"` // For entity Key uniqueness
+	lock      sync.Locker
 }
 
 // EqualsTo returns true when both metadata are equal.
@@ -89,6 +90,7 @@ func newEntity(
 			Name:      name,
 			Namespace: namespace,
 			IDAttrs:   idAttributes(idAttrs...),
+			lock:      &sync.Mutex{},
 		},
 	}
 
@@ -105,7 +107,6 @@ func (e *Entity) SameAs(b *Entity) bool {
 	if e.Metadata == nil || b.Metadata == nil {
 		return false
 	}
-
 	return e.Metadata.EqualsTo(b.Metadata)
 }
 
