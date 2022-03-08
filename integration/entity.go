@@ -19,6 +19,8 @@ type DataSet struct {
 	Inventory        *inventory.Inventory `json:"inventory"`
 	Events           event.Events         `json:"events"`
 	lock             sync.Locker
+
+	IgnoreHostEntity bool `json:"ignore_host_entity"`
 }
 
 // Common is the producer of the common dimensions/attributes.

@@ -50,6 +50,9 @@ type Integration struct {
 	writer       io.Writer
 	logger       log.Logger
 	args         interface{}
+
+	// DataSet contains all metrics not related to any entity.
+	DataSet *DataSet `json:"-"` // skip json serializing
 }
 
 // New creates new integration with sane default values.
@@ -100,7 +103,16 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 
 	i.HostEntity = newHostEntity()
 
+	i.DataSet = newHostEntity()
+	i.DataSet.IgnoreHostEntity = true
+
 	return
+}
+
+// AddMetric adds the metric to the default DataSet of the integration which is not associated
+// with any entity.
+func (i *Integration) AddMetric(metric metric.Metric) {
+	i.DataSet.AddMetric(metric)
 }
 
 // NewEntity method creates a new (uniquely named) Entity.
