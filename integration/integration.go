@@ -40,11 +40,11 @@ type Metadata struct {
 
 // Integration defines the format of the output JSON that integrations will return for protocol 2.
 type Integration struct {
-	ProtocolVersion string    `json:"protocol_version"`
-	Metadata        Metadata  `json:"integration"`
-	Entities        []*Entity `json:"data"`
+	ProtocolVersion string     `json:"protocol_version"`
+	Metadata        Metadata   `json:"integration"`
+	Entities        []*DataSet `json:"data"`
 	// HostEntity is an "entity" that serves as dumping ground for metrics not associated with a specific entity
-	HostEntity   *Entity `json:"-"` //skip json serializing
+	HostEntity   *DataSet `json:"-"` // skip json serializing
 	locker       sync.Locker
 	prettyOutput bool
 	writer       io.Writer
@@ -54,7 +54,6 @@ type Integration struct {
 
 // New creates new integration with sane default values.
 func New(name, version string, opts ...Option) (i *Integration, err error) {
-
 	if name == "" {
 		err = errors.New("integration name cannot be empty")
 		return
@@ -66,10 +65,9 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 	}
 
 	i = &Integration{
-
 		ProtocolVersion: protocolVersion,
 		Metadata:        Metadata{name, version},
-		Entities:        []*Entity{},
+		Entities:        []*DataSet{},
 		writer:          os.Stdout,
 		locker:          &sync.Mutex{},
 	}
@@ -107,7 +105,7 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 
 // NewEntity method creates a new (uniquely named) Entity.
 // The `name` of the Entity must be unique for the account otherwise it will cause conflicts
-func (i *Integration) NewEntity(name string, entityType string, displayName string) (e *Entity, err error) {
+func (i *Integration) NewEntity(name string, entityType string, displayName string) (e *DataSet, err error) {
 	i.locker.Lock()
 	defer i.locker.Unlock()
 
@@ -122,7 +120,7 @@ func (i *Integration) NewEntity(name string, entityType string, displayName stri
 }
 
 // AddEntity adds an entity to the list of entities. No check for "duplicates" is performed
-func (i *Integration) AddEntity(e *Entity) {
+func (i *Integration) AddEntity(e *DataSet) {
 	i.Entities = append(i.Entities, e)
 }
 
@@ -158,7 +156,7 @@ func (i *Integration) Publish() error {
 func (i *Integration) Clear() {
 	i.locker.Lock()
 	defer i.locker.Unlock()
-	i.Entities = []*Entity{} // empty array preferred instead of null on marshaling.
+	i.Entities = []*DataSet{} // empty array preferred instead of null on marshaling.
 	// reset the host entity
 	i.HostEntity = newHostEntity()
 }
@@ -195,9 +193,9 @@ func (i *Integration) Logger() log.Logger {
 }
 
 // FindEntity finds ad return an entity by name. returns false if entity does not exist in the integration
-func (i *Integration) FindEntity(name string) (*Entity, bool) {
+func (i *Integration) FindEntity(name string) (*DataSet, bool) {
 	if i.Entities == nil {
-		return &Entity{}, false
+		return &DataSet{}, false
 	}
 	for _, e := range i.Entities {
 		// nil metadata usually means the "host" entity, so keep searching
@@ -209,7 +207,7 @@ func (i *Integration) FindEntity(name string) (*Entity, bool) {
 			return e, true
 		}
 	}
-	return &Entity{}, false
+	return &DataSet{}, false
 }
 
 // Gauge creates a metric of type gauge
@@ -224,7 +222,8 @@ func Count(timestamp time.Time, metricName string, value float64) (metric.Metric
 
 // Summary creates a metric of type summary
 func Summary(timestamp time.Time, metricName string, count float64,
-	average float64, sum float64, min float64, max float64) (metric.Metric, error) {
+	average float64, sum float64, min float64, max float64,
+) (metric.Metric, error) {
 	return metric.NewSummary(timestamp, metricName, count, average, sum, min, max)
 }
 
@@ -255,7 +254,7 @@ func PrometheusSummary(timestamp time.Time, metricName string, sampleCount uint6
 
 // -- private
 // is entity empty?
-func notEmpty(entity *Entity) bool {
+func notEmpty(entity *DataSet) bool {
 	return len(entity.Events) > 0 || len(entity.Metrics) > 0 || entity.Inventory.Len() > 0
 }
 
@@ -273,7 +272,7 @@ func (i *Integration) checkArguments() error {
 	return errors.New("arguments must be a pointer to a struct (or nil)")
 }
 
-func (i *Integration) addDefaultAttributes(e *Entity) error {
+func (i *Integration) addDefaultAttributes(e *DataSet) error {
 	defaultArgs := args.GetDefaultArgs(i.args)
 
 	// get env vars values for "custom" prefixed vars (NRIA_) and add them as attributes to the entity

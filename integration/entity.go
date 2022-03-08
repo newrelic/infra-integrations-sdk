@@ -11,8 +11,8 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/v4/data/metric"
 )
 
-// Entity is the producer of the data. Entity could be a host, a container, a pod, or whatever unit of meaning.
-type Entity struct {
+// DataSet is the producer of the data. DataSet could be a host, a container, a pod, or whatever unit of meaning.
+type DataSet struct {
 	CommonDimensions Common               `json:"common"` // dimensions common to every entity metric
 	Metadata         *metadata.Metadata   `json:"entity,omitempty"`
 	Metrics          metric.Metrics       `json:"metrics"`
@@ -31,7 +31,7 @@ type Common struct {
 }
 
 // SameAs return true when is same entity
-func (e *Entity) SameAs(b *Entity) bool {
+func (e *DataSet) SameAs(b *DataSet) bool {
 	if e.Metadata == nil || b.Metadata == nil {
 		return false
 	}
@@ -40,7 +40,7 @@ func (e *Entity) SameAs(b *Entity) bool {
 }
 
 // AddMetric adds a new metric to the entity metrics list
-func (e *Entity) AddMetric(metric metric.Metric) {
+func (e *DataSet) AddMetric(metric metric.Metric) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
@@ -48,7 +48,7 @@ func (e *Entity) AddMetric(metric metric.Metric) {
 }
 
 // AddEvent method adds a new Event.
-func (e *Entity) AddEvent(event *event.Event) {
+func (e *DataSet) AddEvent(event *event.Event) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
@@ -56,7 +56,7 @@ func (e *Entity) AddEvent(event *event.Event) {
 }
 
 // AddInventoryItem method sets the inventory item (only one allowed).
-func (e *Entity) AddInventoryItem(key string, field string, value interface{}) error {
+func (e *DataSet) AddInventoryItem(key string, field string, value interface{}) error {
 	if len(key) == 0 || len(field) == 0 {
 		return errors.New("key or field cannot be empty")
 	}
@@ -66,7 +66,7 @@ func (e *Entity) AddInventoryItem(key string, field string, value interface{}) e
 }
 
 // AddCommonDimension adds a new dimension to every metric within the entity.
-func (e *Entity) AddCommonDimension(key string, value string) {
+func (e *DataSet) AddCommonDimension(key string, value string) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
@@ -74,7 +74,7 @@ func (e *Entity) AddCommonDimension(key string, value string) {
 }
 
 // AddCommonTimestamp adds a new common timestamp to the entity.
-func (e *Entity) AddCommonTimestamp(timestamp time.Time) {
+func (e *DataSet) AddCommonTimestamp(timestamp time.Time) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
@@ -83,7 +83,7 @@ func (e *Entity) AddCommonTimestamp(timestamp time.Time) {
 }
 
 // AddCommonInterval adds a common interval in milliseconds from a time.Duration (nanoseconds).
-func (e *Entity) AddCommonInterval(timestamp time.Duration) {
+func (e *DataSet) AddCommonInterval(timestamp time.Duration) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
@@ -92,12 +92,12 @@ func (e *Entity) AddCommonInterval(timestamp time.Duration) {
 }
 
 // GetMetadata returns all the Entity's metadata
-func (e *Entity) GetMetadata() metadata.Map {
+func (e *DataSet) GetMetadata() metadata.Map {
 	return e.Metadata.Metadata
 }
 
 // AddTag adds a new tag to the entity
-func (e *Entity) AddTag(key string, value interface{}) error {
+func (e *DataSet) AddTag(key string, value interface{}) error {
 	if len(key) == 0 {
 		return errors.New("key cannot be empty")
 	}
@@ -106,7 +106,7 @@ func (e *Entity) AddTag(key string, value interface{}) error {
 }
 
 // AddMetadata adds a new metadata to the entity
-func (e *Entity) AddMetadata(key string, value interface{}) error {
+func (e *DataSet) AddMetadata(key string, value interface{}) error {
 	if len(key) == 0 {
 		return errors.New("key cannot be empty")
 	}
@@ -115,15 +115,15 @@ func (e *Entity) AddMetadata(key string, value interface{}) error {
 }
 
 // Name is the unique entity identifier within a New Relic customer account.
-func (e *Entity) Name() string {
+func (e *DataSet) Name() string {
 	return e.Metadata.Name
 }
 
 //--- private
 
 // newHostEntity creates a entity without metadata.
-func newHostEntity() *Entity {
-	return &Entity{
+func newHostEntity() *DataSet {
+	return &DataSet{
 		CommonDimensions: Common{
 			Attributes: make(map[string]interface{}),
 		},
@@ -136,13 +136,12 @@ func newHostEntity() *Entity {
 }
 
 // isHostEntity returns true if entity has no metadata
-func (e *Entity) isHostEntity() bool {
+func (e *DataSet) isHostEntity() bool {
 	return e.Metadata == nil || e.Metadata.Name == ""
 }
 
 // newEntity creates a new entity with with metadata.
-func newEntity(name, entityType string, displayName string) (*Entity, error) {
-
+func newEntity(name, entityType string, displayName string) (*DataSet, error) {
 	if name == "" || entityType == "" {
 		return nil, errors.New("entity name and type cannot be empty")
 	}

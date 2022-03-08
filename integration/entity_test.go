@@ -16,7 +16,6 @@ import (
 )
 
 func Test_Entity_NewEntityInitializesCorrectly(t *testing.T) {
-
 	e, err := newEntity("name", "type", "displayName")
 
 	assert.NoError(t, err)
@@ -28,7 +27,6 @@ func Test_Entity_NewEntityInitializesCorrectly(t *testing.T) {
 	assert.Empty(t, e.Metrics)
 	assert.NotNil(t, e.Inventory)
 	assert.Empty(t, e.Inventory.Items())
-
 }
 
 func Test_Entity_EntityAddTag(t *testing.T) {
@@ -37,7 +35,6 @@ func Test_Entity_EntityAddTag(t *testing.T) {
 
 	_ = e.AddTag("key1", "val1")
 	assert.Len(t, e.GetMetadata(), 1, "tags should have been added to the entity")
-
 }
 
 func Test_Entity_EntityCannotAddTagWithEmptyName(t *testing.T) {
@@ -219,10 +216,10 @@ func TestEntity_AddCommonDimension(t *testing.T) {
 	tests := []struct {
 		name     string
 		commons  metric.Dimensions
-		expected *Entity
+		expected *DataSet
 	}{
 		{"empty", nil, newHostEntity()},
-		{"one entry", metric.Dimensions{"k": "v"}, &Entity{
+		{"one entry", metric.Dimensions{"k": "v"}, &DataSet{
 			CommonDimensions: Common{
 				Attributes: map[string]interface{}{
 					"k": "v",
@@ -234,7 +231,7 @@ func TestEntity_AddCommonDimension(t *testing.T) {
 			Events:    event.Events{},
 			lock:      &sync.Mutex{},
 		}},
-		{"two entries", metric.Dimensions{"k1": "v1", "k2": "v2"}, &Entity{
+		{"two entries", metric.Dimensions{"k1": "v1", "k2": "v2"}, &DataSet{
 			CommonDimensions: Common{
 				Attributes: map[string]interface{}{
 					"k1": "v1",
@@ -250,7 +247,6 @@ func TestEntity_AddCommonDimension(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			got := newHostEntity()
 			for k, v := range tt.commons {
 				got.AddCommonDimension(k, v)
@@ -268,9 +264,9 @@ func TestEntity_AddCommonTimestamp(t *testing.T) {
 	tests := []struct {
 		name      string
 		timestamp time.Time
-		expected  *Entity
+		expected  *DataSet
 	}{
-		{"one entry", time.Unix(10000000, 0), &Entity{
+		{"one entry", time.Unix(10000000, 0), &DataSet{
 			CommonDimensions: Common{
 				Timestamp: asPtr(10000000),
 			},
@@ -298,9 +294,9 @@ func TestEntity_AddCommonInterval(t *testing.T) {
 	tests := []struct {
 		name     string
 		interval time.Duration
-		expected *Entity
+		expected *DataSet
 	}{
-		{"one entry", time.Duration(100000000), &Entity{
+		{"one entry", time.Duration(100000000), &DataSet{
 			CommonDimensions: Common{
 				Interval: asPtr(100),
 			},
