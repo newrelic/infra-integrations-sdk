@@ -18,6 +18,7 @@ type Entity struct {
 	Metrics          metric.Metrics       `json:"metrics"`
 	Inventory        *inventory.Inventory `json:"inventory"`
 	Events           event.Events         `json:"events"`
+	IgnoreEntity     bool                 `json:"ignore_entity"`
 	lock             sync.Locker
 }
 
@@ -114,6 +115,11 @@ func (e *Entity) AddMetadata(key string, value interface{}) error {
 	return nil
 }
 
+// UseHostEntity set if the host should use its entity
+func (e *Entity) UseHostEntity(value bool) {
+	e.IgnoreEntity = !value
+}
+
 // Name is the unique entity identifier within a New Relic customer account.
 func (e *Entity) Name() string {
 	return e.Metadata.Name
@@ -127,11 +133,12 @@ func newHostEntity() *Entity {
 		CommonDimensions: Common{
 			Attributes: make(map[string]interface{}),
 		},
-		Metadata:  nil,
-		Metrics:   metric.Metrics{},
-		Inventory: inventory.New(),
-		Events:    event.Events{},
-		lock:      &sync.Mutex{},
+		Metadata:     nil,
+		Metrics:      metric.Metrics{},
+		Inventory:    inventory.New(),
+		Events:       event.Events{},
+		IgnoreEntity: true,
+		lock:         &sync.Mutex{},
 	}
 }
 
