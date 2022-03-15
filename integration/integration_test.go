@@ -379,7 +379,7 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	e, err := i.NewEntity("EntityOne", "test", "")
 	assert.NoError(t, err)
 	_ = e.AddTag("env", "prod")
-	e.UseHostEntity(true)
+	e.SetIgnoreEntity(false)
 
 	gauge, _ := Gauge(time.Unix(10000000, 0), "metric-gauge", 1)
 	count, _ := Count(time.Unix(10000000, 0), "metric-count", 100)

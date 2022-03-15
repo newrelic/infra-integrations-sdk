@@ -18,8 +18,10 @@ type Entity struct {
 	Metrics          metric.Metrics       `json:"metrics"`
 	Inventory        *inventory.Inventory `json:"inventory"`
 	Events           event.Events         `json:"events"`
-	IgnoreEntity     bool                 `json:"ignore_entity"`
-	lock             sync.Locker
+	// IgnoreEntity defines if the Entity should be registered within the infra agent, if true
+	// the Entity will not be attached to the infra agent entity neither registered.
+	IgnoreEntity bool `json:"ignore_entity"`
+	lock         sync.Locker
 }
 
 // Common is the producer of the common dimensions/attributes.
@@ -115,9 +117,9 @@ func (e *Entity) AddMetadata(key string, value interface{}) error {
 	return nil
 }
 
-// UseHostEntity set if the host should use its entity
-func (e *Entity) UseHostEntity(value bool) {
-	e.IgnoreEntity = !value
+// SetIgnoreEntity set if the infra agent should register the entity
+func (e *Entity) SetIgnoreEntity(value bool) {
+	e.IgnoreEntity = value
 }
 
 // Name is the unique entity identifier within a New Relic customer account.

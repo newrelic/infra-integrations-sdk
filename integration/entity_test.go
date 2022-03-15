@@ -323,17 +323,17 @@ func TestEntity_AddCommonInterval(t *testing.T) {
 	}
 }
 
-func Test_UseHostEntity(t *testing.T) {
+func Test_SetIgnoreEntity(t *testing.T) {
 	e := newHostEntity()
-	e.UseHostEntity(true)
+	e.SetIgnoreEntity(true)
 	j, err := json.Marshal(e)
-	assert.NoError(t, err)
-	assert.Equal(t, `{"common":{},"metrics":[],"inventory":{},"events":[],"ignore_entity":false}`, string(j))
-	assert.Equal(t, false, e.IgnoreEntity)
-
-	e.UseHostEntity(false)
-	j, err = json.Marshal(e)
 	assert.NoError(t, err)
 	assert.Equal(t, `{"common":{},"metrics":[],"inventory":{},"events":[],"ignore_entity":true}`, string(j))
 	assert.Equal(t, true, e.IgnoreEntity)
+
+	e.SetIgnoreEntity(false)
+	j, err = json.Marshal(e)
+	assert.NoError(t, err)
+	assert.Equal(t, `{"common":{},"metrics":[],"inventory":{},"events":[],"ignore_entity":false}`, string(j))
+	assert.Equal(t, false, e.IgnoreEntity)
 }
