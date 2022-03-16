@@ -222,7 +222,8 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 					  "summary": "evnt2sum",
 					  "category": "evnt2cat"
 					}
-				  ]
+				  ],
+				  "ignore_entity": false
 				},
 				{
 				  "common": {
@@ -248,7 +249,8 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 					}
 				  ],
 				  "inventory": {},
-				  "events": []
+				  "events": [],
+				  "ignore_entity": true
 				},
 				{
 				  "common": {
@@ -281,7 +283,8 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 					}
 				  ],
 				  "inventory": {},
-				  "events": []
+				  "events": [],
+				  "ignore_entity": true
 				},
 				{
 				  "common": {},
@@ -359,7 +362,8 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 					  "summary": "evnt2sum",
 					  "category": "evnt2cat"
 					}
-				  ]
+				  ],
+				  "ignore_entity": true
 				}
 			  ]
 			}`)
@@ -375,6 +379,7 @@ func Test_Integration_PublishThrowsNoError(t *testing.T) {
 	e, err := i.NewEntity("EntityOne", "test", "")
 	assert.NoError(t, err)
 	_ = e.AddTag("env", "prod")
+	e.SetIgnoreEntity(false)
 
 	gauge, _ := Gauge(time.Unix(10000000, 0), "metric-gauge", 1)
 	count, _ := Count(time.Unix(10000000, 0), "metric-count", 100)
@@ -488,7 +493,8 @@ func Test_Integration_HostId(t *testing.T) {
       },
       "metrics": [],
       "inventory": {},
-      "events": []
+      "events": [],
+      "ignore_entity": true
     },
     {
       "common": {
@@ -514,7 +520,8 @@ func Test_Integration_HostId(t *testing.T) {
         }
       ],
       "inventory": {},
-      "events": []
+      "events": [],
+      "ignore_entity": true
     }
   ]
 }`)

@@ -196,7 +196,7 @@ func Test_Entity_AnonymousEntityIsProperlySerialized(t *testing.T) {
 	j, err := json.Marshal(e)
 
 	assert.NoError(t, err)
-	assert.Equal(t, `{"common":{},"metrics":[],"inventory":{},"events":[]}`, string(j))
+	assert.Equal(t, `{"common":{},"metrics":[],"inventory":{},"events":[],"ignore_entity":true}`, string(j))
 }
 
 func Test_Entity_EntitiesWithSameMetadataAreSameAs(t *testing.T) {
@@ -228,11 +228,12 @@ func TestEntity_AddCommonDimension(t *testing.T) {
 					"k": "v",
 				},
 			},
-			Metadata:  nil,
-			Metrics:   metric.Metrics{},
-			Inventory: inventory.New(),
-			Events:    event.Events{},
-			lock:      &sync.Mutex{},
+			Metadata:     nil,
+			Metrics:      metric.Metrics{},
+			Inventory:    inventory.New(),
+			Events:       event.Events{},
+			lock:         &sync.Mutex{},
+			IgnoreEntity: true,
 		}},
 		{"two entries", metric.Dimensions{"k1": "v1", "k2": "v2"}, &Entity{
 			CommonDimensions: Common{
@@ -241,11 +242,12 @@ func TestEntity_AddCommonDimension(t *testing.T) {
 					"k2": "v2",
 				},
 			},
-			Metadata:  nil,
-			Metrics:   metric.Metrics{},
-			Inventory: inventory.New(),
-			Events:    event.Events{},
-			lock:      &sync.Mutex{},
+			Metadata:     nil,
+			Metrics:      metric.Metrics{},
+			Inventory:    inventory.New(),
+			Events:       event.Events{},
+			lock:         &sync.Mutex{},
+			IgnoreEntity: true,
 		}},
 	}
 	for _, tt := range tests {
@@ -319,4 +321,19 @@ func TestEntity_AddCommonInterval(t *testing.T) {
 			assert.Equal(t, *tt.expected.CommonDimensions.Interval, *got.CommonDimensions.Interval)
 		})
 	}
+}
+
+func Test_SetIgnoreEntity(t *testing.T) {
+	e := newHostEntity()
+	e.SetIgnoreEntity(true)
+	j, err := json.Marshal(e)
+	assert.NoError(t, err)
+	assert.Equal(t, `{"common":{},"metrics":[],"inventory":{},"events":[],"ignore_entity":true}`, string(j))
+	assert.Equal(t, true, e.IgnoreEntity)
+
+	e.SetIgnoreEntity(false)
+	j, err = json.Marshal(e)
+	assert.NoError(t, err)
+	assert.Equal(t, `{"common":{},"metrics":[],"inventory":{},"events":[],"ignore_entity":false}`, string(j))
+	assert.Equal(t, false, e.IgnoreEntity)
 }

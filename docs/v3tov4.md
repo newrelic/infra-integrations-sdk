@@ -10,6 +10,7 @@ The Go SDK v4 contains the following changes:
 * New metric data types: `count`, `summary`, `cumulative-count` and `cumulative-rate`.
 * Support for Prometheus Histogram and Summary metrics
 * LocalEntity has been replaced by HostEntity.
+* Support for disabling entity registration (IgnoreEntity).
 * Support for Go Modules
 * Removed support for protocols prior to v4.x.
 
@@ -33,6 +34,7 @@ These are the most important changes:
   },
   "data":[                                    # List of objects containing entities, metrics, events and inventory
     {
+      "ignore_entity": false,
       "entity":{                              # this object is optional. If it's not provided, then the Entity will get 
                                               # the same entity ID as the agent that executes the integration. 
         "name":"redis:192.168.100.200:1234",  # unique entity name per customer account
@@ -159,6 +161,20 @@ To add a tag just call
 `func (i *Entity) AddTag(key string, value interface{})`
 
 On both cases, if the `key` already exists the previous value will be overwritten with the new one.
+
+#### Ignore entity
+
+In older versions, the entity payload was decorated by the infra agent with an entity id to uniquely identify it in New 
+Relic One. The entity registration method for New Relic has changed, the current default strategy is named entity 
+synthesis, which can identify unique entities from its metadata and metrics name. You can find more information [here](https://docs.newrelic.com/docs/new-relic-one/core-concepts/what-entity-new-relic/).
+
+All new integrations should be able to register using the entity synthesis strategy, but for backwards compatability and
+possible new host integrations, you can use the `IgnoreEntity` attribute for each entity.
+
+By default, `IgnoreEntity` will be set to true, thus the agent will not register the entity. Nonetheless, if your entity
+needs to be registered or use the infra agent entity id just call:
+
+`func (i *Entity) SetIgnoreEntity(value bool)`
 
 ### Metrics
 
