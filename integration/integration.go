@@ -173,10 +173,10 @@ func (i *Integration) MarshalJSON() (output []byte, err error) {
 	return
 }
 
-// GetHostID returns HostID or an empty string if not set
+// GetHostID returns NriHostID or an empty string if not set
 func (i *Integration) GetHostID() string {
 	defaultArgs := args.GetDefaultArgs(i.args)
-	return defaultArgs.HostID
+	return defaultArgs.NriHostID
 }
 
 // toJSON serializes integration as JSON. If the pretty attribute is
