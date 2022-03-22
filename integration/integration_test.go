@@ -531,11 +531,11 @@ func Test_Integration_HostId(t *testing.T) {
 		},
 	}
 
-	_ = os.Setenv("HOST_ID", "id-1234567890abc")
+	_ = os.Setenv("NRI_HOST_ID", "id-1234567890abc")
 
 	// os.ClearEnv breaks tests in Windows that use the fileStorer because clears the user env vars
 	defer func() {
-		_ = os.Unsetenv("HOST_ID")
+		_ = os.Unsetenv("NRI_HOST_ID")
 	}()
 
 	i, err := New("TestIntegration", "1.0", Logger(log.Discard), Writer(w), Args(&arguments))
