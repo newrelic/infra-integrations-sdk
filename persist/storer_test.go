@@ -475,3 +475,59 @@ func TestFileStore_Save(t *testing.T) {
 	assert.Equal(t, "v", entry.Value)
 	assert.Equal(t, expectedTS, entry.Timestamp)
 }
+
+func TestFileStore_DeleteOldEntriesUponLoading(t *testing.T) {
+	// Reset global variable affected by other tests to the original
+	// value used by the library.
+	SetNow(time.Now)
+
+	// Given a file storer
+	filePath := path.Join(t.TempDir(), "test.json")
+	ttl := 1 * time.Second
+
+	storer, err := NewFileStore(filePath, log.NewStdErr(true), ttl)
+	assert.NoError(t, err)
+
+	// When a valid storer contains keys with timestamp greater than TTL
+	storer.Set("expiredKey", "val")
+
+	time.Sleep(time.Second * 2)
+	storer.Set("recentKey", "v")
+
+	assert.NoError(t, storer.Save())
+
+	storer, err = NewFileStore(filePath, log.NewStdErr(true), ttl)
+	assert.NoError(t, err)
+
+	time.Sleep(time.Second * 1)
+
+	var val interface{}
+	_, err = storer.Get("recentKey", &val)
+	assert.NoError(t, err)
+
+	// Expired keys are removed from the file upon loading.
+	_, err = storer.Get("expiredKey", &val)
+	assert.EqualError(t, err, ErrNotFound.Error())
+}
+
+var data = []byte(`{"Timestamp":1650971736,"Value":["1","2","3","4"]}`)
+
+func Benchmark_UnmashalEntireStruct(b *testing.B) {
+	entry := jsonEntry{}
+	for i := 0; i < b.N; i++ {
+		if err := json.Unmarshal(data, &entry); err != nil {
+			b.Fatal(err)
+		}
+		assert.Equal(b, int64(1650971736), entry.Timestamp)
+	}
+}
+
+func Benchmark_UnmashalPartialStruct(b *testing.B) {
+	timestamp := entryTimestamp{}
+	for i := 0; i < b.N; i++ {
+		if err := json.Unmarshal(data, &timestamp); err != nil {
+			b.Fatal(err)
+		}
+		assert.Equal(b, int64(1650971736), timestamp.Timestamp)
+	}
+}

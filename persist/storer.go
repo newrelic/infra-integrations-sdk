@@ -23,10 +23,8 @@ const (
 	integrationsDir = "nr-integrations"
 )
 
-var (
-	// ErrNotFound defines an error that will be returned when trying to access a storage entry that can't be found
-	ErrNotFound = errors.New("key not found")
-)
+// ErrNotFound defines an error that will be returned when trying to access a storage entry that can't be found
+var ErrNotFound = errors.New("key not found")
 
 var now = time.Now
 
@@ -56,8 +54,12 @@ type inMemoryStore struct {
 
 // Holder for any entry in the JSON storage
 type jsonEntry struct {
+	entryTimestamp
+	Value interface{}
+}
+
+type entryTimestamp struct {
 	Timestamp int64
-	Value     interface{}
 }
 
 // fileStore is a Storer implementation that uses the file system as persistence backend, storing
@@ -122,6 +124,10 @@ func NewFileStore(storagePath string, ilog log.Logger, ttl time.Duration) (Store
 		if err != nil {
 			ilog.Debugf(err.Error())
 		}
+
+		if err := store.deleteOldEntries(ttl); err != nil {
+			ilog.Debugf("Error deleting old entries in store file %q: %w. Ignoring", store.path, err)
+		}
 	} else if os.IsNotExist(err) {
 		folder := path.Dir(storagePath)
 		err := os.MkdirAll(folder, dirFilePerm)
@@ -165,8 +171,8 @@ func (j inMemoryStore) Set(key string, value interface{}) int64 {
 
 	ts := now().Unix()
 	j.cachedData[key] = jsonEntry{
-		Timestamp: ts,
-		Value:     value,
+		entryTimestamp: entryTimestamp{ts},
+		Value:          value,
 	}
 	return ts
 }
@@ -235,6 +241,34 @@ func (j *fileStore) loadFromDisk() error {
 	if err != nil {
 		return fmt.Errorf("can't unmarshall %q: %s. Ignoring", j.path, err.Error())
 	}
+	return nil
+}
+
+func (j *fileStore) deleteOldEntries(ttl time.Duration) error {
+	j.locker.Lock()
+	defer j.locker.Unlock()
+
+	entry := entryTimestamp{}
+
+	unixTTL := int64(ttl.Seconds())
+	unixNow := time.Now().Unix()
+
+	var expiredKeys []string
+
+	for key, val := range j.Data {
+		if err := json.Unmarshal(val, &entry); err != nil {
+			return err
+		}
+
+		if (unixNow - entry.Timestamp) > unixTTL {
+			expiredKeys = append(expiredKeys, key)
+		}
+	}
+
+	for _, key := range expiredKeys {
+		delete(j.Data, key)
+	}
+
 	return nil
 }
 
