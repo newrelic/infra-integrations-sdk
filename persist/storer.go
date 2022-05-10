@@ -54,8 +54,8 @@ type inMemoryStore struct {
 
 // Holder for any entry in the JSON storage
 type jsonEntry struct {
-	entryTimestamp
-	Value interface{}
+	entryTimestamp `json:",inline"`
+	Value          interface{}
 }
 
 type entryTimestamp struct {
@@ -69,6 +69,7 @@ type fileStore struct {
 	inMemoryStore
 	path string
 	ilog log.Logger
+	ttl  time.Duration
 }
 
 // SetNow forces a different "current time" for the Storer.
@@ -112,6 +113,7 @@ func NewFileStore(storagePath string, ilog log.Logger, ttl time.Duration) (Store
 		path:          storagePath,
 		ilog:          ilog,
 		inMemoryStore: *ms,
+		ttl:           ttl,
 	}
 
 	if stat, err := os.Stat(storagePath); err == nil {
@@ -125,9 +127,6 @@ func NewFileStore(storagePath string, ilog log.Logger, ttl time.Duration) (Store
 			ilog.Debugf(err.Error())
 		}
 
-		if err := store.deleteOldEntries(ttl); err != nil {
-			ilog.Debugf("Error deleting old entries in store file %q: %w. Ignoring", store.path, err)
-		}
 	} else if os.IsNotExist(err) {
 		folder := path.Dir(storagePath)
 		err := os.MkdirAll(folder, dirFilePerm)
@@ -148,6 +147,12 @@ func (j *fileStore) Save() error {
 		return err
 	}
 
+	// Removes any entry that has not been updated duiring the integration cycle and with
+	// an expired timestamp.
+	if err := j.deleteOldEntries(); err != nil {
+		j.ilog.Debugf("Error deleting old entries in store file %q: %w. ", j.path, err)
+	}
+
 	j.locker.Lock()
 	defer j.locker.Unlock()
 
@@ -155,6 +160,7 @@ func (j *fileStore) Save() error {
 	if err != nil {
 		return err
 	}
+
 	return ioutil.WriteFile(j.path, bytes, filePerm)
 }
 
@@ -244,29 +250,26 @@ func (j *fileStore) loadFromDisk() error {
 	return nil
 }
 
-func (j *fileStore) deleteOldEntries(ttl time.Duration) error {
+// deleteOldEntries traverse the stored data removing entires with timestamp greater than ttl.
+// There is an implicit filter by integration for the removed entires since each storer file
+// contains only the metrics for a specifc integration instance.
+func (j *fileStore) deleteOldEntries() error {
 	j.locker.Lock()
 	defer j.locker.Unlock()
 
 	entry := entryTimestamp{}
 
-	unixTTL := int64(ttl.Seconds())
-	unixNow := time.Now().Unix()
-
-	var expiredKeys []string
+	nowTime := now()
 
 	for key, val := range j.Data {
 		if err := json.Unmarshal(val, &entry); err != nil {
-			return err
+			return fmt.Errorf("decoding storer entry: %w", err)
 		}
 
-		if (unixNow - entry.Timestamp) > unixTTL {
-			expiredKeys = append(expiredKeys, key)
+		if nowTime.Sub(time.Unix(entry.Timestamp, 0)) > j.ttl {
+			delete(j.Data, key)
 		}
-	}
 
-	for _, key := range expiredKeys {
-		delete(j.Data, key)
 	}
 
 	return nil

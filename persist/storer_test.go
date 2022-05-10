@@ -476,7 +476,7 @@ func TestFileStore_Save(t *testing.T) {
 	assert.Equal(t, expectedTS, entry.Timestamp)
 }
 
-func TestFileStore_DeleteOldEntriesUponLoading(t *testing.T) {
+func TestFileStore_DeleteOldEntriesUponSaving(t *testing.T) {
 	// Reset global variable affected by other tests to the original
 	// value used by the library.
 	SetNow(time.Now)
@@ -490,22 +490,28 @@ func TestFileStore_DeleteOldEntriesUponLoading(t *testing.T) {
 
 	// When a valid storer contains keys with timestamp greater than TTL
 	storer.Set("expiredKey", "val")
+	time.Sleep(ttl + time.Second)
 
-	time.Sleep(time.Second * 2)
 	storer.Set("recentKey", "v")
 
 	assert.NoError(t, storer.Save())
 
-	storer, err = NewFileStore(filePath, log.NewStdErr(true), ttl)
-	assert.NoError(t, err)
-
-	time.Sleep(time.Second * 1)
-
 	var val interface{}
+
 	_, err = storer.Get("recentKey", &val)
 	assert.NoError(t, err)
 
-	// Expired keys are removed from the file upon loading.
+	// Expired keys are removed from the storer on saving.
+	_, err = storer.Get("expiredKey", &val)
+	assert.EqualError(t, err, ErrNotFound.Error())
+
+	storer, err = NewFileStore(filePath, log.NewStdErr(true), ttl)
+	assert.NoError(t, err)
+
+	_, err = storer.Get("recentKey", &val)
+	assert.NoError(t, err)
+
+	// Expired keys have been removed from the file.
 	_, err = storer.Get("expiredKey", &val)
 	assert.EqualError(t, err, ErrNotFound.Error())
 }
