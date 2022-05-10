@@ -54,12 +54,8 @@ type inMemoryStore struct {
 
 // Holder for any entry in the JSON storage
 type jsonEntry struct {
-	entryTimestamp `json:",inline"`
-	Value          interface{}
-}
-
-type entryTimestamp struct {
 	Timestamp int64
+	Value     interface{}
 }
 
 // fileStore is a Storer implementation that uses the file system as persistence backend, storing
@@ -177,8 +173,8 @@ func (j inMemoryStore) Set(key string, value interface{}) int64 {
 
 	ts := now().Unix()
 	j.cachedData[key] = jsonEntry{
-		entryTimestamp: entryTimestamp{ts},
-		Value:          value,
+		Timestamp: ts,
+		Value:     value,
 	}
 	return ts
 }
@@ -257,7 +253,10 @@ func (j *fileStore) deleteOldEntries() error {
 	j.locker.Lock()
 	defer j.locker.Unlock()
 
-	entry := entryTimestamp{}
+	// Just decode Timestamp for performance reasons.
+	var entry struct {
+		Timestamp int64
+	}
 
 	nowTime := now()
 

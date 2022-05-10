@@ -529,7 +529,9 @@ func Benchmark_UnmashalEntireStruct(b *testing.B) {
 }
 
 func Benchmark_UnmashalPartialStruct(b *testing.B) {
-	timestamp := entryTimestamp{}
+	var timestamp struct {
+		Timestamp int64
+	}
 	for i := 0; i < b.N; i++ {
 		if err := json.Unmarshal(data, &timestamp); err != nil {
 			b.Fatal(err)
