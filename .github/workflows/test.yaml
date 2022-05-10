@@ -1,0 +1,17 @@
+name: UnitTesting
+
+on: [push, pull_request]
+
+jobs:
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.18'
+      - name: Run Unit Test
+        run: |
+          make test
