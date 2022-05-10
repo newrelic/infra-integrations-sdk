@@ -1,6 +1,7 @@
 package metric
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,8 +13,7 @@ func TestSourceType_String(t *testing.T) {
 }
 
 func TestSourceType_Positive(t *testing.T) {
-
-	var testCases = []struct {
+	testCases := []struct {
 		sourceType SourceType
 		isPositive bool
 	}{
@@ -25,7 +25,7 @@ func TestSourceType_Positive(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(string(tc.sourceType), func(t *testing.T) {
+		t.Run(fmt.Sprint(tc.sourceType), func(t *testing.T) {
 			assert.Equal(t, tc.isPositive, tc.sourceType.IsPositive())
 		})
 	}

@@ -115,7 +115,7 @@ func TestSet_SetMetricCache_NameSpaceSpecialChars(t *testing.T) {
 }
 
 func TestSet_SetMetricsRatesAndDeltas(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		sourceType  SourceType
 		firstValue  float64
 		secondValue float64
@@ -130,8 +130,7 @@ func TestSet_SetMetricsRatesAndDeltas(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(string(tc.sourceType), func(t *testing.T) {
-
+		t.Run(fmt.Sprint(tc.sourceType), func(t *testing.T) {
 			persist.SetNow(growingTime)
 
 			ms := NewSet("some-event-type", persist.NewInMemoryStore(), attribute.Attr("k", "v"))
@@ -145,7 +144,7 @@ func TestSet_SetMetricsRatesAndDeltas(t *testing.T) {
 
 func TestSet_SetMetricPositivesThrowsOnNegativeValues(t *testing.T) {
 	for _, sourceType := range []SourceType{PDELTA, PRATE} {
-		t.Run(string(sourceType), func(t *testing.T) {
+		t.Run(fmt.Sprint(sourceType), func(t *testing.T) {
 			persist.SetNow(growingTime)
 			ms := NewSet(
 				"some-event-type",
@@ -190,7 +189,6 @@ func TestSet_SetMetric_IncorrectMetricType(t *testing.T) {
 
 	err = ms.SetMetric("foo", 1, 666)
 	assert.Error(t, err, "unknown source type for key foo")
-
 }
 
 func TestSet_MarshalJSON(t *testing.T) {

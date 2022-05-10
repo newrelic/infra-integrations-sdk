@@ -64,7 +64,7 @@ func TestClient_New_with_CABundleFile(t *testing.T) {
 
 func TestClient_New_with_Empty_CABundleFile(t *testing.T) {
 	_, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithCABundleFile(""))
-	require.ErrorIs(t, err, httpSDK.ErrEmptyArg)
+	require.Error(t, err, httpSDK.ErrEmptyArg)
 }
 
 func TestClient_New_with_CABundleDir(t *testing.T) {
@@ -106,7 +106,7 @@ func TestClient_New_with_CABundleDir(t *testing.T) {
 
 func TestClient_New_with_Empty_CABundleDir(t *testing.T) {
 	_, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithCABundleDir(""))
-	require.ErrorIs(t, err, httpSDK.ErrEmptyArg)
+	require.Error(t, err, httpSDK.ErrEmptyArg)
 }
 
 func TestClient_New_with_CABundleFile_and_CABundleDir(t *testing.T) {
@@ -268,7 +268,7 @@ func Test_NewAcceptInvalidHostname(t *testing.T) {
 
 func TestClient_New_with_Empty_AcceptInvalidHostname(t *testing.T) {
 	_, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithAcceptInvalidHostname(""))
-	require.ErrorIs(t, err, httpSDK.ErrEmptyArg)
+	require.Error(t, err, httpSDK.ErrEmptyArg)
 }
 
 func Test_WithInsecureSkipVerify(t *testing.T) {
