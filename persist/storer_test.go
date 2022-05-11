@@ -34,34 +34,26 @@ func (m *memoryStorerProvider) prepareToRead(s Storer) (Storer, error) {
 }
 
 type diskStorerProvider struct {
+	t        *testing.T
 	filePath string
 }
 
 func (j *diskStorerProvider) new() (Storer, error) {
 	if j.filePath == "" {
-		j.filePath = filePath()
+		j.filePath = path.Join(j.t.TempDir(), "storage.json")
 	}
 
 	return NewFileStore(j.filePath, log.NewStdErr(true), DefaultTTL)
 }
 
-func filePath() string {
-	rootDir, err := ioutil.TempDir("", "disk_storage")
-	if err != nil {
-		panic(err)
-	}
-
-	return path.Join(rootDir, "storage.json")
-}
-
 func (j *diskStorerProvider) prepareToRead(s Storer) (Storer, error) {
-	s.Save()
+	assert.NoError(j.t, s.Save())
 
 	return j.new()
 }
 
-func getStorerProviders() []storerProvider {
-	return []storerProvider{&memoryStorerProvider{}, &diskStorerProvider{}}
+func getStorerProviders(t *testing.T) []storerProvider {
+	return []storerProvider{&memoryStorerProvider{}, &diskStorerProvider{t: t}}
 }
 
 func TestStorer_Struct(t *testing.T) {
@@ -70,7 +62,7 @@ func TestStorer_Struct(t *testing.T) {
 		return nowTime
 	})
 
-	for _, provider := range getStorerProviders() {
+	for _, provider := range getStorerProviders(t) {
 		storer, err := provider.new()
 		assert.NoError(t, err)
 
@@ -121,7 +113,7 @@ func TestStorer_Map(t *testing.T) {
 		return nowTime
 	})
 
-	for _, provider := range getStorerProviders() {
+	for _, provider := range getStorerProviders(t) {
 		storer, err := provider.new()
 		assert.NoError(t, err)
 
@@ -161,7 +153,7 @@ func TestStorer_Array(t *testing.T) {
 		return nowTime
 	})
 
-	for _, provider := range getStorerProviders() {
+	for _, provider := range getStorerProviders(t) {
 		storer, err := provider.new()
 		assert.NoError(t, err)
 
@@ -192,13 +184,12 @@ func TestStorer_Array(t *testing.T) {
 }
 
 func TestStorer_String(t *testing.T) {
-
 	nowTime := time.Now()
 	setNow(func() time.Time {
 		return nowTime
 	})
 
-	for _, provider := range getStorerProviders() {
+	for _, provider := range getStorerProviders(t) {
 		storer, err := provider.new()
 		assert.NoError(t, err)
 
@@ -229,13 +220,12 @@ func TestStorer_String(t *testing.T) {
 }
 
 func TestStorer_Number(t *testing.T) {
-
 	nowTime := time.Now()
 	setNow(func() time.Time {
 		return nowTime
 	})
 
-	for _, provider := range getStorerProviders() {
+	for _, provider := range getStorerProviders(t) {
 		storer, err := provider.new()
 		assert.NoError(t, err)
 
@@ -265,25 +255,18 @@ func TestStorer_Number(t *testing.T) {
 }
 
 func TestStorer_Overwrite(t *testing.T) {
-	for _, provider := range getStorerProviders() {
+	setNow(time.Now)
+
+	for _, provider := range getStorerProviders(t) {
 		storer, err := provider.new()
 		assert.NoError(t, err)
 
 		t.Run(reflect.TypeOf(storer).Name(), func(t *testing.T) {
 			// Given a Storer implementation
+			storer.Set("my-storage-test", "initial Value")
 
-			// And a stored record
-			nowTime := time.Unix(1234, 5678)
-			setNow(func() time.Time {
-				return nowTime
-			})
-			ts := storer.Set("my-storage-test", "initial Value")
-			assert.Equal(t, nowTime.Unix(), ts)
-
-			nowTime = time.Unix(78910, 111213)
 			// When this record is overwritten
-			ts = storer.Set("my-storage-test", "overwritten value")
-			assert.Equal(t, nowTime.Unix(), ts)
+			storer.Set("my-storage-test", "overwritten value")
 
 			storer, err = provider.prepareToRead(storer)
 			assert.NoError(t, err)
@@ -297,7 +280,7 @@ func TestStorer_Overwrite(t *testing.T) {
 }
 
 func TestStorer_NotFound(t *testing.T) {
-	for _, provider := range getStorerProviders() {
+	for _, provider := range getStorerProviders(t) {
 		storer, err := provider.new()
 		assert.NoError(t, err)
 
@@ -318,7 +301,7 @@ func TestStorer_NotFound(t *testing.T) {
 }
 
 func TestStorer_Delete(t *testing.T) {
-	for _, provider := range getStorerProviders() {
+	for _, provider := range getStorerProviders(t) {
 		storer, err := provider.new()
 		assert.NoError(t, err)
 
@@ -344,7 +327,7 @@ func TestStorer_Delete(t *testing.T) {
 }
 
 func TestStorer_DeleteUnexistent(t *testing.T) {
-	for _, provider := range getStorerProviders() {
+	for _, provider := range getStorerProviders(t) {
 		storer, err := provider.new()
 		assert.NoError(t, err)
 
@@ -419,7 +402,6 @@ func TestFileStorer_Save(t *testing.T) {
 	_, err = storer.Get("structValue", &structValue)
 	assert.NoError(t, err)
 	assert.Equal(t, testStruct{555, 444}, structValue)
-
 }
 
 func TestInMemoryStore_flushCache(t *testing.T) {
@@ -446,7 +428,7 @@ func TestFileStore_Save(t *testing.T) {
 
 	expectedTS := nowTime.Unix()
 
-	storeProvider := diskStorerProvider{}
+	storeProvider := diskStorerProvider{t: t}
 	s, err := storeProvider.new()
 	assert.NoError(t, err)
 
@@ -492,5 +474,68 @@ func TestFileStore_Save(t *testing.T) {
 
 	assert.Equal(t, "v", entry.Value)
 	assert.Equal(t, expectedTS, entry.Timestamp)
+}
 
+func TestFileStore_DeleteOldEntriesUponSaving(t *testing.T) {
+	// Reset global variable affected by other tests to the original
+	// value used by the library.
+	SetNow(time.Now)
+
+	// Given a file storer
+	filePath := path.Join(t.TempDir(), "test.json")
+	ttl := 1 * time.Second
+
+	storer, err := NewFileStore(filePath, log.NewStdErr(true), ttl)
+	assert.NoError(t, err)
+
+	// When a valid storer contains keys with timestamp greater than TTL
+	storer.Set("expiredKey", "val")
+	time.Sleep(ttl + time.Second)
+
+	storer.Set("recentKey", "v")
+
+	assert.NoError(t, storer.Save())
+
+	var val interface{}
+
+	_, err = storer.Get("recentKey", &val)
+	assert.NoError(t, err)
+
+	// Expired keys are removed from the storer on saving.
+	_, err = storer.Get("expiredKey", &val)
+	assert.EqualError(t, err, ErrNotFound.Error())
+
+	storer, err = NewFileStore(filePath, log.NewStdErr(true), ttl)
+	assert.NoError(t, err)
+
+	_, err = storer.Get("recentKey", &val)
+	assert.NoError(t, err)
+
+	// Expired keys have been removed from the file.
+	_, err = storer.Get("expiredKey", &val)
+	assert.EqualError(t, err, ErrNotFound.Error())
+}
+
+var data = []byte(`{"Timestamp":1650971736,"Value":["1","2","3","4"]}`)
+
+func Benchmark_UnmashalEntireStruct(b *testing.B) {
+	entry := jsonEntry{}
+	for i := 0; i < b.N; i++ {
+		if err := json.Unmarshal(data, &entry); err != nil {
+			b.Fatal(err)
+		}
+		assert.Equal(b, int64(1650971736), entry.Timestamp)
+	}
+}
+
+func Benchmark_UnmashalPartialStruct(b *testing.B) {
+	var timestamp struct {
+		Timestamp int64
+	}
+	for i := 0; i < b.N; i++ {
+		if err := json.Unmarshal(data, &timestamp); err != nil {
+			b.Fatal(err)
+		}
+		assert.Equal(b, int64(1650971736), timestamp.Timestamp)
+	}
 }

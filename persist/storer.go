@@ -23,10 +23,8 @@ const (
 	integrationsDir = "nr-integrations"
 )
 
-var (
-	// ErrNotFound defines an error that will be returned when trying to access a storage entry that can't be found
-	ErrNotFound = errors.New("key not found")
-)
+// ErrNotFound defines an error that will be returned when trying to access a storage entry that can't be found
+var ErrNotFound = errors.New("key not found")
 
 var now = time.Now
 
@@ -67,6 +65,7 @@ type fileStore struct {
 	inMemoryStore
 	path string
 	ilog log.Logger
+	ttl  time.Duration
 }
 
 // SetNow forces a different "current time" for the Storer.
@@ -110,6 +109,7 @@ func NewFileStore(storagePath string, ilog log.Logger, ttl time.Duration) (Store
 		path:          storagePath,
 		ilog:          ilog,
 		inMemoryStore: *ms,
+		ttl:           ttl,
 	}
 
 	if stat, err := os.Stat(storagePath); err == nil {
@@ -122,6 +122,7 @@ func NewFileStore(storagePath string, ilog log.Logger, ttl time.Duration) (Store
 		if err != nil {
 			ilog.Debugf(err.Error())
 		}
+
 	} else if os.IsNotExist(err) {
 		folder := path.Dir(storagePath)
 		err := os.MkdirAll(folder, dirFilePerm)
@@ -142,6 +143,12 @@ func (j *fileStore) Save() error {
 		return err
 	}
 
+	// Removes any entry that has not been updated duiring the integration cycle and with
+	// an expired timestamp.
+	if err := j.deleteOldEntries(); err != nil {
+		j.ilog.Debugf("Error deleting old entries in store file %q: %w. ", j.path, err)
+	}
+
 	j.locker.Lock()
 	defer j.locker.Unlock()
 
@@ -149,6 +156,7 @@ func (j *fileStore) Save() error {
 	if err != nil {
 		return err
 	}
+
 	return ioutil.WriteFile(j.path, bytes, filePerm)
 }
 
@@ -235,6 +243,34 @@ func (j *fileStore) loadFromDisk() error {
 	if err != nil {
 		return fmt.Errorf("can't unmarshall %q: %s. Ignoring", j.path, err.Error())
 	}
+	return nil
+}
+
+// deleteOldEntries traverse the stored data removing entires with timestamp greater than ttl.
+// There is an implicit filter by integration for the removed entires since each storer file
+// contains only the metrics for a specifc integration instance.
+func (j *fileStore) deleteOldEntries() error {
+	j.locker.Lock()
+	defer j.locker.Unlock()
+
+	// Just decode Timestamp for performance reasons.
+	var entry struct {
+		Timestamp int64
+	}
+
+	nowTime := now()
+
+	for key, val := range j.Data {
+		if err := json.Unmarshal(val, &entry); err != nil {
+			return fmt.Errorf("decoding storer entry: %w", err)
+		}
+
+		if nowTime.Sub(time.Unix(entry.Timestamp, 0)) > j.ttl {
+			delete(j.Data, key)
+		}
+
+	}
+
 	return nil
 }
 
