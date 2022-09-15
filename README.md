@@ -15,12 +15,12 @@
 
 # Golang SDK for New Relic integrations
 
-[Infrastructure monitoring](https://docs.newrelic.com/docs/infrastructure) provided by [New Relic](http://www.newrelic.com) offers flexible, dynamic server monitoring, including [integrations](https://docs.newrelic.com/docs/integrations/new-relic-integrations/get-started/introduction-infrastructure-integrations) for many popular services. 
+[Infrastructure monitoring](https://docs.newrelic.com/docs/infrastructure) provided by [New Relic](http://www.newrelic.com) offers flexible, dynamic server monitoring, including [integrations](https://docs.newrelic.com/docs/integrations/new-relic-integrations/get-started/introduction-infrastructure-integrations) for many popular services.
 
-If our [on-host integrations](https://docs.newrelic.com/docs/integrations/host-integrations/getting-started/introduction-host-integrations) don't meet your needs, we provide two options for creating your own: 
+If our [on-host integrations](https://docs.newrelic.com/docs/integrations/host-integrations/getting-started/introduction-host-integrations) don't meet your needs, we provide two options for creating your own:
 
-* Our [Flex integration tool](https://docs.newrelic.com/docs/integrations/host-integrations/host-integrations-list/flex-integration-tool-build-your-own-integration): a simple way to report custom metrics by creating a configuration file that defines what data will be reported. This is recommended for most use cases. 
-* Our Integrations SDK: a more robust solution. We give you access to the complete set of tools we use to build our integrations and report all [infrastructure integrations data types](https://docs.newrelic.com/docs/integrations/new-relic-integrations/get-started/introduction-infrastructure-integrations#data-types). 
+* Our [Flex integration tool](https://docs.newrelic.com/docs/integrations/host-integrations/host-integrations-list/flex-integration-tool-build-your-own-integration): a simple way to report custom metrics by creating a configuration file that defines what data will be reported. This is recommended for most use cases.
+* Our Integrations SDK: a more robust solution. We give you access to the complete set of tools we use to build our integrations and report all [infrastructure integrations data types](https://docs.newrelic.com/docs/integrations/new-relic-integrations/get-started/introduction-infrastructure-integrations#data-types).
 
 The Integrations SDK helps take the complexity out of building an integration by providing a set of useful Go language functions and data structures. For instance, some common use cases like reading values from command-line arguments or environment variables, initializing a structure with all the necessary fields for an integration defined by our SDK, or generating and printing a JSON to stdout, are covered and simplified by this package.
 
@@ -63,18 +63,18 @@ The agent supports different JSON data-structures called *integration protocols*
 
 * v1: Legacy data structure to monitor local entity.
 * v2: This version allows to monitor remote entities and keep support for previous local entity. [Official doc](https://docs.newrelic.com/docs/integrations/integrations-sdk/file-specifications/integration-executable-file-specifications)
-* v3: Improves remote entities support. See [protocol v3](docs/protocol-v3.md) documentation. 
+* v3: Improves remote entities support. See [protocol v3](docs/protocol-v3.md) documentation.
 * v4: Adds support for dimensional metrics format and introduces new metric types: `count`, `summary`, `cumulative-count`
  and `cumulative-rate`.
 
 ### Host Entity vs Entities
 
 `Entity` is a specific thing we collect data about. We used this vague term because we want to support hosts, pods, load
- balancers, DBs, etc. in a generic way. In the previous SDK v3, we had the Local Entity and Remote Entities. 
- 
-In this new version the reporting host is called **HostEntity**, and it's optional to add data to it. It represents the 
-host where the agent is running on. If your entity belongs to a different host or it's something abstract that is 
-not attached to the host where the integration runs, then you can create an Entity which requires a unique name and 
+ balancers, DBs, etc. in a generic way. In the previous SDK v3, we had the Local Entity and Remote Entities.
+
+In this new version the reporting host is called **HostEntity**, and it's optional to add data to it. It represents the
+host where the agent is running on. If your entity belongs to a different host or it's something abstract that is
+not attached to the host where the integration runs, then you can create an Entity which requires a unique name and
 an entity type in order to be created.
 
 You can add metrics, events and inventory on both types of entities.
@@ -83,7 +83,7 @@ You can add metrics, events and inventory on both types of entities.
 
 https://github.com/newrelic/infra-integrations-sdk/blob/master/docs/v3tov4.md
 
-### SDK and agent-protocol compatibility 
+### SDK and agent-protocol compatibility
 
 SDK v1 and v2 use *protocol-v1*.
 
