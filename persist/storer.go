@@ -83,6 +83,15 @@ func DefaultPath(integrationName string) string {
 	return file
 }
 
+// TmpPath returns the temp folder/filename dir to a Storer for an integration using the given tmpDir or will use the default if not set.
+// The name of the file will be the given name of the integration with the .json extension.
+func TmpPath(tempDir, integrationName string) string {
+	dir := tmpIntegrationDir(tempDir)
+	file := filepath.Join(dir, integrationName+".json")
+
+	return file
+}
+
 func tmpIntegrationDir(tempDir string) string {
 	if tempDir == "" {
 		tempDir = os.TempDir()
