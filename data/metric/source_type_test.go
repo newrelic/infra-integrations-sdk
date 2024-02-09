@@ -25,7 +25,7 @@ func TestSourceType_Positive(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(string(tc.sourceType), func(t *testing.T) {
+		t.Run(tc.sourceType.String(), func(t *testing.T) {
 			assert.Equal(t, tc.isPositive, tc.sourceType.IsPositive())
 		})
 	}

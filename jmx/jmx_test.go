@@ -123,8 +123,6 @@ func TestQuery_WithSSL(t *testing.T) {
 }
 
 func TestOpen_WithNrjmx(t *testing.T) {
-	defer Close()
-
 	aux := os.Getenv("NR_JMX_TOOL")
 	require.NoError(t, os.Unsetenv("NR_JMX_TOOL"))
 
@@ -242,14 +240,14 @@ func Test_DefaultPath_IsCorrectForOs(t *testing.T) {
 }
 
 func TestHostName(t *testing.T) {
-	defer Close()
+	cmd = nil
 	host := "a-host"
 	assert.NoError(t, OpenNoAuth(host, ""))
 	assert.Equal(t, host, HostName())
 }
 
 func TestPort(t *testing.T) {
-	defer Close()
+	cmd = nil
 	port := "6666"
 	assert.NoError(t, OpenNoAuth("", port))
 	assert.Equal(t, port, Port())

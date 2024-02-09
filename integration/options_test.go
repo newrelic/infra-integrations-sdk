@@ -72,7 +72,7 @@ func TestItStoresOnDiskByDefault(t *testing.T) {
 	assert.NoError(t, i.Publish())
 
 	// assert data has been flushed to disk
-	storePath, err := persist.NewStorePath(i.Name, i.CreateUniqueID(), i.logger, persist.DefaultTTL)
+	storePath, err := persist.NewStorePath(i.Name, i.CreateUniqueID(), "", i.logger, persist.DefaultTTL)
 	assert.NoError(t, err)
 
 	c, err := persist.NewFileStore(storePath.GetFilePath(), log.NewStdErr(true), persist.DefaultTTL)
