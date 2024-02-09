@@ -28,7 +28,7 @@ type storePath struct {
 }
 
 // NewStorePath create a new instance of StorePath
-func NewStorePath(integrationName, integrationID string, ilog log.Logger, ttl time.Duration) (StorePath, error) {
+func NewStorePath(integrationName, integrationID, customTempDir string, ilog log.Logger, ttl time.Duration) (StorePath, error) {
 	if integrationName == "" {
 		return nil, fmt.Errorf("integration name not specified")
 	}
@@ -42,7 +42,7 @@ func NewStorePath(integrationName, integrationID string, ilog log.Logger, ttl ti
 	}
 
 	return &storePath{
-		dir:             tmpIntegrationDir(),
+		dir:             tmpIntegrationDir(customTempDir),
 		integrationName: integrationName,
 		integrationID:   integrationID,
 		ilog:            ilog,

@@ -77,17 +77,21 @@ func SetNow(newNow func() time.Time) {
 // DefaultPath returns a default folder/filename dir to a Storer for an integration from the given name. The name of
 // the file will be the name of the integration with the .json extension.
 func DefaultPath(integrationName string) string {
-	dir := tmpIntegrationDir()
+	dir := tmpIntegrationDir("")
 	file := filepath.Join(dir, integrationName+".json")
 
 	return file
 }
 
-func tmpIntegrationDir() string {
-	dir := filepath.Join(os.TempDir(), integrationsDir)
+func tmpIntegrationDir(tempDir string) string {
+	if tempDir == "" {
+		tempDir = os.TempDir()
+	}
+
+	dir := filepath.Join(tempDir, integrationsDir)
 	// Create integrations Storer directory
 	if os.MkdirAll(dir, dirFilePerm) != nil {
-		dir = os.TempDir()
+		dir = tempDir
 	}
 	return dir
 }

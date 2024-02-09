@@ -100,7 +100,7 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 	}
 
 	if i.storer == nil {
-		storePath, err := persist.NewStorePath(i.Name, i.CreateUniqueID(), i.logger, persist.DefaultTTL)
+		storePath, err := persist.NewStorePath(i.Name, i.CreateUniqueID(), defaultArgs.TempDir, i.logger, persist.DefaultTTL)
 		if err != nil {
 			return nil, fmt.Errorf("can't create temporary directory for store: %s", err)
 		}

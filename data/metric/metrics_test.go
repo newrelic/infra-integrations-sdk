@@ -130,7 +130,7 @@ func TestSet_SetMetricsRatesAndDeltas(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(string(tc.sourceType), func(t *testing.T) {
+		t.Run(tc.sourceType.String(), func(t *testing.T) {
 
 			persist.SetNow(growingTime)
 
@@ -145,7 +145,7 @@ func TestSet_SetMetricsRatesAndDeltas(t *testing.T) {
 
 func TestSet_SetMetricPositivesThrowsOnNegativeValues(t *testing.T) {
 	for _, sourceType := range []SourceType{PDELTA, PRATE} {
-		t.Run(string(sourceType), func(t *testing.T) {
+		t.Run(sourceType.String(), func(t *testing.T) {
 			persist.SetNow(growingTime)
 			ms := NewSet(
 				"some-event-type",

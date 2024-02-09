@@ -34,6 +34,7 @@ consider. All of them are `bool` and default to `false`. They are described foll
 * `NriAddHostname`: if true, agent will decorate all the metrics with the `hostname`.
 * `NriCluster`: if any value is provided, all the metrics will be decorated with `clusterName: value`. 
 * `NriService`: if any value is provided, all the metrics will be decorated with `serviceName: value`. 
+* `TempDir`: Integrations path to store temporal data (it defaults to `os.TempDir()` if it's left empty). 
 
 An example of
 

@@ -23,6 +23,7 @@ type DefaultArgumentList struct {
 	NriAddHostname bool   `default:"false" help:"Add hostname attribute to the samples."`
 	NriCluster     string `default:"" help:"Optional. Cluster name"`
 	NriService     string `default:"" help:"Optional. Service name"`
+	TempDir        string `default:"" help:"Optional. Integrations path to store temporal data (defaults to os.tempDir if left empty)."`
 }
 
 // All returns if all data should be published
@@ -81,12 +82,12 @@ func underscore(s string) string {
 // fields it defines. Each of the fields in the struct can define their defaults
 // and help string by using tags:
 //
-//  type Arguments struct {
-//     	DefaultArgumentList
-//     	Argument1 bool   `default:"false" help:"This is the help we will print"`
-//     	Argument2 int    `default:"1" help:"This is the help we will print"`
-//     	Argument3 string `default:"value" help:"This is the help we will print"`
-//  }
+//	type Arguments struct {
+//	   	DefaultArgumentList
+//	   	Argument1 bool   `default:"false" help:"This is the help we will print"`
+//	   	Argument2 int    `default:"1" help:"This is the help we will print"`
+//	   	Argument3 string `default:"value" help:"This is the help we will print"`
+//	}
 //
 // The fields in the struct will be populated with the values set either from
 // the command line or from environment variables.

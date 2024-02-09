@@ -15,7 +15,7 @@ func setupTestCase(t *testing.T) func(t *testing.T) {
 	t.Log("setup test case")
 
 	assert.NoError(t, os.RemoveAll(filepath.Join(os.TempDir(), integrationsDir)))
-	tmpDir = tmpIntegrationDir()
+	tmpDir = tmpIntegrationDir("")
 
 	files := []struct {
 		name    string
@@ -61,7 +61,7 @@ func TestStorePath_CleanOldFiles(t *testing.T) {
 	defer tearDownFn(t)
 
 	// WHEN new store file is generated
-	newPath, err := NewStorePath("com.newrelic.fake", "c", log.Discard, 1*time.Minute)
+	newPath, err := NewStorePath("com.newrelic.fake", "c", "", log.Discard, 1*time.Minute)
 	assert.NoError(t, err)
 
 	// THEN only old files with different integration ID are removed
@@ -79,20 +79,39 @@ func TestStorePath_CleanOldFiles(t *testing.T) {
 }
 
 func TestStorePath_GetFilePath(t *testing.T) {
-	storeFile, err := NewStorePath("com.newrelic.fake", "c", log.Discard, 1*time.Minute)
-	assert.NoError(t, err)
+	cases := []struct {
+		tempDir  string
+		expected string
+	}{
+		{
+			tempDir:  "",
+			expected: filepath.Join(tmpIntegrationDir(""), "com.newrelic.fake-c.json"),
+		},
+		{
+			tempDir:  "",
+			expected: filepath.Join(tmpIntegrationDir(os.TempDir()), "com.newrelic.fake-c.json"),
+		},
+		{
+			tempDir:  "custom-tmp",
+			expected: filepath.Join(tmpIntegrationDir("custom-tmp"), "com.newrelic.fake-c.json"),
+		},
+	}
 
-	expected := filepath.Join(tmpIntegrationDir(), "com.newrelic.fake-c.json")
-	assert.Equal(t, expected, storeFile.GetFilePath())
+	for _, tt := range cases {
+		storeFile, err := NewStorePath("com.newrelic.fake", "c", tt.tempDir, log.Discard, 1*time.Minute)
+		assert.NoError(t, err)
+
+		assert.Equal(t, tt.expected, storeFile.GetFilePath())
+	}
 }
 
 func TestStorePath_glob(t *testing.T) {
-	storeFile, err := NewStorePath("com.newrelic.fake", "c", log.Discard, 1*time.Minute)
+	storeFile, err := NewStorePath("com.newrelic.fake", "c", "", log.Discard, 1*time.Minute)
 	assert.NoError(t, err)
 
 	tmp, ok := storeFile.(*storePath)
 	assert.True(t, ok)
 
-	expected := filepath.Join(tmpIntegrationDir(), "com.newrelic.fake-*.json")
+	expected := filepath.Join(tmpIntegrationDir(""), "com.newrelic.fake-*.json")
 	assert.Equal(t, expected, tmp.glob())
 }
