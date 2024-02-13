@@ -48,6 +48,7 @@ func queryRedisConfig(query string) (string, string) {
 	return splittedLine[0], splittedLine[1]
 }
 
+// nolint: typecheck
 func main() {
 	// Create Integration
 	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))

@@ -585,7 +585,7 @@ func Test_Integration_FindEntity(t *testing.T) {
 	assert.True(t, e.SameAs(e1))
 }
 
-//--- helpers
+// --- helpers
 func newTestIntegration(t *testing.T) *Integration {
 	i, err := New(integrationName, integrationVersion, Logger(log.Discard), Writer(ioutil.Discard))
 	assert.NoError(t, err)

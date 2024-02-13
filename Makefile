@@ -3,7 +3,7 @@ GO_VERSION = $(shell go version | sed 's/[^0-9.]*\([0-9.]*\).*/\1/')
 GOTOOLS = github.com/axw/gocov/gocov \
           github.com/AlekSi/gocov-xml
 
-GOLANGCILINT_VERSION = v1.24.0
+GOLANGCILINT_VERSION = v1.56.0
 GOLANGCILINT_BIN = bin/golangci-lint
 
 # Temporary patch to avoid build failing because of the outdated documentation example
@@ -24,7 +24,7 @@ bin:
 .PHONY: tools/golangci-lint
 tools/golangci-lint:
 	@echo "installing GolangCI lint"
-	@(wget -qO - https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s $(GOLANGCILINT_VERSION) )
+	@(wget -qO - https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s $(GOLANGCILINT_VERSION) )
 
 
 .PHONY: tools
