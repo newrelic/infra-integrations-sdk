@@ -54,6 +54,7 @@ func queryAttrRedisInfo(query string, port int) (string, string) {
 	return strings.TrimSpace(splittedLine[0]), strings.TrimSpace(splittedLine[1])
 }
 
+// nolint: typecheck
 func main() {
 	// Create Integration
 	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))

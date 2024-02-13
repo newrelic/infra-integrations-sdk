@@ -92,6 +92,7 @@ func TestOpenURL(t *testing.T) {
 	assert.Equal(t, "sample.url", lastArg)
 }
 
+// nolint: goconst
 func TestQuery(t *testing.T) {
 	for q, isErr := range query2IsErr {
 		require.NoError(t, openWait("", "", "", "", openAttempts), "error on opening for query %s", q)
