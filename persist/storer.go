@@ -92,12 +92,15 @@ func TmpPath(tempDir, integrationName string) string {
 	return file
 }
 
+// if tempDir is set the integrations tempDir will be the one provided, if not, it will use the OS tempDir with
+// "nr-integrations" as a subfolder, Linux example: "/tmp/nr-integrations"
 func tmpIntegrationDir(tempDir string) string {
+	dir := tempDir
 	if tempDir == "" {
 		tempDir = os.TempDir()
+		dir = filepath.Join(tempDir, integrationsDir)
 	}
 
-	dir := filepath.Join(tempDir, integrationsDir)
 	// Create integrations Storer directory
 	if os.MkdirAll(dir, dirFilePerm) != nil {
 		dir = tempDir

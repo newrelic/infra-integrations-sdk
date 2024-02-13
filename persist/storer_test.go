@@ -524,8 +524,8 @@ func TestFileStoreTmpPath_Save_and_Delete(t *testing.T) {
 	tempDir := path.Join(t.TempDir(), "custom")
 
 	// Given a file storer
-	// filePath includes integrationsDir conetant because the call to TmpPath sets that subFolder.
-	filePath := path.Join(tempDir, integrationsDir, "test.json")
+	// filePath should not include integrationsDir subFolder but the overriden tempDir
+	filePath := path.Join(tempDir, "test.json")
 	ttl := 1 * time.Second
 
 	storer, err := NewFileStore(TmpPath(tempDir, "test"), log.NewStdErr(true), ttl)
