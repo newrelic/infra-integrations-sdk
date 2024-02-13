@@ -1,12 +1,13 @@
 package persist
 
 import (
-	"github.com/newrelic/infra-integrations-sdk/log"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/newrelic/infra-integrations-sdk/log"
+	"github.com/stretchr/testify/assert"
 )
 
 var tmpDir string
@@ -85,15 +86,11 @@ func TestStorePath_GetFilePath(t *testing.T) {
 	}{
 		{
 			tempDir:  "",
-			expected: filepath.Join(tmpIntegrationDir(""), "com.newrelic.fake-c.json"),
-		},
-		{
-			tempDir:  "",
-			expected: filepath.Join(tmpIntegrationDir(os.TempDir()), "com.newrelic.fake-c.json"),
+			expected: filepath.Join(os.TempDir(), integrationsDir, "com.newrelic.fake-c.json"),
 		},
 		{
 			tempDir:  "custom-tmp",
-			expected: filepath.Join(tmpIntegrationDir("custom-tmp"), "com.newrelic.fake-c.json"),
+			expected: filepath.Join("custom-tmp", "com.newrelic.fake-c.json"),
 		},
 	}
 
