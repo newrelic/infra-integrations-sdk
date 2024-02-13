@@ -516,6 +516,48 @@ func TestFileStore_DeleteOldEntriesUponSaving(t *testing.T) {
 	assert.EqualError(t, err, ErrNotFound.Error())
 }
 
+func TestFileStoreTmpPath_Save_and_Delete(t *testing.T) {
+	// Reset global variable affected by other tests to the original
+	// value used by the library.
+	SetNow(time.Now)
+
+	tempDir := path.Join(t.TempDir(), "custom")
+
+	// Given a file storer
+	// filePath includes integrationsDir conetant because the call to TmpPath sets that subFolder.
+	filePath := path.Join(tempDir, integrationsDir, "test.json")
+	ttl := 1 * time.Second
+
+	storer, err := NewFileStore(TmpPath(tempDir, "test"), log.NewStdErr(true), ttl)
+
+	// When a valid storer contains keys with timestamp greater than TTL
+	storer.Set("expiredKey", "val")
+	time.Sleep(ttl + time.Second)
+
+	storer.Set("recentKey", "v")
+
+	assert.NoError(t, storer.Save())
+
+	var val interface{}
+
+	_, err = storer.Get("recentKey", &val)
+	assert.NoError(t, err)
+
+	// Expired keys are removed from the storer on saving.
+	_, err = storer.Get("expiredKey", &val)
+	assert.EqualError(t, err, ErrNotFound.Error())
+
+	storer, err = NewFileStore(filePath, log.NewStdErr(true), ttl)
+	assert.NoError(t, err)
+
+	_, err = storer.Get("recentKey", &val)
+	assert.NoError(t, err)
+
+	// Expired keys have been removed from the file.
+	_, err = storer.Get("expiredKey", &val)
+	assert.EqualError(t, err, ErrNotFound.Error())
+}
+
 var data = []byte(`{"Timestamp":1650971736,"Value":["1","2","3","4"]}`)
 
 func Benchmark_UnmashalEntireStruct(b *testing.B) {
