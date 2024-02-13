@@ -1,7 +1,8 @@
 /*
 Package jmx is a library to get metrics through JMX. It requires additional
 setup. Read https://github.com/newrelic/infra-integrations-sdk#jmx-support for
-instructions. */
+instructions.
+*/
 package jmx
 
 import (
@@ -236,8 +237,10 @@ func openConnection(config *connectionConfig) (err error) {
 	}
 
 	go func() {
-		if err = cmd.Wait(); err != nil {
-			cmdErrC <- jmxClientError(fmt.Sprintf("nrjmx error: %s [proc-state: %s]", err, cmd.ProcessState))
+		if cmd != nil {
+			if err = cmd.Wait(); err != nil {
+				cmdErrC <- jmxClientError(fmt.Sprintf("nrjmx error: %s [proc-state: %s]", err, cmd.ProcessState))
+			}
 		}
 
 		cmd = nil
