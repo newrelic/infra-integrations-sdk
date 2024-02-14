@@ -1,4 +1,4 @@
-package http
+package http_test
 
 import (
 	"bytes"
@@ -18,6 +18,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	httpSDK "github.com/newrelic/infra-integrations-sdk/v4/http"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -43,19 +45,26 @@ func TestClient_New_with_CABundleFile(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	// Extract ca.pem from TLS server
-	err = writeCApem(t, err, srv, tmpDir, "ca.pem")
+	writeCApem(t, srv, tmpDir, "ca.pem")
 
 	// New should return new client
-	client, err := New(filepath.Join(tmpDir, "ca.pem"), "", time.Second)
+	client, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithCABundleFile(tmpDir+"/ca.pem"))
 	require.NoError(t, err)
 
 	// And http get should work
 	resp, err := client.Get(srv.URL)
 	require.NoError(t, err)
 
+	// Number of certs loaded should be 1
+	require.Equal(t, 1, len(client.Transport.(*http.Transport).TLSClientConfig.RootCAs.Subjects()))
+
 	_, err = ioutil.ReadAll(resp.Body)
 	assert.NoError(t, err)
+}
+
+func TestClient_New_with_Empty_CABundleFile(t *testing.T) {
+	_, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithCABundleFile(""))
+	require.ErrorIs(t, err, httpSDK.ErrEmptyArg)
 }
 
 func TestClient_New_with_CABundleDir(t *testing.T) {
@@ -78,19 +87,26 @@ func TestClient_New_with_CABundleDir(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	// Extract ca.pem from TLS server
-	err = writeCApem(t, err, srv, tmpDir, "ca.pem")
+	writeCApem(t, srv, tmpDir, "ca.pem")
 
 	// New should return new client
-	client, err := New("", tmpDir, time.Second)
+	client, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithCABundleDir(tmpDir))
 	require.NoError(t, err)
 
 	// And http get should work
 	resp, err := client.Get(srv.URL)
 	require.NoError(t, err)
 
+	// Number of certs loaded should be 1
+	require.Equal(t, 1, len(client.Transport.(*http.Transport).TLSClientConfig.RootCAs.Subjects()))
+
 	_, err = ioutil.ReadAll(resp.Body)
 	assert.NoError(t, err)
+}
+
+func TestClient_New_with_Empty_CABundleDir(t *testing.T) {
+	_, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithCABundleDir(""))
+	require.ErrorIs(t, err, httpSDK.ErrEmptyArg)
 }
 
 func TestClient_New_with_CABundleFile_and_CABundleDir(t *testing.T) {
@@ -113,59 +129,28 @@ func TestClient_New_with_CABundleFile_and_CABundleDir(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	// Extract ca.pem from TLS server
-	err = writeCApem(t, err, srv, tmpDir, "ca")
+	writeCApem(t, srv, tmpDir, "ca")
+	writeAnotherCApem(t, tmpDir, "ca2.pem")
 
 	// New should return new client
-	client, err := New("ca", tmpDir, time.Second)
+	client, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithCABundleFile(tmpDir+"/ca"), httpSDK.WithCABundleDir(tmpDir))
 	require.NoError(t, err)
 
 	// And http get should work
 	resp, err := client.Get(srv.URL)
 	require.NoError(t, err)
 
-	_, err = ioutil.ReadAll(resp.Body)
-	assert.NoError(t, err)
-}
-
-func TestClient_New_with_CABundleFile_full_path_and_CABundleDir(t *testing.T) {
-	srv := httptest.NewTLSServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			_, err := fmt.Fprintln(w, "Test server")
-			assert.NoError(t, err)
-		}))
-	defer srv.Close()
-
-	// Given test server is working
-	_, err := srv.Client().Get(srv.URL)
-	require.NoError(t, err)
-
-	// Then create temp dir
-	tmpDir, err := ioutil.TempDir("", "test")
-	require.NoError(t, err)
-	defer func() {
-		err := os.RemoveAll(tmpDir)
-		require.NoError(t, err)
-	}()
-
-	// Extract ca.pem from TLS server
-	err = writeCApem(t, err, srv, tmpDir, "ca")
-
-	// New should return new client
-	client, err := New(filepath.Join(tmpDir, "ca"), tmpDir, time.Second)
-	require.NoError(t, err)
-
-	// And http get should work
-	resp, err := client.Get(srv.URL)
-	require.NoError(t, err)
+	// Number of certs loaded should be 2
+	require.Equal(t, 2, len(client.Transport.(*http.Transport).TLSClientConfig.RootCAs.Subjects()))
 
 	_, err = ioutil.ReadAll(resp.Body)
 	assert.NoError(t, err)
 }
 
-func writeCApem(t *testing.T, err error, srv *httptest.Server, tmpDir string, certName string) error {
+// Extract ca.pem from TLS server
+func writeCApem(t *testing.T, srv *httptest.Server, tmpDir string, certName string) {
 	caPEM := new(bytes.Buffer)
-	err = pem.Encode(caPEM, &pem.Block{
+	err := pem.Encode(caPEM, &pem.Block{
 		Type:  "CERTIFICATE",
 		Bytes: srv.Certificate().Raw,
 	})
@@ -176,7 +161,48 @@ func writeCApem(t *testing.T, err error, srv *httptest.Server, tmpDir string, ce
 	require.NoError(t, err)
 	_, err = caPem.Write(caPEM.Bytes())
 	require.NoError(t, err)
-	return err
+}
+
+func writeAnotherCApem(t *testing.T, tmpDir string, certName string) {
+	ca := &x509.Certificate{
+		SerialNumber: big.NewInt(2019),
+		Subject: pkix.Name{
+			Organization:  []string{"Another, INC."},
+			Country:       []string{"MO"},
+			Province:      []string{""},
+			Locality:      []string{"Maputo"},
+			StreetAddress: []string{"Maputo City"},
+			PostalCode:    []string{"14016"},
+			CommonName:    "invented",
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(10, 0, 0),
+		IsCA:                  true,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+	}
+
+	// create our private and public key
+	caPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
+	require.NoError(t, err)
+
+	// create the CA
+	caBytes, err := x509.CreateCertificate(rand.Reader, ca, ca, &caPrivKey.PublicKey, caPrivKey)
+	require.NoError(t, err)
+
+	// pem encode
+	caPEM := new(bytes.Buffer)
+	err = pem.Encode(caPEM, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: caBytes,
+	})
+
+	// Then write the ca.pem to disk
+	caPem, err := os.Create(filepath.Join(tmpDir, certName))
+	require.NoError(t, err)
+	_, err = caPem.Write(caPEM.Bytes())
+	require.NoError(t, err)
 }
 
 func Test_NewAcceptInvalidHostname(t *testing.T) {
@@ -206,13 +232,13 @@ func Test_NewAcceptInvalidHostname(t *testing.T) {
 	}()
 
 	// And ca.pem exists for client
-	err = writeCApem(t, err, srv, tmpDir, "ca.pem")
+	writeCApem(t, srv, tmpDir, "ca.pem")
 
 	// 2 assertions:
 
 	// When HTTPS client is created accepting server certificated IP
 	sameIP := ip.String()
-	client, err := NewAcceptInvalidHostname(filepath.Join(tmpDir, "ca.pem"), "", time.Second, sameIP)
+	client, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithAcceptInvalidHostname(sameIP), httpSDK.WithCABundleFile(tmpDir+"/ca.pem"))
 	require.NoError(t, err)
 
 	// Then HTTPS should work even for different hostname and source IP (127.0.0.1)
@@ -226,7 +252,7 @@ func Test_NewAcceptInvalidHostname(t *testing.T) {
 	assert.NoError(t, err)
 
 	// When HTTPS client is created accepting server certificated hostname
-	client, err = NewAcceptInvalidHostname(filepath.Join(tmpDir, "ca.pem"), "", time.Second, "foo.bar")
+	client, err = httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithAcceptInvalidHostname("foo.bar"), httpSDK.WithCABundleFile(tmpDir+"/ca.pem"))
 	require.NoError(t, err)
 
 	// Then HTTPS should work
@@ -234,6 +260,46 @@ func Test_NewAcceptInvalidHostname(t *testing.T) {
 	require.NoError(t, err)
 	req.Host = "different.hostname"
 	resp, err = client.Do(req)
+	require.NoError(t, err)
+
+	_, err = ioutil.ReadAll(resp.Body)
+	assert.NoError(t, err)
+}
+
+func TestClient_New_with_Empty_AcceptInvalidHostname(t *testing.T) {
+	_, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithAcceptInvalidHostname(""))
+	require.ErrorIs(t, err, httpSDK.ErrEmptyArg)
+}
+
+func Test_WithInsecureSkipVerify(t *testing.T) {
+	srv := httptest.NewTLSServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, err := fmt.Fprintln(w, "Test server")
+			assert.NoError(t, err)
+		}))
+	defer srv.Close()
+
+	// Given test server is working
+	_, err := srv.Client().Get(srv.URL)
+	require.NoError(t, err)
+
+	// Then create temp dir
+	tmpDir, err := ioutil.TempDir("", "test")
+	require.NoError(t, err)
+	defer func() {
+		err := os.RemoveAll(tmpDir)
+		require.NoError(t, err)
+	}()
+
+	// Extract ca.pem from TLS server
+	writeCApem(t, srv, tmpDir, "ca.pem")
+
+	// New should return new client
+	client, err := httpSDK.New(httpSDK.WithTimeout(time.Second), httpSDK.WithTLSInsecureSkipVerify())
+	require.NoError(t, err)
+
+	// And http get should work
+	resp, err := client.Get(srv.URL)
 	require.NoError(t, err)
 
 	_, err = ioutil.ReadAll(resp.Body)
