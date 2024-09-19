@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -17,7 +16,7 @@ import (
 
 const (
 	// DefaultTTL specifies the "Time To Live" of the disk storage.
-	DefaultTTL      = 1 * time.Minute
+	DefaultTTL      = 6 * time.Minute
 	filePerm        = 0644
 	dirFilePerm     = 0755
 	integrationsDir = "nr-integrations"
@@ -173,7 +172,7 @@ func (j *fileStore) Save() error {
 		return err
 	}
 
-	return ioutil.WriteFile(j.path, bytes, filePerm)
+	return os.WriteFile(j.path, bytes, filePerm)
 }
 
 func (j *inMemoryStore) Save() error {
@@ -251,7 +250,7 @@ func (j *fileStore) loadFromDisk() error {
 	j.locker.Lock()
 	defer j.locker.Unlock()
 
-	bytes, err := ioutil.ReadFile(j.path)
+	bytes, err := os.ReadFile(j.path)
 	if err != nil {
 		return fmt.Errorf("can't read %q: %s. Ignoring", j.path, err.Error())
 	}
