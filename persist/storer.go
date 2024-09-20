@@ -95,6 +95,12 @@ func TmpPath(tempDir, integrationName string) string {
 // "nr-integrations" as a subfolder, Linux example: "/tmp/nr-integrations"
 func tmpIntegrationDir(tempDir string) string {
 	dir := tempDir
+
+	legacyCachePath := os.Getenv("NRIA_CACHE_PATH")
+	if legacyCachePath != "" {
+		tempDir = legacyCachePath
+	}
+
 	if tempDir == "" {
 		tempDir = os.TempDir()
 		dir = filepath.Join(tempDir, integrationsDir)
