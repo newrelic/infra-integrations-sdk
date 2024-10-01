@@ -12,9 +12,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/log"
-	"github.com/newrelic/infra-integrations-sdk/persist"
+	"github.com/newrelic/infra-integrations-sdk/v3/args"
+	"github.com/newrelic/infra-integrations-sdk/v3/log"
+	"github.com/newrelic/infra-integrations-sdk/v3/persist"
 )
 
 // Custom attribute keys:

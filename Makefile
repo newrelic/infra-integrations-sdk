@@ -9,7 +9,7 @@ all: lint test
 .PHONY: test
 test:
 	@go test -race $(PKGS)
-	@go test github.com/newrelic/infra-integrations-sdk/jmx > /dev/null # TODO: fix race for jmx package
+	@go test github.com/newrelic/infra-integrations-sdk/v3/jmx > /dev/null # TODO: fix race for jmx package
 
 .PHONY: clean
 clean:

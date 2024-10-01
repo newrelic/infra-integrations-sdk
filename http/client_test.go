@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	httpSDK "github.com/newrelic/infra-integrations-sdk/http"
+	httpSDK "github.com/newrelic/infra-integrations-sdk/v3/http"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

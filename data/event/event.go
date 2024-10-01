@@ -1,6 +1,6 @@
 package event
 
-import "github.com/newrelic/infra-integrations-sdk/data/attribute"
+import "github.com/newrelic/infra-integrations-sdk/v3/data/attribute"
 
 const (
 	// NotificationEventCategory category for notification events.
