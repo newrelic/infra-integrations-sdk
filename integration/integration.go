@@ -89,6 +89,9 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 	defaultArgs := args.GetDefaultArgs(i.args)
 	i.prettyOutput = defaultArgs.Pretty
 	i.addHostnameToMeta = defaultArgs.NriAddHostname
+	if defaultArgs.CacheTTL == 0 {
+		defaultArgs.CacheTTL = persist.DefaultTTL
+	}
 
 	if defaultArgs.Verbose {
 		log.SetupLogging(defaultArgs.Verbose)
@@ -100,14 +103,14 @@ func New(name, version string, opts ...Option) (i *Integration, err error) {
 	}
 
 	if i.storer == nil {
-		storePath, err := persist.NewStorePath(i.Name, i.CreateUniqueID(), defaultArgs.TempDir, i.logger, persist.DefaultTTL)
+		storePath, err := persist.NewStorePath(i.Name, i.CreateUniqueID(), defaultArgs.TempDir, i.logger, defaultArgs.CacheTTL)
 		if err != nil {
 			return nil, fmt.Errorf("can't create temporary directory for store: %s", err)
 		}
 
 		storePath.CleanOldFiles()
 
-		i.storer, err = persist.NewFileStore(storePath.GetFilePath(), i.logger, persist.DefaultTTL)
+		i.storer, err = persist.NewFileStore(storePath.GetFilePath(), i.logger, defaultArgs.CacheTTL)
 		if err != nil {
 			return nil, fmt.Errorf("can't create store: %s", err)
 		}

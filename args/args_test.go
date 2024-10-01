@@ -253,7 +253,11 @@ func TestDefaultArgumentsWithPretty(t *testing.T) {
 	var args sdk_args.DefaultArgumentList
 	assert.NoError(t, sdk_args.SetupArgs(&args))
 
-	assertEqualArgs(t, sdk_args.DefaultArgumentList{Pretty: true}, args)
+	clearFlagSet()
+	expected := sdk_args.DefaultArgumentList{Pretty: true}
+	assert.NoError(t, sdk_args.SetupArgs(&expected))
+
+	assertEqualArgs(t, expected, args)
 }
 
 func TestAddCustomArgumentsToDefault(t *testing.T) {
@@ -271,10 +275,12 @@ func TestAddCustomArgumentsToDefault(t *testing.T) {
 	}
 	assert.NoError(t, sdk_args.SetupArgs(&args))
 
+	clearFlagSet()
 	expected := argumentList{
 		DefaultArgumentList: sdk_args.DefaultArgumentList{Pretty: true},
 		Hostname:            "otherhost",
 	}
+	assert.NoError(t, sdk_args.SetupArgs(&expected))
 
 	assertEqualArgs(t, expected, args)
 }

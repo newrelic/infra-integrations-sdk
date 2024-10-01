@@ -2,6 +2,7 @@ package metric
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -9,7 +10,6 @@ import (
 
 	"github.com/newrelic/infra-integrations-sdk/data/attribute"
 	"github.com/newrelic/infra-integrations-sdk/persist"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -61,9 +61,7 @@ func AddCustomAttributes(metricSet *Set, customAttributes []attribute.Attribute)
 
 // AddNamespaceAttributes add attributes to MetricSet namespace.
 func (ms *Set) AddNamespaceAttributes(attributes ...attribute.Attribute) {
-	for _, attr := range attributes {
-		ms.nsAttributes = append(ms.nsAttributes, attr)
-	}
+	ms.nsAttributes = append(ms.nsAttributes, attributes...)
 }
 
 // SetMetric adds a metric to the Set object or updates the metric value if the metric already exists.
@@ -81,7 +79,7 @@ func (ms *Set) SetMetric(name string, value interface{}, sourceType SourceType) 
 		}
 		newValue, errElapsed = ms.elapsedDifference(name, value, sourceType)
 		if errElapsed != nil {
-			return errors.Wrapf(errElapsed, "cannot calculate elapsed difference for metric: %s value %v", name, value)
+			return fmt.Errorf("cannot calculate elapsed difference for metric: %s value %v: %w", name, value, errElapsed)
 		}
 	case GAUGE:
 		newValue, err = castToFloat(value)

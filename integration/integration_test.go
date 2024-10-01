@@ -464,7 +464,7 @@ func TestIntegration_CreateUniqueID_Default(t *testing.T) {
 	i, err := New("testIntegration", "0.0.0", Args(&al))
 	assert.NoError(t, err)
 
-	assert.Equal(t, i.CreateUniqueID(), "f2fbf79d935a14908cb886e98cff0879")
+	assert.Equal(t, "d72d09add1ac94e0293c4f5d41fd9f6e", i.CreateUniqueID())
 }
 
 func TestIntegration_CreateUniqueID_EnvironmentVar(t *testing.T) {
@@ -481,7 +481,7 @@ func TestIntegration_CreateUniqueID_EnvironmentVar(t *testing.T) {
 	i, err := New("testIntegration", "0.0.0", Args(&al))
 	assert.NoError(t, err)
 
-	assert.Equal(t, i.CreateUniqueID(), "3d3c4d31fdec9ccd1250c9d080ca514f")
+	assert.Equal(t, "0a837adb9898b2aeb68da8b817adce1c", i.CreateUniqueID())
 }
 
 type testWriter struct {

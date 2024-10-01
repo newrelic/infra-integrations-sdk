@@ -2,10 +2,11 @@ package persist
 
 import (
 	"fmt"
-	"github.com/newrelic/infra-integrations-sdk/log"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/newrelic/infra-integrations-sdk/log"
 )
 
 const (
@@ -37,8 +38,8 @@ func NewStorePath(integrationName, integrationID, customTempDir string, ilog log
 		return nil, fmt.Errorf("integration id not specified")
 	}
 
-	if ttl == 0 {
-		ttl = DefaultTTL
+	if ttl <= 0 {
+		return nil, fmt.Errorf("invalid TTL: %d", ttl)
 	}
 
 	return &storePath{
