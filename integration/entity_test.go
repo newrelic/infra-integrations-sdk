@@ -8,10 +8,10 @@ import (
 
 	"encoding/json"
 
-	"github.com/newrelic/infra-integrations-sdk/data/attribute"
-	"github.com/newrelic/infra-integrations-sdk/data/event"
-	"github.com/newrelic/infra-integrations-sdk/data/metric"
-	"github.com/newrelic/infra-integrations-sdk/persist"
+	"github.com/newrelic/infra-integrations-sdk/v3/data/attribute"
+	"github.com/newrelic/infra-integrations-sdk/v3/data/event"
+	"github.com/newrelic/infra-integrations-sdk/v3/data/metric"
+	"github.com/newrelic/infra-integrations-sdk/v3/persist"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/newrelic/infra-integrations-sdk/log"
-	"github.com/newrelic/infra-integrations-sdk/persist"
+	"github.com/newrelic/infra-integrations-sdk/v3/log"
+	"github.com/newrelic/infra-integrations-sdk/v3/persist"
 )
 
 type Topping string

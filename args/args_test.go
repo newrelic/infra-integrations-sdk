@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	sdk_args "github.com/newrelic/infra-integrations-sdk/args"
+	sdk_args "github.com/newrelic/infra-integrations-sdk/v3/args"
 	"github.com/stretchr/testify/assert"
 )
 

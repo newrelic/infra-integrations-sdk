@@ -12,9 +12,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/log"
-	"github.com/newrelic/infra-integrations-sdk/persist"
+	"github.com/newrelic/infra-integrations-sdk/v3/args"
+	"github.com/newrelic/infra-integrations-sdk/v3/log"
+	"github.com/newrelic/infra-integrations-sdk/v3/persist"
 )
 
 func TestWriter(t *testing.T) {

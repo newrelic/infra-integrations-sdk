@@ -3,7 +3,7 @@ package event
 import (
 	"testing"
 
-	"github.com/newrelic/infra-integrations-sdk/data/attribute"
+	"github.com/newrelic/infra-integrations-sdk/v3/data/attribute"
 	"github.com/stretchr/testify/assert"
 )
 
