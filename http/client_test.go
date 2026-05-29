@@ -240,6 +240,43 @@ func Test_NewAcceptInvalidHostname(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func Test_NewAcceptInvalidHostname_rejects_wrong_hostname(t *testing.T) {
+	srv := httptest.NewUnstartedServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, err := fmt.Fprintln(w, "Test server")
+			assert.NoError(t, err)
+		}))
+	defer srv.Close()
+
+	// Given a server certificate only valid for "foo.bar"
+	ip := net.IPv4(127, 0, 0, 1)
+	serverTLSConf, err := certsetup("foo.bar", []net.IP{ip})
+	require.NoError(t, err)
+	srv.TLS = serverTLSConf
+	srv.StartTLS()
+
+	// And folder in client to contain a certificate
+	tmpDir, err := ioutil.TempDir("", "test")
+	require.NoError(t, err)
+	defer func() {
+		err := os.RemoveAll(tmpDir)
+		require.NoError(t, err)
+	}()
+
+	// And ca.pem exists for client
+	err = writeCApem(t, err, srv, tmpDir, "ca.pem")
+
+	// When HTTPS client is created with a hostname NOT in the certificate
+	client, err := NewAcceptInvalidHostname(filepath.Join(tmpDir, "ca.pem"), "", time.Second, "wrong.host")
+	require.NoError(t, err)
+
+	// Then the request should fail because the cert doesn't match "wrong.host"
+	req, err := http.NewRequest("GET", srv.URL, nil)
+	require.NoError(t, err)
+	_, err = client.Do(req)
+	require.Error(t, err)
+}
+
 func certsetup(hostname string, ips []net.IP) (serverTLSConf *tls.Config, err error) {
 	// set up our CA certificate
 	ca := &x509.Certificate{
